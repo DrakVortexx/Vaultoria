@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaultoria</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <div id="auth-screen" class="screen">
+    <div class="auth-box">
+      <h1 class="site-title">Vaultoria</h1>
+
+      <form id="login-form" class="auth-form">
+        <div class="field">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Log in</button>
+      </form>
+
+      <form id="register-form" class="auth-form hidden">
+        <div class="field">
+          <label for="reg-username">Username</label>
+          <input type="text" id="reg-username" autocomplete="username" minlength="3" maxlength="20" required>
+        </div>
+        <div class="field">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" autocomplete="new-password" minlength="6" required>
+        </div>
+        <div class="field">
+          <label for="reg-confirm">Confirm password</label>
+          <input type="password" id="reg-confirm" autocomplete="new-password" minlength="6" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Create account</button>
+      </form>
+
+      <button id="auth-toggle" class="toggle-link">Need an account? Register</button>
+    </div>
+  </div>
+
+  <div id="game-screen" class="screen hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">Vaultoria</span>
+      </div>
+      <div class="topbar-right">
+        <span id="header-level" class="badge">Lv.1</span>
+        <span id="header-coins" class="coin-display">0</span>
+        <span id="header-username" class="user-display"></span>
+        <button id="logout-btn" class="btn btn-ghost">Log out</button>
+      </div>
+    </header>
+
+    <nav class="tab-bar">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="shop">Shop</button>
+      <button class="tab" data-tab="inventory">Inventory</button>
+      <button class="tab" data-tab="trades">Trades</button>
+      <button class="tab" data-tab="leaderboard">Leaderboard</button>
+    </nav>
+
+    <main class="content">
+      <div id="dashboard-tab" class="tab-panel active"></div>
+      <div id="shop-tab" class="tab-panel"></div>
+      <div id="inventory-tab" class="tab-panel"></div>
+      <div id="trades-tab" class="tab-panel"></div>
+      <div id="leaderboard-tab" class="tab-panel"></div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
