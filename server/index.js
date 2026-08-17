@@ -2,6 +2,8 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const { securityMiddleware } = require("./middleware/security");
+const { execSync } = require("child_process");
+const { startup } = require("../prisma/startup");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +37,20 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Vaultoria server running on port ${PORT}`);
-});
+async function main() {
+  try {
+    console.log("Syncing database schema...");
+    execSync("npx prisma db push --skip-generate", { stdio: "inherit" });
+    console.log("Schema synced.");
+  } catch (err) {
+    console.error("Schema sync failed:", err.message);
+  }
+
+  await startup();
+
+  app.listen(PORT, () => {
+    console.log(`Vaultoria server running on port ${PORT}`);
+  });
+}
+
+main();

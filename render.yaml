@@ -3,7 +3,7 @@ services:
     name: vaultoria
     runtime: node
     plan: free
-    buildCommand: npm install && npx prisma generate && npx prisma db push --skip-generate
+    buildCommand: npm install && npx prisma generate
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
