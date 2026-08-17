@@ -4,14 +4,7 @@ var App = {
 
   async init() {
     Auth.init();
-    try {
-      var data = await API.me();
-      this.user = data.user;
-      this.player = data.player;
-      this.loadGame();
-    } catch {
-      UI.showAuth();
-    }
+    await this.loadGame();
   },
 
   async loadGame() {
@@ -237,6 +230,7 @@ var App = {
   },
 
   async loadInventory() {
+    var self = this;
     var content = document.getElementById("inventory-tab");
     content.innerHTML = '<div class="loading">Loading inventory...</div>';
 
