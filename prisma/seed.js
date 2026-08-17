@@ -39,6 +39,7 @@ async function seed() {
 
   await prisma.tradeItem.deleteMany();
   await prisma.trade.deleteMany();
+  await prisma.auctionListing.deleteMany();
   await prisma.inventory.deleteMany();
   await prisma.shopListing.deleteMany();
   await prisma.item.deleteMany();
@@ -67,7 +68,7 @@ async function seed() {
       username: "admin",
       passwordHash: adminHash,
       player: {
-        create: { coins: 5000, level: 10, xp: 500 },
+        create: { coins: 10000, level: 10, xp: 500 },
       },
     },
     include: { player: true },

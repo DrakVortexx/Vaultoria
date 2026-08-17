@@ -1,7 +1,7 @@
 const express = require("express");
 const prisma = require("../db");
 const { requireAuth } = require("../middleware/auth");
-const { calculateLevelUp, rollMysteryBox } = require("../services/game");
+const { calculateLevelUp } = require("../services/game");
 
 const router = express.Router();
 
@@ -161,80 +161,6 @@ router.post("/sell", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Sell error:", err);
     res.status(500).json({ error: "Sale failed" });
-  }
-});
-
-router.post("/mystery-box", requireAuth, async (req, res) => {
-  try {
-    const cost = 100;
-
-    if (req.player.coins < cost) {
-      return res.status(400).json({ error: "Need 100 coins for a mystery box" });
-    }
-
-    const rarity = rollMysteryBox(req.player.level);
-
-    const items = await prisma.item.findMany({
-      where: { rarity },
-    });
-
-    if (items.length === 0) {
-      return res.status(500).json({ error: "No items available for this rarity" });
-    }
-
-    const item = items[Math.floor(Math.random() * items.length)];
-    const xpGained = rarity === "LEGENDARY" ? 50 : rarity === "EPIC" ? 30 : rarity === "RARE" ? 15 : 5;
-
-    const result = await prisma.$transaction(async (tx) => {
-      const levelResult = calculateLevelUp(req.player.level, req.player.xp, xpGained);
-
-      await tx.player.update({
-        where: { id: req.player.id },
-        data: {
-          coins: { decrement: cost },
-          level: levelResult.level,
-          xp: levelResult.xp,
-          ...(levelResult.coinBonus > 0 ? { coins: { increment: levelResult.coinBonus } } : {}),
-        },
-      });
-
-      const inventory = await tx.inventory.upsert({
-        where: {
-          playerId_itemId: { playerId: req.player.id, itemId: item.id },
-        },
-        update: { quantity: { increment: 1 } },
-        create: {
-          playerId: req.player.id,
-          itemId: item.id,
-          quantity: 1,
-        },
-      });
-
-      const updatedPlayer = await tx.player.findUnique({
-        where: { id: req.player.id },
-      });
-
-      return { inventory, player: updatedPlayer, levelResult };
-    });
-
-    res.json({
-      message: `You opened a mystery box and found ${item.name}!`,
-      item: {
-        id: item.id,
-        name: item.name,
-        rarity: item.rarity,
-        type: item.type,
-        description: item.description,
-      },
-      coins: result.player.coins,
-      xpGained,
-      levelUp: result.levelResult.levelsGained > 0,
-      newLevel: result.levelResult.level,
-      coinBonus: result.levelResult.coinBonus,
-    });
-  } catch (err) {
-    console.error("Mystery box error:", err);
-    res.status(500).json({ error: "Failed to open mystery box" });
   }
 });
 

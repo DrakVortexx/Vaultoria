@@ -81,7 +81,19 @@ const API = {
     return this.request("POST", `/api/trade/${tradeId}/cancel`);
   },
 
-  openMysteryBox() {
-    return this.request("POST", "/api/shop/mystery-box");
+  getAuctionListings() {
+    return this.request("GET", "/api/auction");
+  },
+
+  listAuction(data) {
+    return this.request("POST", "/api/auction/list", data);
+  },
+
+  buyAuction(listingId) {
+    return this.request("POST", `/api/auction/buy/${listingId}`);
+  },
+
+  cancelAuction(listingId) {
+    return this.request("POST", `/api/auction/cancel/${listingId}`);
   },
 };

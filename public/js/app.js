@@ -59,6 +59,7 @@ var App = {
     switch (tab) {
       case "dashboard": return this.loadDashboard();
       case "shop": return this.loadShop();
+      case "auction": return this.loadAuction();
       case "inventory": return this.loadInventory();
       case "trades": return this.loadTrades();
       case "leaderboard": return this.loadLeaderboard();
@@ -86,16 +87,11 @@ var App = {
           '<p style="color:var(--muted);font-size:.85rem;margin-bottom:14px">Every 20 hours. Streak bonus up to +105 coins.</p>' +
           '<button id="daily-btn" class="btn btn-primary">Claim</button>' +
         '</div>' +
-        '<div class="card mystery-card">' +
-          '<h3>Mystery Box</h3>' +
-          '<p style="color:var(--muted);font-size:.85rem;margin-bottom:6px">Spend $100 for a random item.</p>' +
-          '<p style="color:var(--muted);font-size:.78rem;margin-bottom:14px">Higher level = better odds.</p>' +
-          '<button id="mystery-btn" class="btn btn-primary">Open Box</button>' +
-        '</div>' +
         '<div class="card">' +
           '<h3>Quick Links</h3>' +
           '<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">' +
             '<button id="goto-shop" class="btn btn-secondary">Shop</button>' +
+            '<button id="goto-auction" class="btn btn-secondary">Auction</button>' +
             '<button id="goto-inv" class="btn btn-secondary">Inventory</button>' +
             '<button id="goto-trade" class="btn btn-secondary">Trades</button>' +
           '</div>' +
@@ -118,23 +114,14 @@ var App = {
       }
     });
 
-    document.getElementById("mystery-btn").addEventListener("click", async function() {
-      try {
-        var res = await API.openMysteryBox();
-        self.player.coins = res.coins;
-        self.player.level = res.newLevel || self.player.level;
-        self.updateHeader();
-        UI.toast(res.message, "success");
-        self.handleLevelUp(res);
-        self.loadDashboard();
-      } catch (err) {
-        UI.toast(err.message, "error");
-      }
-    });
-
     document.getElementById("goto-shop").addEventListener("click", function() {
       UI.showTab("shop");
       self.loadShop();
+    });
+
+    document.getElementById("goto-auction").addEventListener("click", function() {
+      UI.showTab("auction");
+      self.loadAuction();
     });
 
     document.getElementById("goto-inv").addEventListener("click", function() {
@@ -226,6 +213,146 @@ var App = {
       });
     } catch (err) {
       content.innerHTML = '<div class="error-msg">Failed to load shop: ' + err.message + '</div>';
+    }
+  },
+
+  async loadAuction() {
+    var self = this;
+    var content = document.getElementById("auction-tab");
+    content.innerHTML = '<div class="loading">Loading auction house...</div>';
+
+    try {
+      var res = await API.getAuctionListings();
+      var listings = res.listings;
+      var invRes = await API.getInventory();
+      var myInventory = invRes.inventory;
+
+      content.innerHTML =
+        '<div class="auction-header">' +
+          '<div class="filter-row">' +
+            '<button class="filter-pill on" data-filter="all">All</button>' +
+            '<button class="filter-pill" data-filter="COMMON">Common</button>' +
+            '<button class="filter-pill" data-filter="RARE">Rare</button>' +
+            '<button class="filter-pill" data-filter="EPIC">Epic</button>' +
+            '<button class="filter-pill" data-filter="LEGENDARY">Legendary</button>' +
+          '</div>' +
+          '<button id="sell-item-btn" class="btn btn-primary">Sell Item</button>' +
+        '</div>' +
+        '<div class="shop-grid" id="auction-grid"></div>' +
+        '<div class="modal-overlay hidden" id="sell-modal">' +
+          '<div class="modal-box">' +
+            '<h3>Sell Item on Auction</h3>' +
+            '<form id="sell-form">' +
+              '<label>Item</label>' +
+              '<select id="sell-item-select" required></select>' +
+              '<label>Quantity</label>' +
+              '<input type="number" id="sell-qty" min="1" value="1" required>' +
+              '<label>Price per unit ($)</label>' +
+              '<input type="number" id="sell-price" min="1" required>' +
+              '<div style="display:flex;gap:8px;margin-top:14px">' +
+                '<button type="submit" class="btn btn-primary">List</button>' +
+                '<button type="button" class="btn btn-secondary" id="close-sell-modal">Cancel</button>' +
+              '</div>' +
+            '</form>' +
+          '</div>' +
+        '</div>';
+
+      var renderAuction = function(filter) {
+        var grid = document.getElementById("auction-grid");
+        var filtered = filter === "all" ? listings : listings.filter(function(l) { return l.item.rarity === filter; });
+        if (filtered.length === 0) {
+          grid.innerHTML = '<div class="empty-state">No listings found.</div>';
+          return;
+        }
+        grid.innerHTML = filtered.map(function(l) {
+          var isMine = l.sellerId === self.player.id;
+          return '<div class="card shop-card border-' + l.item.rarity.toLowerCase() + '">' +
+            '<div class="item-icon">' + UI.renderItemIcon(l.item.type) + '</div>' +
+            '<h4>' + l.item.name + '</h4>' +
+            '<p class="item-desc">' + l.item.description + '</p>' +
+            '<span class="rarity-tag ' + l.item.rarity.toLowerCase() + '">' + l.item.rarity + '</span>' +
+            '<div class="shop-price">$ ' + l.price.toLocaleString() + ' each</div>' +
+            '<div class="stock">Qty: ' + l.quantity + ' &middot; by ' + l.seller.user.username + '</div>' +
+            (isMine
+              ? '<button class="btn btn-danger btn-sm cancel-auction-btn" data-lid="' + l.id + '">Cancel</button>'
+              : '<button class="btn btn-primary btn-sm buy-auction-btn" data-lid="' + l.id + '">Buy</button>'
+            ) +
+          '</div>';
+        }).join("");
+
+        grid.querySelectorAll(".buy-auction-btn").forEach(function(btn) {
+          btn.addEventListener("click", async function() {
+            try {
+              var r = await API.buyAuction(btn.dataset.lid);
+              self.player.coins = r.coins;
+              self.player.level = r.newLevel || self.player.level;
+              self.updateHeader();
+              UI.toast(r.message, "success");
+              self.handleLevelUp(r);
+              self.loadAuction();
+            } catch (err) {
+              UI.toast(err.message, "error");
+            }
+          });
+        });
+
+        grid.querySelectorAll(".cancel-auction-btn").forEach(function(btn) {
+          btn.addEventListener("click", async function() {
+            try {
+              var r = await API.cancelAuction(btn.dataset.lid);
+              UI.toast(r.message, "info");
+              self.loadAuction();
+            } catch (err) {
+              UI.toast(err.message, "error");
+            }
+          });
+        });
+      };
+
+      renderAuction("all");
+
+      content.querySelectorAll(".filter-pill").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          content.querySelectorAll(".filter-pill").forEach(function(b) { b.classList.remove("on"); });
+          btn.classList.add("on");
+          renderAuction(btn.dataset.filter);
+        });
+      });
+
+      document.getElementById("sell-item-btn").addEventListener("click", function() {
+        var select = document.getElementById("sell-item-select");
+        select.innerHTML = myInventory.length === 0
+          ? '<option value="">No items in inventory</option>'
+          : myInventory.map(function(inv) {
+              return '<option value="' + inv.id + '">' + inv.item.name + ' (x' + inv.quantity + ')</option>';
+            }).join("");
+        document.getElementById("sell-modal").classList.remove("hidden");
+      });
+
+      document.getElementById("close-sell-modal").addEventListener("click", function() {
+        document.getElementById("sell-modal").classList.add("hidden");
+      });
+
+      document.getElementById("sell-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        var inventoryId = document.getElementById("sell-item-select").value;
+        var quantity = parseInt(document.getElementById("sell-qty").value) || 1;
+        var price = parseInt(document.getElementById("sell-price").value) || 0;
+        if (!inventoryId || price < 1) {
+          UI.toast("Fill in all fields", "error");
+          return;
+        }
+        try {
+          var r = await API.listAuction({ inventoryId, quantity, price });
+          UI.toast(r.message, "success");
+          document.getElementById("sell-modal").classList.add("hidden");
+          self.loadAuction();
+        } catch (err) {
+          UI.toast(err.message, "error");
+        }
+      });
+    } catch (err) {
+      content.innerHTML = '<div class="error-msg">Failed to load auction: ' + err.message + '</div>';
     }
   },
 

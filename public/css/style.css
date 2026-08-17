@@ -151,7 +151,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .border-legendary{border-color:var(--legendary)}
 
 /* ---- Shop ---- */
-.filter-row{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.auction-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap}
 .filter-pill{
   padding:5px 14px;background:var(--surface);border:1px solid var(--border);
   border-radius:16px;color:var(--muted);font-size:.8rem;cursor:pointer;
@@ -169,7 +170,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .stock{color:var(--muted);font-size:.75rem}
 .buy-row{display:flex;gap:6px;align-items:center;margin-top:4px}
 .buy-total{color:var(--yellow);font-family:var(--mono);font-size:.8rem;font-weight:600}
-.mystery-card{border-color:var(--yellow)}
 
 /* ---- Inventory ---- */
 .inv-stats{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
@@ -204,7 +204,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 }
 .modal-box h3{margin-bottom:16px;font-size:1rem}
 .modal-box label{display:block;color:var(--muted);font-size:.8rem;margin-bottom:3px;margin-top:10px}
-.modal-box input{
+.modal-box input,.modal-box select{
   width:100%;padding:8px 12px;background:var(--bg);border:1px solid var(--border);
   border-radius:var(--r);color:var(--text);font-size:.88rem;font-family:var(--font);outline:none;
 }

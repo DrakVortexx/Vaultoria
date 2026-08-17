@@ -18,6 +18,7 @@ app.use("/api/player", require("./routes/player"));
 app.use("/api/shop", require("./routes/shop"));
 app.use("/api/inventory", require("./routes/inventory"));
 app.use("/api/trade", require("./routes/trade"));
+app.use("/api/auction", require("./routes/auction"));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

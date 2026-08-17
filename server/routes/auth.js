@@ -36,7 +36,7 @@ router.post("/register", validateBody(["username", "password", "confirmPassword"
         username,
         passwordHash,
         player: {
-          create: { coins: 100, level: 1, xp: 0 },
+          create: { coins: 10000, level: 1, xp: 0 },
         },
       },
       include: { player: true },

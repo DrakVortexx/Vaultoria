@@ -20,27 +20,4 @@ function calculateLevelUp(currentLevel, currentXp, xpGained) {
   return { level, xp, levelsGained, coinBonus };
 }
 
-function rollMysteryBox(playerLevel) {
-  const roll = Math.random() * 100;
-  let rarity;
-
-  if (roll < 2) {
-    rarity = "LEGENDARY";
-  } else if (roll < 10) {
-    rarity = "EPIC";
-  } else if (roll < 30) {
-    rarity = "RARE";
-  } else {
-    rarity = "COMMON";
-  }
-
-  const levelBonus = Math.floor(playerLevel / 5);
-  const adjustedRoll = Math.random() * 100;
-  if (adjustedRoll < levelBonus) {
-    rarity = rarity === "COMMON" ? "RARE" : rarity === "RARE" ? "EPIC" : "LEGENDARY";
-  }
-
-  return rarity;
-}
-
-module.exports = { xpForLevel, calculateLevelUp, rollMysteryBox };
+module.exports = { xpForLevel, calculateLevelUp };
