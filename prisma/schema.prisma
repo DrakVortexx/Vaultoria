@@ -39,6 +39,8 @@ model Player {
   xp               Int           @default(0)
   dailyStreak      Int           @default(0) @map("daily_streak")
   lastDailyReward  DateTime?     @map("last_daily_reward")
+  activeJob        String?       @map("active_job")
+  jobStartedAt     DateTime?     @map("job_started_at")
   createdAt        DateTime      @default(now()) @map("created_at")
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   inventory        Inventory[]
@@ -71,6 +73,10 @@ enum Rarity {
   RARE
   EPIC
   LEGENDARY
+  MYTHIC
+  SECRET
+  TRANSCENDENTAL
+  OMNIVERSAL
 }
 
 enum ItemType {
@@ -79,6 +85,7 @@ enum ItemType {
   ARMOR
   PET
   COSMETIC
+  RELIC
 }
 
 model Inventory {

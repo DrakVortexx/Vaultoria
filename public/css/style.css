@@ -16,6 +16,10 @@
   --rare:#3b82f6;
   --epic:#a855f7;
   --legendary:#f59e0b;
+  --mythic:#ef4444;
+  --secret:#ec4899;
+  --transcendental:#06b6d4;
+  --omniversal:#f97316;
   --font:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
   --mono:"SF Mono","Fira Code","Consolas",monospace;
   --r:6px;
@@ -144,11 +148,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .rarity-tag.rare{background:rgba(59,130,246,.15);color:var(--rare)}
 .rarity-tag.epic{background:rgba(168,85,247,.15);color:var(--epic)}
 .rarity-tag.legendary{background:rgba(245,158,11,.15);color:var(--legendary)}
+.rarity-tag.mythic{background:rgba(239,68,68,.15);color:var(--mythic)}
+.rarity-tag.secret{background:rgba(236,72,153,.15);color:var(--secret)}
+.rarity-tag.transcendental{background:rgba(6,182,212,.15);color:var(--transcendental)}
+.rarity-tag.omniversal{background:rgba(249,115,22,.15);color:var(--omniversal)}
 
 .border-common{border-color:var(--common)}
 .border-rare{border-color:var(--rare)}
 .border-epic{border-color:var(--epic)}
 .border-legendary{border-color:var(--legendary)}
+.border-mythic{border-color:var(--mythic)}
+.border-secret{border-color:var(--secret)}
+.border-transcendental{border-color:var(--transcendental)}
+.border-omniversal{border-color:var(--omniversal)}
 
 /* ---- Shop ---- */
 .auction-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
@@ -229,6 +241,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* ---- Misc ---- */
 .loading,.empty-state,.error-msg{text-align:center;padding:36px;color:var(--muted);font-size:.9rem}
 .error-msg{color:var(--red)}
+
+/* ---- Jobs ---- */
+.job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.job-card{display:flex;flex-direction:column;gap:6px}
+.job-card h4{font-size:.95rem;font-weight:600}
+.job-card .job-desc{color:var(--muted);font-size:.82rem}
+.job-card .job-req{font-size:.78rem;color:var(--yellow)}
+.job-card .job-req.unlocked{color:var(--green)}
+.job-status{margin-top:16px;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.job-status h3{font-size:.95rem;margin-bottom:10px}
+.job-earnings{font-family:var(--mono);font-size:.88rem;color:var(--yellow)}
+.job-timer{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:#fff;margin:8px 0}
+.job-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* ---- Admin ---- */
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.admin-card{display:flex;flex-direction:column;gap:10px}
+.admin-card h3{font-size:.95rem;font-weight:600;margin-bottom:4px}
+.admin-card label{display:block;color:var(--muted);font-size:.8rem;margin-bottom:3px;margin-top:6px}
+.admin-card input,.admin-card select,.admin-card textarea{
+  width:100%;padding:8px 12px;background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r);color:var(--text);font-size:.88rem;font-family:var(--font);outline:none;
+}
+.admin-card input:focus{border-color:var(--accent)}
+.admin-players{max-height:300px;overflow-y:auto}
+.admin-player-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.82rem}
 
 /* ---- Responsive ---- */
 @media(max-width:640px){

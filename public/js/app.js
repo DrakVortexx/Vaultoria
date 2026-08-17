@@ -1,6 +1,7 @@
 var App = {
   user: null,
   player: null,
+  jobInterval: null,
 
   async init() {
     Auth.init();
@@ -19,6 +20,7 @@ var App = {
 
     UI.showGame();
     this.updateHeader();
+    this.showAdminTab();
     UI.showTab("dashboard");
     this.loadDashboard();
     this.bindTabs();
@@ -36,6 +38,15 @@ var App = {
     }
   },
 
+  showAdminTab() {
+    var adminTab = document.querySelector(".tab-admin");
+    if (this.user && this.user.username === "admin") {
+      adminTab.classList.remove("hidden");
+    } else {
+      adminTab.classList.add("hidden");
+    }
+  },
+
   bindTabs() {
     var self = this;
     document.querySelectorAll(".tab").forEach(function(btn) {
@@ -50,6 +61,7 @@ var App = {
       await API.logout();
       self.user = null;
       self.player = null;
+      if (self.jobInterval) { clearInterval(self.jobInterval); self.jobInterval = null; }
       UI.showAuth();
       UI.toast("Logged out", "info");
     });
@@ -60,9 +72,11 @@ var App = {
       case "dashboard": return this.loadDashboard();
       case "shop": return this.loadShop();
       case "auction": return this.loadAuction();
+      case "jobs": return this.loadJobs();
       case "inventory": return this.loadInventory();
       case "trades": return this.loadTrades();
       case "leaderboard": return this.loadLeaderboard();
+      case "admin": return this.loadAdmin();
     }
   },
 
@@ -92,6 +106,7 @@ var App = {
           '<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">' +
             '<button id="goto-shop" class="btn btn-secondary">Shop</button>' +
             '<button id="goto-auction" class="btn btn-secondary">Auction</button>' +
+            '<button id="goto-jobs" class="btn btn-secondary">Jobs</button>' +
             '<button id="goto-inv" class="btn btn-secondary">Inventory</button>' +
             '<button id="goto-trade" class="btn btn-secondary">Trades</button>' +
           '</div>' +
@@ -124,6 +139,11 @@ var App = {
       self.loadAuction();
     });
 
+    document.getElementById("goto-jobs").addEventListener("click", function() {
+      UI.showTab("jobs");
+      self.loadJobs();
+    });
+
     document.getElementById("goto-inv").addEventListener("click", function() {
       UI.showTab("inventory");
       self.loadInventory();
@@ -143,17 +163,17 @@ var App = {
     try {
       var res = await API.getShop();
       var listings = res.listings;
-      var rarityOrder = { COMMON: 0, RARE: 1, EPIC: 2, LEGENDARY: 3 };
+      var rarityOrder = { COMMON: 0, RARE: 1, EPIC: 2, LEGENDARY: 3, MYTHIC: 4, SECRET: 5, TRANSCENDENTAL: 6, OMNIVERSAL: 7 };
       listings.sort(function(a, b) { return rarityOrder[a.item.rarity] - rarityOrder[b.item.rarity]; });
 
+      var allRarities = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "SECRET", "TRANSCENDENTAL", "OMNIVERSAL"];
+      var filterHTML = '<button class="filter-pill on" data-filter="all">All</button>';
+      allRarities.forEach(function(r) {
+        filterHTML += '<button class="filter-pill" data-filter="' + r + '">' + r.charAt(0) + r.slice(1).toLowerCase() + '</button>';
+      });
+
       content.innerHTML =
-        '<div class="filter-row">' +
-          '<button class="filter-pill on" data-filter="all">All</button>' +
-          '<button class="filter-pill" data-filter="COMMON">Common</button>' +
-          '<button class="filter-pill" data-filter="RARE">Rare</button>' +
-          '<button class="filter-pill" data-filter="EPIC">Epic</button>' +
-          '<button class="filter-pill" data-filter="LEGENDARY">Legendary</button>' +
-        '</div>' +
+        '<div class="filter-row">' + filterHTML + '</div>' +
         '<div class="shop-grid" id="shop-grid"></div>';
 
       var renderListings = function(filter) {
@@ -227,15 +247,15 @@ var App = {
       var invRes = await API.getInventory();
       var myInventory = invRes.inventory;
 
+      var allRarities = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "SECRET", "TRANSCENDENTAL", "OMNIVERSAL"];
+      var filterHTML = '<button class="filter-pill on" data-filter="all">All</button>';
+      allRarities.forEach(function(r) {
+        filterHTML += '<button class="filter-pill" data-filter="' + r + '">' + r.charAt(0) + r.slice(1).toLowerCase() + '</button>';
+      });
+
       content.innerHTML =
         '<div class="auction-header">' +
-          '<div class="filter-row">' +
-            '<button class="filter-pill on" data-filter="all">All</button>' +
-            '<button class="filter-pill" data-filter="COMMON">Common</button>' +
-            '<button class="filter-pill" data-filter="RARE">Rare</button>' +
-            '<button class="filter-pill" data-filter="EPIC">Epic</button>' +
-            '<button class="filter-pill" data-filter="LEGENDARY">Legendary</button>' +
-          '</div>' +
+          '<div class="filter-row">' + filterHTML + '</div>' +
           '<button id="sell-item-btn" class="btn btn-primary">Sell Item</button>' +
         '</div>' +
         '<div class="shop-grid" id="auction-grid"></div>' +
@@ -343,7 +363,7 @@ var App = {
           return;
         }
         try {
-          var r = await API.listAuction({ inventoryId, quantity, price });
+          var r = await API.listAuction({ inventoryId: inventoryId, quantity: quantity, price: price });
           UI.toast(r.message, "success");
           document.getElementById("sell-modal").classList.add("hidden");
           self.loadAuction();
@@ -356,6 +376,127 @@ var App = {
     }
   },
 
+  async loadJobs() {
+    var self = this;
+    var content = document.getElementById("jobs-tab");
+    content.innerHTML = '<div class="loading">Loading jobs...</div>';
+
+    if (this.jobInterval) { clearInterval(this.jobInterval); this.jobInterval = null; }
+
+    try {
+      var res = await API.getJobs();
+      var jobs = res.jobs;
+      var activeJob = res.activeJob;
+
+      content.innerHTML = '';
+
+      if (activeJob && res.earnings) {
+        var e = res.earnings;
+        var rate = e.rate;
+        var xpRate = e.xpRate;
+        var elapsed = e.elapsed;
+
+        var statusHTML =
+          '<div class="job-status">' +
+            '<h3>Working: ' + activeJob.replace(/_/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase(); }) + '</h3>' +
+            '<div class="job-earnings">+$' + rate.toLocaleString() + '/sec &middot; +' + xpRate.toFixed(1) + ' XP/sec</div>' +
+            '<div class="job-timer" id="job-timer">' + self.formatTime(elapsed) + '</div>' +
+            '<div class="job-earnings" id="job-earned">Earned: $' + e.coinsEarned.toLocaleString() + ' &middot; ' + e.xpEarned + ' XP</div>' +
+            '<div class="job-actions">' +
+              '<button id="collect-btn" class="btn btn-primary">Collect Earnings</button>' +
+              '<button id="stop-job-btn" class="btn btn-danger">Stop Job</button>' +
+            '</div>' +
+          '</div>';
+
+        content.innerHTML = statusHTML;
+
+        self.jobInterval = setInterval(function() {
+          elapsed++;
+          var coins = elapsed * rate;
+          var xp = Math.floor(elapsed * xpRate);
+          var timerEl = document.getElementById("job-timer");
+          var earnedEl = document.getElementById("job-earned");
+          if (timerEl) timerEl.textContent = self.formatTime(elapsed);
+          if (earnedEl) earnedEl.textContent = 'Earned: $' + coins.toLocaleString() + ' &middot; ' + xp + ' XP';
+        }, 1000);
+
+        document.getElementById("collect-btn").addEventListener("click", async function() {
+          try {
+            var r = await API.collectJob();
+            self.player.coins = r.coins;
+            self.player.level = r.newLevel || self.player.level;
+            self.updateHeader();
+            UI.toast(r.message, "success");
+            self.handleLevelUp(r);
+            self.loadJobs();
+          } catch (err) {
+            UI.toast(err.message, "error");
+          }
+        });
+
+        document.getElementById("stop-job-btn").addEventListener("click", async function() {
+          try {
+            var r = await API.stopJob();
+            self.player.coins = r.coins;
+            self.player.level = r.newLevel || self.player.level;
+            self.updateHeader();
+            UI.toast(r.message, "success");
+            self.handleLevelUp(r);
+            self.loadJobs();
+          } catch (err) {
+            UI.toast(err.message, "error");
+          }
+        });
+      }
+
+      var jobGridHTML = '<h3 style="margin:16px 0 12px;font-size:.95rem">' + (activeJob ? 'Available Jobs' : 'Choose a Job') + '</h3><div class="job-grid">';
+      jobs.forEach(function(j) {
+        var isActive = activeJob === j.id;
+        var card = '<div class="card job-card">' +
+          '<h4>' + j.name + '</h4>' +
+          '<p class="job-desc">' + j.description + '</p>' +
+          '<span class="job-req ' + (j.unlocked ? "unlocked" : "") + '">' +
+            (j.unlocked ? "Unlocked" : "Requires Lv." + j.levelReq) +
+          '</span>';
+        if (!activeJob && j.unlocked) {
+          card += '<button class="btn btn-primary btn-sm start-job-btn" data-job="' + j.id + '">Start</button>';
+        }
+        if (isActive) {
+          card += '<span style="color:var(--green);font-size:.82rem;font-weight:600">Active</span>';
+        }
+        card += '</div>';
+        jobGridHTML += card;
+      });
+      jobGridHTML += '</div>';
+      content.innerHTML += jobGridHTML;
+
+      content.querySelectorAll(".start-job-btn").forEach(function(btn) {
+        btn.addEventListener("click", async function() {
+          try {
+            await API.startJob(btn.dataset.job);
+            UI.toast("Job started!", "success");
+            self.loadJobs();
+          } catch (err) {
+            UI.toast(err.message, "error");
+          }
+        });
+      });
+    } catch (err) {
+      content.innerHTML = '<div class="error-msg">Failed to load jobs: ' + err.message + '</div>';
+    }
+  },
+
+  formatTime(seconds) {
+    var h = Math.floor(seconds / 3600);
+    var m = Math.floor((seconds % 3600) / 60);
+    var s = seconds % 60;
+    var parts = [];
+    if (h > 0) parts.push(h + "h");
+    if (m > 0) parts.push(m + "m");
+    parts.push(s + "s");
+    return parts.join(" ");
+  },
+
   async loadInventory() {
     var self = this;
     var content = document.getElementById("inventory-tab");
@@ -366,15 +507,20 @@ var App = {
       var statsRes = await API.getInventoryStats();
       var stats = statsRes.stats;
 
+      var rarityStatsHTML = '';
+      var rarityList = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "SECRET", "TRANSCENDENTAL", "OMNIVERSAL"];
+      rarityList.forEach(function(r) {
+        if (stats.byRarity[r] > 0) {
+          rarityStatsHTML += '<div class="inv-pill" style="color:var(--' + r.toLowerCase() + ')">' + stats.byRarity[r] + ' ' + r.charAt(0) + r.slice(1).toLowerCase() + '</div>';
+        }
+      });
+
       content.innerHTML =
         '<div class="inv-stats">' +
           '<div class="inv-pill">Total: ' + stats.totalItems + '</div>' +
           '<div class="inv-pill">Unique: ' + stats.uniqueItems + '</div>' +
           '<div class="inv-pill">Value: $ ' + stats.totalValue.toLocaleString() + '</div>' +
-          '<div class="inv-pill" style="color:var(--common)">' + stats.byRarity.COMMON + ' Common</div>' +
-          '<div class="inv-pill" style="color:var(--rare)">' + stats.byRarity.RARE + ' Rare</div>' +
-          '<div class="inv-pill" style="color:var(--epic)">' + stats.byRarity.EPIC + ' Epic</div>' +
-          '<div class="inv-pill" style="color:var(--legendary)">' + stats.byRarity.LEGENDARY + ' Legendary</div>' +
+          rarityStatsHTML +
         '</div>' +
         '<div class="inv-grid" id="inv-grid"></div>';
 
@@ -561,6 +707,106 @@ var App = {
         '</div>';
     } catch (err) {
       content.innerHTML = '<div class="error-msg">Failed to load leaderboard: ' + err.message + '</div>';
+    }
+  },
+
+  async loadAdmin() {
+    var self = this;
+    var content = document.getElementById("admin-tab");
+
+    if (!this.user || this.user.username !== "drakvortexx") {
+      content.innerHTML = '<div class="error-msg">Admin access denied</div>';
+      return;
+    }
+
+    content.innerHTML = '<div class="loading">Loading admin panel...</div>';
+
+    try {
+      var res = await API.adminPlayers();
+      var players = res.players;
+
+      content.innerHTML =
+        '<div class="admin-grid">' +
+          '<div class="card admin-card">' +
+            '<h3>Give Coins</h3>' +
+            '<label>Username</label>' +
+            '<input type="text" id="admin-coin-user" placeholder="username">' +
+            '<label>Amount</label>' +
+            '<input type="number" id="admin-coin-amount" min="1" value="1000">' +
+            '<button class="btn btn-primary" id="admin-give-coins">Give</button>' +
+          '</div>' +
+          '<div class="card admin-card">' +
+            '<h3>Give Item</h3>' +
+            '<label>Username</label>' +
+            '<input type="text" id="admin-item-user" placeholder="username">' +
+            '<label>Item Name</label>' +
+            '<input type="text" id="admin-item-name" placeholder="Item Name">' +
+            '<label>Quantity</label>' +
+            '<input type="number" id="admin-item-qty" min="1" value="1">' +
+            '<button class="btn btn-primary" id="admin-give-item">Give</button>' +
+          '</div>' +
+          '<div class="card admin-card">' +
+            '<h3>Set Level</h3>' +
+            '<label>Username</label>' +
+            '<input type="text" id="admin-level-user" placeholder="username">' +
+            '<label>Level</label>' +
+            '<input type="number" id="admin-level-val" min="1" value="1">' +
+            '<button class="btn btn-primary" id="admin-set-level">Set</button>' +
+          '</div>' +
+          '<div class="card admin-card">' +
+            '<h3>All Players (' + players.length + ')</h3>' +
+            '<div class="admin-players" id="admin-players-list">' +
+              players.map(function(p) {
+                return '<div class="admin-player-row">' +
+                  '<span>' + p.user.username + '</span>' +
+                  '<span>Lv.' + p.level + '</span>' +
+                  '<span style="color:var(--yellow)">$' + p.coins.toLocaleString() + '</span>' +
+                '</div>';
+              }).join("") +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      document.getElementById("admin-give-coins").addEventListener("click", async function() {
+        var username = document.getElementById("admin-coin-user").value.trim();
+        var amount = parseInt(document.getElementById("admin-coin-amount").value) || 0;
+        if (!username || amount < 1) { UI.toast("Enter username and amount", "error"); return; }
+        try {
+          var r = await API.adminGiveCoins(username, amount);
+          UI.toast(r.message, "success");
+          self.loadAdmin();
+        } catch (err) {
+          UI.toast(err.message, "error");
+        }
+      });
+
+      document.getElementById("admin-give-item").addEventListener("click", async function() {
+        var username = document.getElementById("admin-item-user").value.trim();
+        var itemName = document.getElementById("admin-item-name").value.trim();
+        var qty = parseInt(document.getElementById("admin-item-qty").value) || 1;
+        if (!username || !itemName) { UI.toast("Enter username and item name", "error"); return; }
+        try {
+          var r = await API.adminGiveItem(username, itemName, qty);
+          UI.toast(r.message, "success");
+        } catch (err) {
+          UI.toast(err.message, "error");
+        }
+      });
+
+      document.getElementById("admin-set-level").addEventListener("click", async function() {
+        var username = document.getElementById("admin-level-user").value.trim();
+        var level = parseInt(document.getElementById("admin-level-val").value) || 1;
+        if (!username) { UI.toast("Enter username", "error"); return; }
+        try {
+          var r = await API.adminSetLevel(username, level);
+          UI.toast(r.message, "success");
+          self.loadAdmin();
+        } catch (err) {
+          UI.toast(err.message, "error");
+        }
+      });
+    } catch (err) {
+      content.innerHTML = '<div class="error-msg">Failed to load admin: ' + err.message + '</div>';
     }
   },
 };

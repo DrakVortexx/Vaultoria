@@ -70,15 +70,15 @@ const API = {
   },
 
   acceptTrade(tradeId) {
-    return this.request("POST", `/api/trade/${tradeId}/accept`);
+    return this.request("POST", "/api/trade/" + tradeId + "/accept");
   },
 
   declineTrade(tradeId) {
-    return this.request("POST", `/api/trade/${tradeId}/decline`);
+    return this.request("POST", "/api/trade/" + tradeId + "/decline");
   },
 
   cancelTrade(tradeId) {
-    return this.request("POST", `/api/trade/${tradeId}/cancel`);
+    return this.request("POST", "/api/trade/" + tradeId + "/cancel");
   },
 
   getAuctionListings() {
@@ -90,10 +90,42 @@ const API = {
   },
 
   buyAuction(listingId) {
-    return this.request("POST", `/api/auction/buy/${listingId}`);
+    return this.request("POST", "/api/auction/buy/" + listingId);
   },
 
   cancelAuction(listingId) {
-    return this.request("POST", `/api/auction/cancel/${listingId}`);
+    return this.request("POST", "/api/auction/cancel/" + listingId);
+  },
+
+  getJobs() {
+    return this.request("GET", "/api/jobs");
+  },
+
+  startJob(jobId) {
+    return this.request("POST", "/api/jobs/start", { jobId: jobId });
+  },
+
+  stopJob() {
+    return this.request("POST", "/api/jobs/stop");
+  },
+
+  collectJob() {
+    return this.request("POST", "/api/jobs/collect");
+  },
+
+  adminPlayers() {
+    return this.request("GET", "/api/admin/players");
+  },
+
+  adminGiveCoins(username, amount) {
+    return this.request("POST", "/api/admin/give-coins", { username: username, amount: amount });
+  },
+
+  adminGiveItem(username, itemName, quantity) {
+    return this.request("POST", "/api/admin/give-item", { username: username, itemName: itemName, quantity: quantity });
+  },
+
+  adminSetLevel(username, level) {
+    return this.request("POST", "/api/admin/set-level", { username: username, level: level });
   },
 };
