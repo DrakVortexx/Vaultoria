@@ -34,6 +34,10 @@ var UI = {
     }, 3000);
   },
 
+  levelUpToast(newLevel, bonus) {
+    this.toast("Level up! Now Lv." + newLevel + (bonus > 0 ? " (+" + bonus + " coins)" : ""), "success");
+  },
+
   renderRarity(r) {
     return '<span class="rarity-tag ' + r.toLowerCase() + '">' + r + '</span>';
   },

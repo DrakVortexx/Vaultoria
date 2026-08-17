@@ -1,6 +1,7 @@
 const express = require("express");
 const prisma = require("../db");
 const { requireAuth } = require("../middleware/auth");
+const { calculateLevelUp } = require("../services/game");
 
 const router = express.Router();
 
@@ -163,18 +164,24 @@ router.post("/:tradeId/accept", requireAuth, async (req, res) => {
     }
 
     await prisma.$transaction(async (tx) => {
+      const senderLevel = calculateLevelUp(sender.level, sender.xp, 25);
+      const receiverLevel = calculateLevelUp(receiver.level, receiver.xp, 25);
+
       await tx.player.update({
         where: { id: trade.senderId },
         data: {
           coins: { decrement: trade.offerCoins },
-          xp: { increment: 25 },
+          level: senderLevel.level,
+          xp: senderLevel.xp,
+          coins: { increment: senderLevel.coinBonus },
         },
       });
       await tx.player.update({
         where: { id: trade.receiverId },
         data: {
-          coins: { increment: trade.offerCoins - trade.requestCoins },
-          xp: { increment: 25 },
+          coins: { increment: trade.offerCoins - trade.requestCoins + receiverLevel.coinBonus },
+          level: receiverLevel.level,
+          xp: receiverLevel.xp,
         },
       });
 

@@ -80,4 +80,8 @@ const API = {
   cancelTrade(tradeId) {
     return this.request("POST", `/api/trade/${tradeId}/cancel`);
   },
+
+  openMysteryBox() {
+    return this.request("POST", "/api/shop/mystery-box");
+  },
 };

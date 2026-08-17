@@ -167,6 +167,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .item-desc{color:var(--muted);font-size:.78rem;line-height:1.4}
 .shop-price{font-weight:700;font-family:var(--mono);font-size:.9rem}
 .stock{color:var(--muted);font-size:.75rem}
+.buy-row{display:flex;gap:6px;align-items:center;margin-top:4px}
+.buy-total{color:var(--yellow);font-family:var(--mono);font-size:.8rem;font-weight:600}
+.mystery-card{border-color:var(--yellow)}
 
 /* ---- Inventory ---- */
 .inv-stats{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
