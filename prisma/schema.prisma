@@ -61,6 +61,7 @@ model Item {
   inventory   Inventory[]
   shopListings ShopListing[]
   auctionListings AuctionListing[]
+  tradeItems  TradeItem[]
 
   @@map("items")
 }
@@ -129,6 +130,7 @@ model TradeItem {
   quantity  Int         @default(1)
   direction TradeDirection
   trade     Trade       @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  item      Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@map("trade_items")
 }
