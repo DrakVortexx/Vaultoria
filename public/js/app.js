@@ -388,7 +388,7 @@ var App = {
       var jobs = res.jobs;
       var activeJob = res.activeJob;
 
-      content.innerHTML = '';
+      var fullHTML = '';
 
       if (activeJob && res.earnings) {
         var e = res.earnings;
@@ -396,7 +396,7 @@ var App = {
         var xpRate = e.xpRate;
         var elapsed = e.elapsed;
 
-        var statusHTML =
+        fullHTML +=
           '<div class="job-status">' +
             '<h3>Working: ' + activeJob.replace(/_/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase(); }) + '</h3>' +
             '<div class="job-earnings">+$' + rate.toLocaleString() + '/sec &middot; +' + xpRate.toFixed(1) + ' XP/sec</div>' +
@@ -407,16 +407,38 @@ var App = {
               '<button id="stop-job-btn" class="btn btn-danger">Stop Job</button>' +
             '</div>' +
           '</div>';
+      }
 
-        content.innerHTML = statusHTML;
+      fullHTML += '<h3 style="margin:16px 0 12px;font-size:.95rem">' + (activeJob ? 'Available Jobs' : 'Choose a Job') + '</h3><div class="job-grid">';
+      jobs.forEach(function(j) {
+        var isActive = activeJob === j.id;
+        var card = '<div class="card job-card">' +
+          '<h4>' + j.name + '</h4>' +
+          '<p class="job-desc">' + j.description + '</p>' +
+          '<span class="job-req ' + (j.unlocked ? "unlocked" : "") + '">' +
+            (j.unlocked ? "Unlocked" : "Requires Lv." + j.levelReq) +
+          '</span>';
+        if (!activeJob && j.unlocked) {
+          card += '<button class="btn btn-primary btn-sm start-job-btn" data-job="' + j.id + '">Start</button>';
+        }
+        if (isActive) {
+          card += '<span style="color:var(--green);font-size:.82rem;font-weight:600">Active</span>';
+        }
+        card += '</div>';
+        fullHTML += card;
+      });
+      fullHTML += '</div>';
 
+      content.innerHTML = fullHTML;
+
+      if (activeJob && res.earnings) {
         self.jobInterval = setInterval(function() {
-          elapsed++;
-          var coins = elapsed * rate;
-          var xp = Math.floor(elapsed * xpRate);
+          res.earnings.elapsed++;
+          var coins = res.earnings.elapsed * rate;
+          var xp = Math.floor(res.earnings.elapsed * xpRate);
           var timerEl = document.getElementById("job-timer");
           var earnedEl = document.getElementById("job-earned");
-          if (timerEl) timerEl.textContent = self.formatTime(elapsed);
+          if (timerEl) timerEl.textContent = self.formatTime(res.earnings.elapsed);
           if (earnedEl) earnedEl.textContent = 'Earned: $' + coins.toLocaleString() + ' &middot; ' + xp + ' XP';
         }, 1000);
 
@@ -448,27 +470,6 @@ var App = {
           }
         });
       }
-
-      var jobGridHTML = '<h3 style="margin:16px 0 12px;font-size:.95rem">' + (activeJob ? 'Available Jobs' : 'Choose a Job') + '</h3><div class="job-grid">';
-      jobs.forEach(function(j) {
-        var isActive = activeJob === j.id;
-        var card = '<div class="card job-card">' +
-          '<h4>' + j.name + '</h4>' +
-          '<p class="job-desc">' + j.description + '</p>' +
-          '<span class="job-req ' + (j.unlocked ? "unlocked" : "") + '">' +
-            (j.unlocked ? "Unlocked" : "Requires Lv." + j.levelReq) +
-          '</span>';
-        if (!activeJob && j.unlocked) {
-          card += '<button class="btn btn-primary btn-sm start-job-btn" data-job="' + j.id + '">Start</button>';
-        }
-        if (isActive) {
-          card += '<span style="color:var(--green);font-size:.82rem;font-weight:600">Active</span>';
-        }
-        card += '</div>';
-        jobGridHTML += card;
-      });
-      jobGridHTML += '</div>';
-      content.innerHTML += jobGridHTML;
 
       content.querySelectorAll(".start-job-btn").forEach(function(btn) {
         btn.addEventListener("click", async function() {
