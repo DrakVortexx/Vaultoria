@@ -20,14 +20,22 @@
     <div class="login-panel" id="login-panel">
       <div class="window">
         <div class="window-header">
-          <span id="auth-title">INITIALIZE_CONNECTION</span>
+          <span id="auth-title">⚡ VAULTORIA ACCESS</span>
         </div>
         <div class="window-content">
-          <input type="text" id="username-input" placeholder="Enter username..." maxlength="20">
-          <input type="password" id="password-input" placeholder="Enter password..." maxlength="50">
-          <button id="login-btn">LOGIN</button>
-          <button id="register-btn" style="margin-top: 10px;">REGISTER</button>
-          <p id="auth-message" style="margin-top: 15px; font-size: 0.9em;"></p>
+          <div class="input-group">
+            <label>USERNAME</label>
+            <input type="text" id="username-input" placeholder="Enter username..." maxlength="20">
+          </div>
+          <div class="input-group">
+            <label>PASSWORD</label>
+            <input type="password" id="password-input" placeholder="Enter password..." maxlength="50">
+          </div>
+          <div class="button-group">
+            <button id="login-btn" class="auth-btn">LOGIN</button>
+            <button id="register-btn" class="auth-btn">REGISTER</button>
+          </div>
+          <p id="auth-message"></p>
         </div>
       </div>
     </div>
