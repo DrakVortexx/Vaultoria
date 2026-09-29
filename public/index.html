@@ -14,20 +14,32 @@
       <div class="status-bar">
         <span id="player-status">Not logged in</span>
         <span id="cash-display">CASH: $0.00</span>
+        <span id="level-display">LEVEL: 1</span>
+        <span id="xp-display">XP: 0/100</span>
+        <button id="daily-reward-btn" class="daily-reward-btn" style="display: none;">🎁 DAILY REWARD</button>
+        <button id="logout-btn" class="logout-btn" style="display: none;">LOGOUT</button>
       </div>
     </div>
 
     <div class="login-panel" id="login-panel">
       <div class="window">
         <div class="window-header">
-          <span id="auth-title">INITIALIZE_CONNECTION</span>
+          <span id="auth-title">⚡ VAULTORIA ACCESS</span>
         </div>
         <div class="window-content">
-          <input type="text" id="username-input" placeholder="Enter username..." maxlength="20">
-          <input type="password" id="password-input" placeholder="Enter password..." maxlength="50">
-          <button id="login-btn">LOGIN</button>
-          <button id="register-btn" style="margin-top: 10px;">REGISTER</button>
-          <p id="auth-message" style="margin-top: 15px; font-size: 0.9em;"></p>
+          <div class="input-group">
+            <label>USERNAME</label>
+            <input type="text" id="username-input" placeholder="Enter username..." maxlength="20">
+          </div>
+          <div class="input-group">
+            <label>PASSWORD</label>
+            <input type="password" id="password-input" placeholder="Enter password..." maxlength="50">
+          </div>
+          <div class="button-group">
+            <button id="login-btn" class="auth-btn">LOGIN</button>
+            <button id="register-btn" class="auth-btn">REGISTER</button>
+          </div>
+          <p id="auth-message"></p>
         </div>
       </div>
     </div>
@@ -38,6 +50,7 @@
         <button class="nav-btn" data-tab="inventory">INVENTORY</button>
         <button class="nav-btn" data-tab="bazaar">BAZAAR</button>
         <button class="nav-btn" data-tab="shop">SHOP</button>
+        <button class="nav-btn" data-tab="achievements">ACHIEVEMENTS</button>
         <button class="nav-btn" data-tab="leaderboard">LEADERBOARD</button>
       </div>
 
@@ -72,6 +85,19 @@
 
           <div class="window">
             <div class="window-header">
+              <span>AUTO_CLICKER</span>
+            </div>
+            <div class="window-content">
+              <div class="generator-section">
+                <span>Autoclicker Level: <span id="autoclicker-level">0</span></span>
+                <span id="autoclicker-status">INACTIVE</span>
+                <div id="autoclicker-log" class="generator-log"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="window">
+            <div class="window-header">
               <span>PROTECTION_STATUS</span>
             </div>
             <div class="window-content">
@@ -81,27 +107,30 @@
               </div>
             </div>
           </div>
+
+          <div class="window">
+            <div class="window-header">
+              <span>XP_PROGRESS</span>
+            </div>
+            <div class="window-content">
+              <div class="xp-container">
+                <div class="xp-bar">
+                  <div class="xp-fill" id="xp-fill" style="width: 0%"></div>
+                  <span class="xp-text" id="xp-text">0/100 XP</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="tab-content" id="inventory">
           <div class="window">
             <div class="window-header">
-              <span>INVENTORY_STORAGE</span>
+              <span>INVENTORY</span>
             </div>
             <div class="window-content">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>ITEM</th>
-                    <th>RARITY</th>
-                    <th>QTY</th>
-                    <th>QUICK_SELL</th>
-                    <th>LIST_ON_BAZAAR</th>
-                  </tr>
-                </thead>
-                <tbody id="inventory-table">
-                </tbody>
-              </table>
+              <div id="inventory-grid" class="inventory-grid">
+              </div>
             </div>
           </div>
         </div>
@@ -109,23 +138,29 @@
         <div class="tab-content" id="bazaar">
           <div class="window">
             <div class="window-header">
-              <span>GLOBAL_MARKET</span>
+              <span>GLOBAL MARKET</span>
             </div>
             <div class="window-content">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>SELLER</th>
-                    <th>ITEM</th>
-                    <th>RARITY</th>
-                    <th>QTY</th>
-                    <th>PRICE</th>
-                    <th>ACTION</th>
-                  </tr>
-                </thead>
-                <tbody id="bazaar-table">
-                </tbody>
-              </table>
+              <div class="bazaar-controls">
+                <input type="text" id="bazaar-search" placeholder="Search items or sellers...">
+                <select id="bazaar-rarity-filter">
+                  <option value="all">All Rarities</option>
+                  <option value="junk">Junk</option>
+                  <option value="common">Common</option>
+                  <option value="rare">Rare</option>
+                  <option value="epic">Epic</option>
+                  <option value="legendary">Legendary</option>
+                </select>
+                <select id="bazaar-sort">
+                  <option value="newest">Newest First</option>
+                  <option value="cheapest">Cheapest First</option>
+                  <option value="expensive">Most Expensive First</option>
+                  <option value="quantity">Highest Quantity</option>
+                </select>
+                <button id="list-item-btn">List Item</button>
+              </div>
+              <div id="bazaar-grid" class="bazaar-grid">
+              </div>
             </div>
           </div>
         </div>
@@ -138,10 +173,13 @@
             <div class="window-content">
               <h3>CLICKER_UPGRADES</h3>
               <div id="clicker-upgrades" class="upgrade-section"></div>
-              
+
+              <h3>AUTOCLICKER_UPGRADES</h3>
+              <div id="autoclicker-upgrades" class="upgrade-section"></div>
+
               <h3>GENERATOR_UPGRADES</h3>
               <div id="generator-upgrades" class="upgrade-section"></div>
-              
+
               <h3>PROTECTION_UPGRADES</h3>
               <div id="protection-upgrades" class="upgrade-section"></div>
             </div>
@@ -169,6 +207,18 @@
           </div>
         </div>
 
+        <div class="tab-content" id="achievements">
+          <div class="window">
+            <div class="window-header">
+              <span>ACHIEVEMENTS</span>
+            </div>
+            <div class="window-content">
+              <div id="achievements-grid" class="achievements-grid">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="tab-content" id="leaderboard">
           <div class="window">
             <div class="window-header">
@@ -181,7 +231,7 @@
                     <th>RANK</th>
                     <th>USERNAME</th>
                     <th>CASH</th>
-                    <th>PROTECTION</th>
+                    <th>LEVEL</th>
                   </tr>
                 </thead>
                 <tbody id="leaderboard-table">
@@ -194,6 +244,34 @@
     </div>
 
     <div class="notification-panel" id="notification-panel"></div>
+
+    <!-- List Item Modal -->
+    <div id="list-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span>LIST ITEM ON BAZAAR</span>
+          <button class="close-modal" onclick="closeModal('list-modal')">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-input-group">
+            <label>Select item:</label>
+            <select id="list-item-select"></select>
+          </div>
+          <div class="modal-input-group">
+            <label>Amount:</label>
+            <input type="number" id="list-amount" min="1" value="1">
+          </div>
+          <div class="modal-input-group">
+            <label>Price per item:</label>
+            <input type="number" id="list-price" min="0.01" step="0.01" value="1.00">
+          </div>
+          <div class="modal-actions">
+            <button class="cancel-btn" onclick="closeModal('list-modal')">Cancel</button>
+            <button class="confirm-btn" onclick="confirmListItem()">List Item</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
