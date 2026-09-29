@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULTORIA - Cyberpunk Trading Game</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="terminal-container">
+    <div class="header">
+      <h1>VAULTORIA</h1>
+      <div class="status-bar">
+        <span id="player-status">Not logged in</span>
+        <span id="cash-display">CASH: $0.00</span>
+      </div>
+    </div>
+
+    <div class="login-panel" id="login-panel">
+      <div class="window">
+        <div class="window-header">
+          <span>INITIALIZE_CONNECTION</span>
+        </div>
+        <div class="window-content">
+          <input type="text" id="username-input" placeholder="Enter username..." maxlength="20">
+          <button id="login-btn">CONNECT</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-interface" id="main-interface" style="display: none;">
+      <div class="sidebar">
+        <button class="nav-btn active" data-tab="dashboard">DASHBOARD</button>
+        <button class="nav-btn" data-tab="inventory">INVENTORY</button>
+        <button class="nav-btn" data-tab="bazaar">BAZAAR</button>
+        <button class="nav-btn" data-tab="shop">SHOP</button>
+        <button class="nav-btn" data-tab="leaderboard">LEADERBOARD</button>
+      </div>
+
+      <div class="content-area">
+        <div class="tab-content active" id="dashboard">
+          <div class="window">
+            <div class="window-header">
+              <span>MANUAL_MINER</span>
+            </div>
+            <div class="window-content">
+              <div class="clicker-section">
+                <button id="click-btn" class="click-btn">MINE_DATA</button>
+                <div class="clicker-stats">
+                  <span>Clicker Level: <span id="clicker-level">1</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="window">
+            <div class="window-header">
+              <span>AUTO_GENERATOR</span>
+            </div>
+            <div class="window-content">
+              <div class="generator-section">
+                <span>Generator Level: <span id="generator-level">0</span></span>
+                <span id="generator-status">INACTIVE</span>
+                <div id="generator-log" class="generator-log"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="window">
+            <div class="window-header">
+              <span>PROTECTION_STATUS</span>
+            </div>
+            <div class="window-content">
+              <div class="protection-section">
+                <span>Protection Level: <span id="protection-level">1</span></span>
+                <span id="breach-warning" class="warning hidden">⚠️ VULNERABLE TO BREACH</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="inventory">
+          <div class="window">
+            <div class="window-header">
+              <span>INVENTORY_STORAGE</span>
+            </div>
+            <div class="window-content">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ITEM</th>
+                    <th>RARITY</th>
+                    <th>QTY</th>
+                    <th>QUICK_SELL</th>
+                    <th>LIST_ON_BAZAAR</th>
+                  </tr>
+                </thead>
+                <tbody id="inventory-table">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="bazaar">
+          <div class="window">
+            <div class="window-header">
+              <span>GLOBAL_MARKET</span>
+            </div>
+            <div class="window-content">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>SELLER</th>
+                    <th>ITEM</th>
+                    <th>RARITY</th>
+                    <th>QTY</th>
+                    <th>PRICE</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="bazaar-table">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="shop">
+          <div class="window">
+            <div class="window-header">
+              <span>UPGRADE_TERMINAL</span>
+            </div>
+            <div class="window-content">
+              <h3>CLICKER_UPGRADES</h3>
+              <div id="clicker-upgrades" class="upgrade-section"></div>
+              
+              <h3>GENERATOR_UPGRADES</h3>
+              <div id="generator-upgrades" class="upgrade-section"></div>
+              
+              <h3>PROTECTION_UPGRADES</h3>
+              <div id="protection-upgrades" class="upgrade-section"></div>
+            </div>
+          </div>
+
+          <div class="window">
+            <div class="window-header">
+              <span>BREACH_TOOLS</span>
+            </div>
+            <div class="window-content">
+              <h3>TARGET_SELECTION</h3>
+              <div class="target-section">
+                <select id="target-select">
+                  <option value="">Select target...</option>
+                </select>
+                <select id="breach-tool-select">
+                  <option value="">Select breach tool...</option>
+                </select>
+                <button id="breach-btn">EXECUTE_BREACH</button>
+              </div>
+              
+              <h3>AVAILABLE_TOOLS</h3>
+              <div id="breach-tools" class="tools-section"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="leaderboard">
+          <div class="window">
+            <div class="window-header">
+              <span>GLOBAL_RANKINGS</span>
+            </div>
+            <div class="window-content">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>RANK</th>
+                    <th>USERNAME</th>
+                    <th>CASH</th>
+                    <th>PROTECTION</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-table">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notification-panel" id="notification-panel"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
