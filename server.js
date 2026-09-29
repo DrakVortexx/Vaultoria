@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const bcrypt = require('bcrypt');
 const pool = require('./db');
 
 const app = express();
@@ -49,27 +50,68 @@ const getGeneratorItem = (generatorLevel) => {
   return { name: getItemByRarity('legendary'), rarity: 'legendary' };
 };
 
-app.post('/api/player', async (req, res) => {
+app.post('/api/register', async (req, res) => {
   try {
-    const { username } = req.body;
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+    
+    const passwordHash = await bcrypt.hash(password, 10);
+    
     const result = await pool.query(
-      'INSERT INTO players (username) VALUES ($1) RETURNING *',
-      [username]
+      'INSERT INTO players (username, password_hash) VALUES ($1, $2) RETURNING id, username, cash, protection_level, clicker_level, generator_level, generator_active',
+      [username, passwordHash]
     );
     res.json(result.rows[0]);
   } catch (err) {
     if (err.code === '23505') {
-      const result = await pool.query('SELECT * FROM players WHERE username = $1', [username]);
-      res.json(result.rows[0]);
+      res.status(400).json({ error: 'Username already exists' });
     } else {
       res.status(500).json({ error: err.message });
     }
   }
 });
 
-app.get('/api/player/:username', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM players WHERE username = $1', [req.params.username]);
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+    
+    const result = await pool.query('SELECT * FROM players WHERE username = $1', [username]);
+    const player = result.rows[0];
+    
+    if (!player) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const validPassword = await bcrypt.compare(password, player.password_hash);
+    
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Return player data without password hash
+    const { password_hash, ...playerData } = player;
+    res.json(playerData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/player/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, cash, protection_level, clicker_level, generator_level, generator_active FROM players WHERE id = $1',
+      [req.params.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
