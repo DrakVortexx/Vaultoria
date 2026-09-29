@@ -52,7 +52,7 @@ function updatePlayerDisplay() {
 
 async function loadPlayerData() {
   try {
-    const response = await fetch(`/api/player/${currentPlayer}`);
+    const response = await fetch(`/api/player/${playerData.id}`);
     const data = await response.json();
     playerData = data;
     updatePlayerDisplay();
@@ -441,41 +441,100 @@ function renderLeaderboard(players) {
 
 async function handleLogin() {
   const usernameInput = document.getElementById('username-input');
+  const passwordInput = document.getElementById('password-input');
   const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
   
-  if (!username) {
-    showNotification('Please enter a username', 'error');
+  if (!username || !password) {
+    showNotification('Please enter username and password', 'error');
     return;
   }
   
   try {
-    const response = await fetch('/api/player', {
+    const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username })
+      body: JSON.stringify({ username, password })
     });
     
-    const player = await response.json();
-    currentPlayer = player.username;
-    playerData = player;
+    const data = await response.json();
     
-    document.getElementById('login-panel').style.display = 'none';
-    document.getElementById('main-interface').style.display = 'grid';
-    
-    socket.emit('join', currentPlayer);
-    
-    updatePlayerDisplay();
-    await loadInventory();
-    await loadBazaar();
-    await loadUpgrades();
-    await loadBreachTools();
-    await loadTargets();
-    await loadLeaderboard();
-    
-    showNotification(`Connected as ${username}`);
+    if (response.ok) {
+      currentPlayer = username;
+      playerData = data;
+      
+      document.getElementById('login-panel').style.display = 'none';
+      document.getElementById('main-interface').style.display = 'grid';
+      
+      socket.emit('join', currentPlayer);
+      
+      updatePlayerDisplay();
+      await loadInventory();
+      await loadBazaar();
+      await loadUpgrades();
+      await loadBreachTools();
+      await loadTargets();
+      await loadLeaderboard();
+      
+      showNotification(`Connected as ${username}`);
+    } else {
+      showNotification(data.error || 'Login failed', 'error');
+    }
   } catch (error) {
     console.error('Error logging in:', error);
     showNotification('Error connecting', 'error');
+  }
+}
+
+async function handleRegister() {
+  const usernameInput = document.getElementById('username-input');
+  const passwordInput = document.getElementById('password-input');
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+  
+  if (!username || !password) {
+    showNotification('Please enter username and password', 'error');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showNotification('Password must be at least 6 characters', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      currentPlayer = username;
+      playerData = data;
+      
+      document.getElementById('login-panel').style.display = 'none';
+      document.getElementById('main-interface').style.display = 'grid';
+      
+      socket.emit('join', currentPlayer);
+      
+      updatePlayerDisplay();
+      await loadInventory();
+      await loadBazaar();
+      await loadUpgrades();
+      await loadBreachTools();
+      await loadTargets();
+      await loadLeaderboard();
+      
+      showNotification(`Account created for ${username}`);
+    } else {
+      showNotification(data.error || 'Registration failed', 'error');
+    }
+  } catch (error) {
+    console.error('Error registering:', error);
+    showNotification('Error creating account', 'error');
   }
 }
 
@@ -500,7 +559,11 @@ async function handleClick() {
 
 function setupEventListeners() {
   document.getElementById('login-btn').addEventListener('click', handleLogin);
+  document.getElementById('register-btn').addEventListener('click', handleRegister);
   document.getElementById('username-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+  document.getElementById('password-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleLogin();
   });
   
