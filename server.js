@@ -177,7 +177,7 @@ app.post('/api/sell', async (req, res) => {
     const price = rarityPrices[item.item_rarity] || 0.50;
     const total = price * quantity;
     
-    await pool.query('UPDATE players SET cash = cash + $1 WHERE id = $2', [total, player_id]);
+    await pool.query('UPDATE players SET cash = cash + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [total, player_id]);
     
     if (item.quantity === quantity) {
       await pool.query('DELETE FROM inventory WHERE id = $1', [item_id]);
@@ -267,8 +267,8 @@ app.post('/api/bazaar/buy', async (req, res) => {
       return res.status(400).json({ error: 'Not enough cash' });
     }
     
-    await pool.query('UPDATE players SET cash = cash - $1 WHERE id = $2', [totalCost, player_id]);
-    await pool.query('UPDATE players SET cash = cash + $1 WHERE id = $2', [totalCost, listing.player_id]);
+    await pool.query('UPDATE players SET cash = cash - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [totalCost, player_id]);
+    await pool.query('UPDATE players SET cash = cash + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [totalCost, listing.player_id]);
     
     const existingInventory = await pool.query(
       'SELECT * FROM inventory WHERE player_id = $1 AND item_name = $2',
@@ -330,14 +330,14 @@ app.post('/api/upgrade', async (req, res) => {
       return res.status(400).json({ error: 'Not enough cash' });
     }
     
-    await pool.query('UPDATE players SET cash = cash - $1 WHERE id = $2', [upgrade.cost, player_id]);
+    await pool.query('UPDATE players SET cash = cash - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [upgrade.cost, player_id]);
     
     if (upgrade_type === 'clicker') {
-      await pool.query('UPDATE players SET clicker_level = $1 WHERE id = $2', [level, player_id]);
+      await pool.query('UPDATE players SET clicker_level = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [level, player_id]);
     } else if (upgrade_type === 'generator') {
-      await pool.query('UPDATE players SET generator_level = $1, generator_active = true WHERE id = $2', [level, player_id]);
+      await pool.query('UPDATE players SET generator_level = $1, generator_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [level, player_id]);
     } else if (upgrade_type === 'protection') {
-      await pool.query('UPDATE players SET protection_level = $1 WHERE id = $2', [level, player_id]);
+      await pool.query('UPDATE players SET protection_level = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [level, player_id]);
     }
     
     const updatedPlayer = await pool.query('SELECT * FROM players WHERE id = $1', [player_id]);
@@ -377,7 +377,7 @@ app.post('/api/breach', async (req, res) => {
       return res.status(400).json({ error: 'Not enough cash to purchase breach tool' });
     }
     
-    await pool.query('UPDATE players SET cash = cash - $1 WHERE id = $2', [tool.price, attacker_id]);
+    await pool.query('UPDATE players SET cash = cash - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [tool.price, attacker_id]);
     
     const success = tool_level > target.protection_level;
     
@@ -385,14 +385,16 @@ app.post('/api/breach', async (req, res) => {
       const stealPercentage = 0.10 + (tool_level * 0.05);
       const stolenAmount = target.cash * stealPercentage;
       
-      await pool.query('UPDATE players SET cash = cash - $1 WHERE id = $2', [stolenAmount, target_id]);
-      await pool.query('UPDATE players SET cash = cash + $1 WHERE id = $2', [stolenAmount, attacker_id]);
+      await pool.query('UPDATE players SET cash = cash - $1, last_breach = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [stolenAmount, target_id]);
+      await pool.query('UPDATE players SET cash = cash + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [stolenAmount, attacker_id]);
       
       io.emit('playerUpdate', { player_id: target_id });
       io.emit('playerUpdate', { player_id: attacker_id });
       
       res.json({ success: true, stolenAmount, message: `Successfully breached ${target.username} and stole $${stolenAmount.toFixed(2)}` });
     } else {
+      // Breach failed - attacker spent money but didn't succeed
+      await pool.query('UPDATE players SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [attacker_id]);
       res.json({ success: false, message: `Breach failed! ${target.username}'s protection was too strong.` });
     }
   } catch (err) {
