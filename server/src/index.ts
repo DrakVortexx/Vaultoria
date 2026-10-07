@@ -20,6 +20,9 @@ const PORT = env.PORT;
 const NODE_ENV = env.NODE_ENV;
 const IS_PROD = NODE_ENV === 'production';
 
+// Trust proxy for rate limiting when behind Render/proxy
+app.set('trust proxy', true);
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: IS_PROD ? undefined : false,
