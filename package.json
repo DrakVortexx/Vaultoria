@@ -1,15 +1,14 @@
 {
   "name": "vaultoria",
   "version": "1.0.0",
-  "description": "Simple auth with 2D movement",
+  "description": "Vaultoria multiplayer MVP",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
     "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "pg": "^8.11.3"
+    "pg": "^8.13.1",
+    "socket.io": "^4.7.5"
   }
 }
