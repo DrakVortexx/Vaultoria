@@ -2,36 +2,33 @@ import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { hashPassword, verifyPassword, createSession, deleteAllUserSessions } from '../auth';
 import { GameConfig } from '@vaultoria/shared';
-import { validateRegistrationData, validateUsername, validatePassword } from '../validation';
+import { validateUsername, validatePassword } from '../validation';
 
 const router = Router();
 
 // Register
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, password } = req.body;
 
     // Validate input
-    const validation = validateRegistrationData(username, email, password);
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.valid) {
+      return res.status(400).json({ error: usernameValidation.error });
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ error: passwordValidation.error });
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username },
-          { email },
-        ],
-      },
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
     });
 
     if (existingUser) {
-      if (existingUser.username === username) {
-        return res.status(400).json({ error: 'Username already taken' });
-      }
-      return res.status(400).json({ error: 'Email already registered' });
+      return res.status(400).json({ error: 'Username already taken' });
     }
 
     // Hash password
@@ -41,7 +38,6 @@ router.post('/register', async (req: Request, res: Response) => {
     const user = await prisma.user.create({
       data: {
         username,
-        email,
         password: hashedPassword,
       },
     });
@@ -80,7 +76,6 @@ router.post('/register', async (req: Request, res: Response) => {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email,
       },
       profile: {
         id: profile.id,
@@ -140,7 +135,6 @@ router.post('/login', async (req: Request, res: Response) => {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email,
       },
       profile: {
         id: profile?.id,

@@ -7,7 +7,6 @@ interface RegisterPageProps {
 
 export default function RegisterPage({ onLogin }: RegisterPageProps) {
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,7 +35,7 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
@@ -74,19 +73,7 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
               maxLength={20}
             />
           </div>
-          
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-          
+
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
