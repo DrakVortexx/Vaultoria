@@ -1,6 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vaultoria — Riftbound</title>
+<style>
+:root{color-scheme:dark;--bg:#090d18;--panel:#111a2b;--panel2:#17243a;--line:#263956;--text:#eef4ff;--muted:#92a4c1;--cyan:#58e1db;--purple:#a88bff;--gold:#ffd36e;--red:#ff6e88}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#17253d 0,transparent 45%),var(--bg);color:var(--text);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}button,input,select{font:inherit}button{color:var(--text);cursor:pointer;border:1px solid #395276;border-radius:10px;padding:10px 14px;background:linear-gradient(135deg,#263b5b,#1b2a42);font-weight:700;transition:.18s}button:hover{filter:brightness(1.2);transform:translateY(-1px)}button:disabled{opacity:.45;cursor:not-allowed;transform:none}.primary{background:linear-gradient(135deg,#39aaa9,#6260d6);border:0;color:white}.danger{border-color:#79384e;background:#442334}.small{padding:6px 9px;font-size:12px}.muted{color:var(--muted)}.gold{color:var(--gold)}.cyan{color:var(--cyan)}.wrap{max-width:1500px;padding:20px;margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.brand{font-size:22px;font-weight:900;letter-spacing:2px}.brand span{color:var(--cyan)}.top-right{display:flex;align-items:center;gap:10px}.pill{border:1px solid var(--line);background:#101a2a;padding:8px 12px;border-radius:999px;color:var(--muted)}.layout{display:grid;grid-template-columns:225px minmax(0,1fr);gap:18px}.sidebar,.panel,.card{background:linear-gradient(145deg,rgba(22,34,54,.97),rgba(13,21,36,.97));border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 50px #0003}.sidebar{padding:12px;align-self:start;position:sticky;top:16px}.nav{display:grid;gap:7px}.nav button{text-align:left;background:transparent;border-color:transparent;color:var(--muted)}.nav button.active,.nav button:hover{background:#1c2b43;border-color:#324965;color:white}.side-note{padding:14px 10px 4px;color:var(--muted);font-size:12px}.main{min-width:0}.view{display:none}.view.active{display:block}.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.section-head h1,.section-head h2{margin:0;font-size:22px}.panel{padding:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.stat{padding:13px;background:#0e1727;border:1px solid var(--line);border-radius:12px}.stat small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}.stat strong{font-size:20px}.card{padding:17px}.card h3{margin:0 0 9px;font-size:16px}.card p{margin:5px 0;color:var(--muted)}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.stack{display:grid;gap:10px}.world-panel{padding:12px}.canvas-wrap{position:relative;width:100%;overflow:hidden;border-radius:12px;background:#0b1422}.canvas-wrap canvas{display:block;width:100%;height:auto;aspect-ratio:1200/760}.world-hint{position:absolute;left:12px;bottom:10px;background:#07101ddd;padding:7px 10px;border:1px solid var(--line);border-radius:9px;color:#b6c6dd;font-size:12px}.event-banner{border:1px solid #5c4f8a;background:#211e3a;padding:12px 14px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;gap:12px}.inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}.item{padding:13px;border:1px solid var(--line);border-radius:12px;background:#0e1727;display:flex;justify-content:space-between;gap:10px}.tier{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--cyan)}.tier.Common{color:#bac8dd}.tier.Uncommon{color:#72e0a0}.tier.Rare{color:#76b9ff}.tier.Epic{color:#ba8cff}.tier.Legendary{color:#ffd36e}.tier.Mythic{color:#ff9a70}.tier.Divine,.tier.Celestial,.tier.Eternal,.tier.Omniversal{color:#ff80cb}input,select{color:var(--text);background:#0b1422;border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0}input::placeholder{color:#7183a0}.form{display:flex;gap:8px;flex-wrap:wrap}.form input,.form select{flex:1;min-width:140px}.table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{text-align:left;padding:10px;border-bottom:1px solid #24334b}.table th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px}.empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed #34445e;border-radius:12px}.toast-area{position:fixed;right:18px;top:18px;z-index:20;display:grid;gap:9px;max-width:min(380px,calc(100% - 36px))}.toast{padding:12px 15px;border-radius:11px;background:#18263b;border:1px solid #466080;box-shadow:0 8px 30px #0008}.toast.success{border-color:#278e7c}.toast.error{border-color:#a64661}.auth-overlay{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:#070b14eF}.auth-card{width:min(420px,100%);padding:28px;border:1px solid #354b6d;border-radius:18px;background:linear-gradient(145deg,#182740,#0c1422);box-shadow:0 24px 100px #0009}.auth-card h1{margin:0 0 4px;font-size:28px;letter-spacing:2px}.auth-card h1 span{color:var(--cyan)}.auth-card .form{display:grid;margin-top:20px}.auth-card input{width:100%}.auth-error{min-height:23px;color:#ff91a5;font-size:13px}.online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#5ee6a7;margin-right:7px}.hidden{display:none!important}.recipe{border-left:3px solid var(--purple);padding:9px 12px;background:#111a2b;border-radius:0 9px 9px 0}.footer-note{margin-top:14px;color:var(--muted);font-size:12px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:static}.nav{grid-template-columns:repeat(3,1fr)}.nav button{text-align:center;padding:9px 5px;font-size:12px}.side-note{display:none}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.wrap{padding:12px}.topbar{align-items:flex-start}.top-right{justify-content:flex-end;flex-wrap:wrap}.brand{font-size:17px}.grid{grid-template-columns:1fr}.section-head{flex-direction:column}.nav{grid-template-columns:repeat(2,1fr)}.pill{font-size:12px;padding:6px 9px}.panel{padding:13px}.table{font-size:12px}.table th,.table td{padding:8px 5px}}
+</style>
+</head>
+<body>
+<div class="auth-overlay" id="authOverlay"><div class="auth-card"><h1><span>VAULT</span>ORIA</h1><p class="muted">Build your vault. Enter the Warzone. Claim the unknown.</p><div class="form"><input id="authUsername" maxlength="18" placeholder="Username" autocomplete="username"><input id="authPassword" type="password" placeholder="Password (6+ characters)" autocomplete="current-password"><div class="row"><button class="primary" id="loginBtn">Login</button><button id="registerBtn">Create account</button></div><div id="authError" class="auth-error"></div></div><small class="muted">Your profile, inventory, sessions, and Bazaar data are saved in Neon.</small></div></div>
+<div class="toast-area" id="toastArea"></div>
+<div class="wrap">
+<header class="topbar"><div class="brand"><span>VAULT</span>ORIA <small class="muted">/ RIFTBOUND</small></div><div class="top-right"><span class="pill"><span class="online-dot"></span><span id="connection">Connecting</span></span><span class="pill">◈ <b id="topCash">0</b> credits</span><span class="pill" id="playerName">Guest</span><button class="small danger" id="logoutBtn">Log out</button></div></header>
+<div class="layout"><aside class="sidebar"><nav class="nav" id="nav"><button class="active" data-view="world">◉ &nbsp;World</button><button data-view="vault">⬡ &nbsp;Vault</button><button data-view="inventory">▣ &nbsp;Inventory</button><button data-view="bazaar">⇄ &nbsp;Bazaar</button><button data-view="crafting">⚒ &nbsp;Crafting</button><button data-view="leaderboard">♜ &nbsp;Leaders</button></nav><div class="side-note">A shared universe, split into rooms of up to 8 explorers. The central diamond is a PvP zone.</div></aside>
+<main class="main">
+<section class="view active" id="view-world"><div class="section-head"><div><h1>Shared Rift</h1><div class="muted">Explore the lobby, find your portal, and risk it all in the Warzone.</div></div><div class="pill">Room <b id="roomName">—</b></div></div><div class="event-banner"><div><strong id="eventName">Quiet Markets</strong><div id="eventDescription" class="muted">Waiting for the world's next event.</div></div><span class="gold">GLOBAL EVENT</span></div><div class="panel world-panel"><div class="canvas-wrap"><canvas id="worldCanvas" width="1200" height="760"></canvas><div class="world-hint">Move: WASD / Arrows &nbsp; • &nbsp; Face an opponent, attack: Space</div></div></div><p class="footer-note">Your movement is validated and synchronized by the server. Defeated Warzone players lose 10% of carried credits and one random item.</p></section>
+<section class="view" id="view-vault"><div class="section-head"><div><h1>Your Vault</h1><div class="muted">Upgrade your sanctuary and power its generator.</div></div></div><div class="stats"><div class="stat"><small>Vault level</small><strong id="vaultLevel">1</strong></div><div class="stat"><small>Security</small><strong id="security">1</strong></div><div class="stat"><small>Ascensions</small><strong id="ascensions">0</strong></div><div class="stat"><small>Offline cache</small><strong id="cache">0 ◈</strong></div></div><div class="grid"><article class="card"><h3>Generator</h3><p>Roll the 10-tier rarity table. Higher vault levels and ascensions improve your odds.</p><p>Next activation: <b class="gold" id="generatorCost">42 credits</b></p><button class="primary" id="generateBtn">Activate Generator</button></article><article class="card"><h3>Vault upgrades</h3><p id="upgradeDescription">Raise your vault's level and permanent security.</p><p>Upgrade cost: <b class="gold" id="upgradeCost">250 credits</b></p><button id="upgradeBtn">Upgrade Vault</button><hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><p>Level 10 breakthrough resets your level, raises security, and improves generator odds.</p><button class="danger" id="ascendBtn">Ascend · 5,000 credits</button></article></div><article class="card" style="margin-top:14px"><h3>Rarity matrix</h3><p>Common 55% · Uncommon 23% · Rare 11% · Epic 5% · Legendary 2.8% · Mythic 1.5% · Divine 0.8% · Celestial 0.45% · Eternal 0.25% · Omniversal 0.2%</p></article></section>
+<section class="view" id="view-inventory"><div class="section-head"><div><h1>Inventory</h1><div class="muted">Items you carry can be traded, crafted, or risked in the Warzone.</div></div><button class="small" id="buyKeyBtn">Buy Breach Key · 250 ◈</button></div><div id="inventoryItems" class="inventory-grid"></div><p class="footer-note">A Breach Key can be used below. The server selects a random online vault and never reveals its identity to the attacker.</p></section>
+<section class="view" id="view-bazaar"><div class="section-head"><div><h1>The Bazaar</h1><div class="muted">Fixed-price item listings and escrow-backed player buy orders.</div></div></div><div class="grid"><article class="card"><h3>Sell an item</h3><div class="form"><select id="sellItem"></select><input id="sellPrice" type="number" min="1" placeholder="Price in credits"><button class="primary" id="listItemBtn">List item</button></div><p>Listed items are held in secure market escrow until sale or cancellation.</p></article><article class="card"><h3>Place a buy order</h3><div class="form"><select id="orderItem"></select><input id="orderQuantity" type="number" min="1" max="20" value="1" placeholder="Quantity"><input id="orderPrice" type="number" min="1" placeholder="Per-item bounty"><button id="placeOrderBtn">Place order</button></div><p>Credits are held in escrow; unused funds return when your order fills or is cancelled.</p></article></div><article class="card" style="margin-top:14px"><h3>Open item listings</h3><div id="listings"></div></article><article class="card" style="margin-top:14px"><h3>Open buy orders</h3><div id="orders"></div></article></section>
+<section class="view" id="view-crafting"><div class="section-head"><div><h1>Crafting & Breaches</h1><div class="muted">Combine components into high-tier assets or test another vault's defenses.</div></div></div><div class="grid"><article class="card"><h3>Eternal Reactor recipe</h3><div class="recipe">3 × Common Scrap<br>2 × Uncommon Core<br><span class="muted">Crafting Holiday reduces the Scrap requirement to 2.</span></div><p>Components are consumed only when the server validates the full recipe.</p><button class="primary" id="craftBtn">Craft Eternal Reactor</button></article><article class="card"><h3>Blind vault breach</h3><p>Buy a Breach Key from Inventory. The server randomly chooses an online target and resolves offense against vault security.</p><p class="muted">Target identity stays hidden to reduce targeted harassment.</p><button class="danger" id="breachBtn">Use a Breach Key</button></article></div><article class="card" style="margin-top:14px"><h3>World events</h3><p id="eventDetail">Events periodically change generator prices or crafting recipes for every room.</p></article></section>
+<section class="view" id="view-leaderboard"><div class="section-head"><div><h1>Hall of Ascendants</h1><div class="muted">Server-wide progression rankings.</div></div><button class="small" id="refreshLeaders">Refresh</button></div><article class="card"><div id="leaderboard"></div></article></section>
+</main></div></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = id => document.getElementById(id);
+let username = localStorage.getItem('vaultoria.username') || '';
+let token = localStorage.getItem('vaultoria.token') || '';
+let gameState = null;
+let remotePlayers = [];
+const held = new Set();
+const canvas = $('worldCanvas');
+const ctx = canvas.getContext('2d');
+let localPosition = { x: 80, y: 80 };
+let lastFrame = 0;
+
+function toast(text, kind='info') {
+  const node = document.createElement('div'); node.className = `toast ${kind}`; node.textContent = text;
+  $('toastArea').appendChild(node); setTimeout(() => node.remove(), 4200);
+}
+function authSubmit(mode) {
+  const name = $('authUsername').value.trim(); const password = $('authPassword').value;
+  $('authError').textContent = '';
+  socket.emit(`auth:${mode}`, { username: name, password }, response => {
+    if (!response?.ok) $('authError').textContent = response?.message || 'Could not authenticate.';
+  });
+}
+$('loginBtn').onclick = () => authSubmit('login');
+$('registerBtn').onclick = () => authSubmit('register');
+$('authPassword').addEventListener('keydown', event => { if (event.key === 'Enter') authSubmit('login'); });
+$('logoutBtn').onclick = () => { localStorage.removeItem('vaultoria.token'); localStorage.removeItem('vaultoria.username'); location.reload(); };
+socket.on('connect', () => {
+  $('connection').textContent = 'Online';
+  if (token) socket.emit('auth:resume', { token });
+});
+socket.on('disconnect', () => $('connection').textContent = 'Reconnecting');
+socket.on('auth:error', data => { token = ''; localStorage.removeItem('vaultoria.token'); $('authOverlay').classList.remove('hidden'); $('authError').textContent = data.message; });
+socket.on('auth:success', data => {
+  username = data.username; token = data.token;
+  localStorage.setItem('vaultoria.username', username); localStorage.setItem('vaultoria.token', token);
+  $('playerName').textContent = username; $('authOverlay').classList.add('hidden');
+  if (data.offlineCache) toast(`Offline cache earned ${data.offlineCache} credits.`, 'success');
+});
+socket.on('notice', data => toast(data.text, data.kind));
+socket.on('game:state', data => { gameState = data; remotePlayers = data.players || []; updateUI(); });
+socket.on('world:players', data => {
+  remotePlayers = data || [];
+  const self = remotePlayers.find(player => player.username === username);
+  if (self) {
+    localPosition.x += (self.x - localPosition.x) * 0.35;
+    localPosition.y += (self.y - localPosition.y) * 0.35;
+  }
+  drawWorld();
+});
+socket.on('market:update', data => { if (gameState) gameState.market = data; renderMarket(data); });
+socket.on('event:update', data => { if (gameState) gameState.event = data; renderEvent(data); });
+socket.on('leaderboard:data', renderLeaderboard);
+
+$('nav').addEventListener('click', event => {
+  const button = event.target.closest('[data-view]'); if (!button) return;
+  document.querySelectorAll('.nav button').forEach(node => node.classList.toggle('active', node === button));
+  document.querySelectorAll('.view').forEach(node => node.classList.toggle('active', node.id === `view-${button.dataset.view}`));
+  if (button.dataset.view === 'leaderboard') socket.emit('leaderboard:get');
+  if (button.dataset.view === 'world') drawWorld();
+});
+function updateUI() {
+  if (!gameState) return;
+  const profile = gameState.profile;
+  $('topCash').textContent = profile.cash.toLocaleString(); $('roomName').textContent = gameState.room;
+  $('vaultLevel').textContent = profile.vaultLevel; $('security').textContent = profile.security;
+  $('ascensions').textContent = profile.ascensions; $('cache').textContent = `${profile.cache.toLocaleString()} ◈`;
+  const generatorCost = Math.floor((30 + profile.vaultLevel * 12) * (gameState.event.type === 'surge' ? .8 : gameState.event.type === 'shock' ? 1.2 : 1));
+  $('generatorCost').textContent = `${generatorCost} credits`; $('upgradeCost').textContent = `${profile.vaultLevel * 250} credits`;
+  $('upgradeBtn').disabled = profile.vaultLevel >= 10; $('ascendBtn').disabled = profile.vaultLevel < 10 || profile.cash < 5000;
+  if (gameState.players) remotePlayers = gameState.players;
+  const self = remotePlayers.find(player => player.username === username);
+  if (self) localPosition = { x: self.x, y: self.y };
+  renderInventory(profile.inventory); renderMarket(gameState.market); renderEvent(gameState.event); drawWorld();
+}
+function renderInventory(items=[]) {
+  const container = $('inventoryItems');
+  $('sellItem').innerHTML = '<option value="">Choose inventory item</option>';
+  $('orderItem').innerHTML = Object.entries({Common:['Common Scrap','Copper Shard','Dusty Relic'],Uncommon:['Uncommon Core','Charged Coil','Verdant Sigil'],Rare:['Aether Lens','Prism Fang','Runic Engine'],Epic:['Void Catalyst','Stormheart','Echo Matrix'],Legendary:['Solar Crown','Dragon Circuit','Starforged Gear'],Mythic:['Abyssal Crown','Phoenix Reactor','Worldbreaker'],Divine:['Divine Keystone','Godspark Engine'],Celestial:['Celestial Prism','Astral Singularity'],Eternal:['Eternal Reactor','Timeless Core'],Omniversal:['Omniversal Heart','Origin Engine']}).flatMap(([tier,names])=>names.map(name=>`<option value="${name}">${name} · ${tier}</option>`)).join('');
+  if (!items.length) { container.innerHTML = '<div class="empty">Your inventory is empty. Activate the Vault Generator to find items.</div>'; return; }
+  container.innerHTML = '';
+  items.forEach(item => {
+    const card = document.createElement('div'); card.className = 'item';
+    card.innerHTML = `<div><strong>${escapeHtml(item.name)}</strong><div class="tier ${escapeHtml(item.tier)}">${escapeHtml(item.tier)}</div></div><button class="small" data-breach="${item.id}" ${item.name === 'Breach Key' ? '' : 'disabled'}>Use key</button>`;
+    container.appendChild(card);
+    const option = document.createElement('option'); option.value = item.id; option.textContent = `${item.name} · ${item.tier}`; $('sellItem').appendChild(option);
+  });
+  container.querySelectorAll('[data-breach]').forEach(button => button.onclick = () => socket.emit('breach:launch'));
+}
+function renderMarket(market={listings:[],orders:[]}) {
+  const listings = $('listings'), orders = $('orders'); if (!listings || !orders) return;
+  const visibleListings = market.listings || [], visibleOrders = market.orders || [];
+  listings.innerHTML = visibleListings.length ? `<table class="table"><thead><tr><th>Item</th><th>Tier</th><th>Seller</th><th>Price</th><th></th></tr></thead><tbody>${visibleListings.map(item=>`<tr><td>${escapeHtml(item.item.name)}</td><td>${escapeHtml(item.item.tier)}</td><td>${escapeHtml(item.username)}</td><td>${item.price.toLocaleString()} ◈</td><td>${item.username===username?`<button class="small" data-cancel-listing="${item.id}">Cancel</button>`:`<button class="small primary" data-buy="${item.id}">Buy</button>`}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No items listed yet.</div>';
+  orders.innerHTML = visibleOrders.length ? `<table class="table"><thead><tr><th>Wanted item</th><th>Buyer</th><th>Remaining</th><th>Bounty each</th><th></th></tr></thead><tbody>${visibleOrders.map(order=>`<tr><td>${escapeHtml(order.itemName)}</td><td>${escapeHtml(order.username)}</td><td>${order.remaining}/${order.quantity}</td><td>${order.price.toLocaleString()} ◈</td><td>${order.username===username?`<button class="small" data-cancel-order="${order.id}">Cancel</button>`:''}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No open buy orders.</div>';
+  listings.querySelectorAll('[data-buy]').forEach(button=>button.onclick=()=>socket.emit('market:buy',{id:button.dataset.buy}));
+  listings.querySelectorAll('[data-cancel-listing]').forEach(button=>button.onclick=()=>socket.emit('market:cancel-listing',{id:button.dataset.cancelListing}));
+  orders.querySelectorAll('[data-cancel-order]').forEach(button=>button.onclick=()=>socket.emit('market:cancel-order',{id:button.dataset.cancelOrder}));
+}
+function renderEvent(event={}) { $('eventName').textContent=event.name||'Global event'; $('eventDescription').textContent=event.description||''; $('eventDetail').textContent=`${event.description||''} Global effects apply across all active rooms.`; }
+function renderLeaderboard(rows=[]) {
+  $('leaderboard').innerHTML = rows.length ? `<table class="table"><thead><tr><th>#</th><th>Explorer</th><th>Ascensions</th><th>Vault</th><th>Kills</th><th>Credits</th></tr></thead><tbody>${rows.map((row,index)=>`<tr><td>${index+1}</td><td>${escapeHtml(row.username)}</td><td>${row.ascensions}</td><td>${row.vaultLevel}</td><td>${row.kills}</td><td>${row.cash.toLocaleString()} ◈</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No ranked explorers yet.</div>';
+}
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g, character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character])); }
+
+$('generateBtn').onclick=()=>socket.emit('vault:generate');
+$('upgradeBtn').onclick=()=>socket.emit('vault:upgrade');
+$('ascendBtn').onclick=()=>socket.emit('vault:ascend');
+$('buyKeyBtn').onclick=()=>socket.emit('shop:breach-key');
+$('craftBtn').onclick=()=>socket.emit('craft:reactor');
+$('breachBtn').onclick=()=>socket.emit('breach:launch');
+$('listItemBtn').onclick=()=>socket.emit('market:list',{itemId:$('sellItem').value,price:$('sellPrice').value});
+$('placeOrderBtn').onclick=()=>socket.emit('market:order',{itemName:$('orderItem').value,quantity:$('orderQuantity').value,price:$('orderPrice').value});
+$('refreshLeaders').onclick=()=>socket.emit('leaderboard:get');
+
+function keyDirection(event, down) {
+  const key = event.key.toLowerCase();
+  const map = {arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right'};
+  if (map[key]) { event.preventDefault(); down ? held.add(map[key]) : held.delete(map[key]); }
+  if (down && event.code === 'Space' && !event.repeat) { event.preventDefault(); socket.emit('combat:attack'); }
+}
+window.addEventListener('keydown',event=>keyDirection(event,true));
+window.addEventListener('keyup',event=>keyDirection(event,false));
+window.addEventListener('blur',()=>{held.clear(); socket.emit('move',{});});
+function sendMove() { socket.emit('move',{up:held.has('up'),down:held.has('down'),left:held.has('left'),right:held.has('right')}); }
+function frame(time) {
+  const delta = Math.min((time-lastFrame)/1000||0,.05); lastFrame=time;
+  if (held.size && gameState) {
+    let dx=Number(held.has('right'))-Number(held.has('left')),dy=Number(held.has('down'))-Number(held.has('up'));
+    if(dx&&dy){dx*=Math.SQRT1_2;dy*=Math.SQRT1_2;}
+    localPosition.x=Math.max(20,Math.min(1180,localPosition.x+dx*230*delta));
+    localPosition.y=Math.max(20,Math.min(740,localPosition.y+dy*230*delta));
+  }
+  drawWorld(); requestAnimationFrame(frame);
+}
+setInterval(sendMove,50);
+function drawWorld() {
+  if (!ctx) return;
+  const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0b1422';ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='rgba(110,145,190,.09)';ctx.lineWidth=1;
+  for(let x=0;x<=w;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+  for(let y=0;y<=h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+  const portals=gameState?.portals||[{x:80,y:80},{x:600,y:55},{x:1120,y:80},{x:1120,y:380},{x:1120,y:680},{x:600,y:705},{x:80,y:680},{x:80,y:380}];
+  portals.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,28,0,Math.PI*2);ctx.fillStyle='rgba(74,203,200,.11)';ctx.fill();ctx.strokeStyle='#4bcac3';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#86e8e0';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(`VAULT ${i+1}`,p.x,p.y+4);});
+  ctx.beginPath();ctx.moveTo(600,235);ctx.lineTo(845,380);ctx.lineTo(600,525);ctx.lineTo(355,380);ctx.closePath();ctx.fillStyle='rgba(183,57,95,.13)';ctx.fill();ctx.strokeStyle='#e35478';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#ff8097';ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillText('WARZONE',600,373);ctx.font='12px system-ui';ctx.fillText('PVP ACTIVE • ENTER AT YOUR OWN RISK',600,396);
+  remotePlayers.forEach(player=>{
+    if(player.username===username)return;
+    ctx.beginPath();ctx.arc(player.x,player.y,16,0,Math.PI*2);ctx.fillStyle=player.inWarzone?'#ff6e88':'#a88bff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle='#eaf0ff';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(player.username,player.x,player.y-23);
+  });
+  if(gameState){ctx.beginPath();ctx.arc(localPosition.x,localPosition.y,18,0,Math.PI*2);ctx.fillStyle='#58e1db';ctx.shadowColor='#58e1db';ctx.shadowBlur=20;ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(username,localPosition.x,localPosition.y-25);}
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vaultoria</title>
