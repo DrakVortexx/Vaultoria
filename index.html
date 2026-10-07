@@ -11,75 +11,180 @@
       box-sizing: border-box;
     }
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
-    .container {
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    .auth-container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
       max-width: 400px;
-      width: 100%;
+      width: 90%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
     h1 {
       text-align: center;
-      color: #333;
-      margin-bottom: 1.5rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+      font-size: 2.5rem;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .subtitle {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
     }
     input {
       width: 100%;
-      padding: 0.75rem;
+      padding: 1rem;
       margin-bottom: 1rem;
-      border: 1px solid #ddd;
-      border-radius: 5px;
+      border: none;
+      border-radius: 10px;
       font-size: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s;
+    }
+    input:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
     }
     button {
       width: 100%;
-      padding: 0.75rem;
-      background: #667eea;
+      padding: 1rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 10px;
       font-size: 1rem;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
     button:hover {
-      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .secondary {
+      background: transparent;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      margin-top: 0.5rem;
+    }
+    .secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
     .message {
       margin-top: 1rem;
-      padding: 0.75rem;
-      border-radius: 5px;
+      padding: 1rem;
+      border-radius: 10px;
       text-align: center;
+      font-size: 0.9rem;
     }
     .success {
-      background: #d4edda;
+      background: rgba(212, 237, 218, 0.2);
       color: #155724;
+      border: 1px solid rgba(212, 237, 218, 0.4);
     }
     .error {
-      background: #f8d7da;
+      background: rgba(248, 215, 218, 0.2);
       color: #721c24;
+      border: 1px solid rgba(248, 215, 218, 0.4);
+    }
+
+    /* Game area */
+    #game {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .game-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+    .player {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      transition: all 0.1s ease-out;
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+    }
+    .player-label {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: rgba(255, 0, 0, 0.7);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+    .logout-btn:hover {
+      background: rgba(255, 0, 0, 0.9);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Vaultoria</h1>
+  <div class="auth-container" id="auth">
+    <h1>VAULTORIA</h1>
+    <p class="subtitle">Move. Explore. Connect.</p>
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
     <button onclick="register()">Register</button>
-    <button onclick="login()" style="margin-top: 0.5rem;">Login</button>
+    <button onclick="login()" class="secondary">Login</button>
     <div id="message" class="message"></div>
   </div>
 
+  <div id="game">
+    <button class="logout-btn" onclick="logout()">Logout</button>
+    <div class="game-container" id="gameContainer"></div>
+  </div>
+
   <script>
+    let token = localStorage.getItem('token');
+    let username = localStorage.getItem('username');
+    let myPlayer = null;
+    let players = new Map();
+
+    if (token && username) {
+      showGame();
+    }
+
     async function register() {
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
@@ -107,10 +212,132 @@
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('token', data.token);
-        showMessage('Logged in successfully!', 'success');
+        localStorage.setItem('username', data.username);
+        token = data.token;
+        username = data.username;
+        showGame();
       } else {
         showMessage(data.message, 'error');
       }
+    }
+
+    function showGame() {
+      document.getElementById('auth').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      loadPlayers();
+      createMyPlayer();
+      setInterval(savePosition, 1000);
+      setInterval(loadPlayers, 2000);
+    }
+
+    function createMyPlayer() {
+      const player = document.createElement('div');
+      player.className = 'player';
+      player.id = 'myPlayer';
+      player.style.left = '100px';
+      player.style.top = '100px';
+
+      const label = document.createElement('div');
+      label.className = 'player-label';
+      label.textContent = username;
+      player.appendChild(label);
+
+      document.getElementById('gameContainer').appendChild(player);
+      myPlayer = player;
+
+      setupMovement();
+    }
+
+    function setupMovement() {
+      const keys = {};
+      const speed = 5;
+
+      document.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+      });
+
+      document.addEventListener('keyup', (e) => {
+        keys[e.key] = false;
+      });
+
+      function move() {
+        const rect = myPlayer.getBoundingClientRect();
+        let x = rect.left;
+        let y = rect.top;
+
+        if (keys['ArrowUp'] || keys['w'] || keys['W']) y -= speed;
+        if (keys['ArrowDown'] || keys['s'] || keys['S']) y += speed;
+        if (keys['ArrowLeft'] || keys['a'] || keys['A']) x -= speed;
+        if (keys['ArrowRight'] || keys['d'] || keys['D']) x += speed;
+
+        // Keep within bounds
+        x = Math.max(0, Math.min(window.innerWidth - 40, x));
+        y = Math.max(0, Math.min(window.innerHeight - 40, y));
+
+        myPlayer.style.left = x + 'px';
+        myPlayer.style.top = y + 'px';
+
+        requestAnimationFrame(move);
+      }
+
+      move();
+    }
+
+    async function savePosition() {
+      if (!myPlayer) return;
+      const x = parseInt(myPlayer.style.left);
+      const y = parseInt(myPlayer.style.top);
+
+      await fetch('/api/position', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ x, y })
+      });
+    }
+
+    async function loadPlayers() {
+      const res = await fetch('/api/users');
+      const users = await res.json();
+
+      // Remove old players
+      players.forEach((player, username) => {
+        if (!users.find(u => u.username === username)) {
+          player.remove();
+          players.delete(username);
+        }
+      });
+
+      // Add/update players
+      users.forEach(user => {
+        if (user.username === username) return; // Skip self
+
+        let player = players.get(user.username);
+        if (!player) {
+          player = document.createElement('div');
+          player.className = 'player';
+          player.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%)';
+
+          const label = document.createElement('div');
+          label.className = 'player-label';
+          label.textContent = user.username;
+          player.appendChild(label);
+
+          document.getElementById('gameContainer').appendChild(player);
+          players.set(user.username, player);
+        }
+
+        player.style.left = user.x_position + 'px';
+        player.style.top = user.y_position + 'px';
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      location.reload();
     }
 
     function showMessage(text, type) {
