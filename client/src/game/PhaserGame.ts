@@ -118,37 +118,16 @@ class LobbyScene extends Phaser.Scene {
     const ws = (window as any).gameWebSocket;
     if (!ws) return;
 
-    // Use the new on/off methods if available
-    if (ws.on) {
-      ws.on('PLAYER_JOIN', (data: any) => this.addOtherPlayer(data));
-      ws.on('PLAYER_LEAVE', (data: any) => this.removePlayer(data.id));
-      ws.on('PLAYER_UPDATE', (data: any) => {
-        if (data.players) {
-          data.players.forEach((player: any) => this.addOtherPlayer(player));
-        } else {
-          this.updatePlayerPosition(data.id, data.x, data.y);
-        }
-      });
-    } else {
-      // Fallback to addEventListener for backward compatibility
-      ws.addEventListener('message', (event: MessageEvent) => {
-        const message = JSON.parse(event.data);
-
-        if (message.type === 'PLAYER_JOIN') {
-          this.addOtherPlayer(message.data);
-        } else if (message.type === 'PLAYER_LEAVE') {
-          this.removePlayer(message.data.id);
-        } else if (message.type === 'PLAYER_UPDATE') {
-          if (message.data.players) {
-            message.data.players.forEach((player: any) => {
-              this.addOtherPlayer(player);
-            });
-          } else {
-            this.updatePlayerPosition(message.data.id, message.data.x, message.data.y);
-          }
-        }
-      });
-    }
+    // Use ReconnectingWebSocket's on/off methods
+    ws.on('PLAYER_JOIN', (data: any) => this.addOtherPlayer(data));
+    ws.on('PLAYER_LEAVE', (data: any) => this.removePlayer(data.id));
+    ws.on('PLAYER_UPDATE', (data: any) => {
+      if (data.players) {
+        data.players.forEach((player: any) => this.addOtherPlayer(player));
+      } else {
+        this.updatePlayerPosition(data.id, data.x, data.y);
+      }
+    });
   }
 
   private addOtherPlayer(playerData: any) {
@@ -185,7 +164,7 @@ class LobbyScene extends Phaser.Scene {
     if (sprite) {
       // Simple interpolation could be added here
       sprite.setPosition(x, y);
-      
+
       const nameTag = sprite.getData('nameTag');
       if (nameTag) {
         nameTag.setPosition(x, y - 30);
