@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: vaultoria
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production

@@ -1,185 +1,198 @@
-# VAULTORIA - Multiplayer Incremental Trading & PvP Risk Game
+# VAULTORIA
 
-A cyberpunk-themed multiplayer web game where players mine digital items, trade on a global bazaar, upgrade their systems, and breach other players' vaults.
+BUILD YOUR VAULT. BUILD YOUR FORTUNE. RISK EVERYTHING. BECOME OMNIVERSAL.
 
-## Tech Stack
+A multiplayer 2D progression game with real-time multiplayer, persistent accounts, economy, PvP, and more.
 
-- **Backend**: Node.js with Express and Socket.io
-- **Database**: Neon (PostgreSQL) using pg connection pooler
-- **Frontend**: Vanilla HTML/CSS/JS (retro-futuristic terminal interface)
-- **Architecture**: Single web service (Express serves static files and handles API/WebSocket routes)
+## Prerequisites
 
-## Features
+- Node.js 18+ 
+- PostgreSQL 14+ (local installation or cloud service)
+- npm or yarn
 
-### Manual Clicker
-- Click to mine digital items (Floppy Disks, Cassette Tapes, etc.)
-- Upgrade clicker to unlock rarer item drops (Rare, Epic, Legendary)
-- Quick-sell items for cash or list on the Bazaar
+## Quick Start
 
-### Auto Generator
-- Purchase and upgrade automatic generators
-- Generators produce items automatically every 5 seconds
-- Higher level generators produce better items
+### Step 1: Set up PostgreSQL
 
-### Bazaar (Market)
-- Live marketplace with real-time updates via Socket.io
-- List items for custom prices
-- Buy items from other players
-- Instant transactions
+**For Windows users without Docker:**
+See [SETUP.md](SETUP.md) for detailed Windows setup instructions.
 
-### PvP Breach System
-- Players with $100+ become vulnerable to breaches
-- Purchase breach tools of varying tiers
-- Target other players and attempt to steal their cash
-- Success depends on tool level vs target's protection level
+**Quick options:**
+- Install PostgreSQL locally from https://www.postgresql.org/download/windows/
+- Or use a free cloud service like Supabase or ElephantSQL
 
-### Protection System
-- Upgrade protection to defend against breaches
-- Higher protection levels make you harder to breach
+Create a database named "vaultoria".
 
-### Leaderboard
-- Real-time global rankings by cash balance
-- Track your progress against other players
-
-## Setup Instructions
-
-### 1. Install Dependencies
+### Step 2: Install dependencies
 ```bash
 npm install
 ```
 
-### 2. Set Up Neon PostgreSQL Database
+### Step 3: Configure environment
 
-1. Create a free account at [Neon](https://neon.tech)
-2. Create a new PostgreSQL database
-3. Copy your connection string
-
-### 3. Configure Environment Variables
-
-Create a `.env` file in the project root:
+Update `server/.env` with your PostgreSQL credentials:
 ```env
-DATABASE_URL=postgresql://username:password@ep-xxx.region.aws.neon.tech/database?sslmode=require
-PORT=3000
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/vaultoria?schema=public"
+JWT_SECRET="vaultoria-super-secret-jwt-key-change-this-in-production"
+PORT=3001
+NODE_ENV=development
+CORS_ORIGIN="http://localhost:5173"
 ```
 
-### 4. Initialize Database Schema
-
-Run the SQL schema against your Neon database:
+### Step 4: Set up database
 ```bash
-# You can run this using psql, the Neon console, or any PostgreSQL client
-psql $DATABASE_URL -f schema.sql
+npm run db:push
 ```
 
-### 5. Start the Server
+### Step 5: Start the game
+
+Terminal 1 - Start server:
+```bash
+npm run dev:server
+```
+
+Terminal 2 - Start client:
+```bash
+npm run dev:client
+```
+
+### Step 6: Play
+
+Open http://localhost:5173 in your browser.
+
+Register an account, then you can:
+- Move around the multiplayer lobby with WASD or arrow keys
+- Generate items from your vault's generator
+- Sell items for money
+- Upgrade your vault (generator, storage, security)
+- See other players moving in real-time
+
+## Project Structure
+
+```
+Vaultoria/
+├── client/          # React + Phaser frontend
+├── server/          # Node.js + WebSocket backend
+├── shared/          # Shared TypeScript types and config
+├── database/        # Database migrations and seeds
+├── assets/          # Game assets
+├── config/          # Configuration files
+└── scripts/         # Utility scripts
+```
+
+## Development Commands
 
 ```bash
-npm start
+# Install all dependencies
+npm install
+
+# Database operations
+npm run db:generate   # Generate Prisma client
+npm run db:migrate    # Run database migrations
+npm run db:push       # Push schema changes (dev only)
+npm run db:studio     # Open Prisma Studio
+
+# Development
+npm run dev           # Start both server and client
+npm run dev:server    # Start server only
+npm run dev:client    # Start client only
+
+# Production build
+npm run build         # Build all packages
+npm run build:server  # Build server
+npm run build:client  # Build client
+
+# Testing
+npm test              # Run all tests
+npm run test:server   # Run server tests
+npm run test:client   # Run client tests
 ```
 
-The server will start on port 3000 (or your configured PORT).
+## Environment Variables
 
-### 6. Play the Game
+Create `server/.env`:
 
-Open your browser and navigate to:
-```
-http://localhost:3000
-```
-
-## Game Mechanics
-
-### Item Rarities & Quick Sell Prices
-- **Junk**: $0.10 (Broken Cable - from level 0 generator)
-- **Common**: $0.50 (Floppy Disk, Cassette Tape, etc.)
-- **Rare**: $5.00 (SSD Drive, Graphics Card, etc.)
-- **Epic**: $25.00 (Quantum Processor, Neural Chip, etc.)
-- **Legendary**: $100.00 (AI Core, Time Crystal, etc.)
-
-### Breach Tools & Success Rates
-- **Basic Scanner (Level 1)**: $50, 20% success rate
-- **Network Sniffer (Level 2)**: $150, 35% success rate
-- **Packet Injector (Level 3)**: $400, 50% success rate
-- **Zero-Day Exploit (Level 4)**: $1,000, 70% success rate
-- **Quantum Decryptor (Level 5)**: $2,500, 90% success rate
-
-### Breach Rules
-- Target must have $100+ to be breachable
-- Tool level must be higher than target's protection level
-- Successful breach steals 10-35% of target's cash (based on tool level)
-- Failed breach wastes the tool cost
-
-## File Structure
-
-```
-vaultoria/
-├── package.json          # Dependencies and scripts
-├── server.js             # Express server, Socket.io, API routes
-├── db.js                 # PostgreSQL connection pool
-├── schema.sql            # Database schema
-├── .env.example          # Environment variables template
-├── public/
-│   ├── index.html        # Main HTML interface
-│   ├── style.css         # Cyberpunk terminal styling
-│   └── app.js            # Frontend game logic
-└── README.md             # This file
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/vaultoria?schema=public"
+JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
+PORT=3001
+NODE_ENV=development
+CORS_ORIGIN="http://localhost:5173"
 ```
 
-## API Endpoints
+## Game Features
 
-### Player Management
-- `POST /api/player` - Create or get player
-- `GET /api/player/:username` - Get player data
+### Phase 1 (Current)
+- ✅ Account system with secure authentication
+- ✅ Multiplayer lobby with real-time player movement
+- ✅ Vaults with generator, storage, and security
+- ✅ Server-authoritative item generation with rarity system
+- ✅ Inventory system
+- ✅ Money system with transaction logging
+- ✅ Basic UI (Vault, Inventory, Generator panels)
+- ✅ PostgreSQL database with Prisma ORM
 
-### Gameplay
-- `POST /api/click` - Manual click to generate item
-- `GET /api/inventory/:player_id` - Get player inventory
-- `POST /api/sell` - Quick sell items
+### Phase 2 (Planned)
+- Vault upgrades
+- Offline production
+- Bazaar marketplace
+- Market listings and buy orders
+- Transaction history
 
-### Bazaar
-- `POST /api/bazaar/list` - List item on bazaar
-- `GET /api/bazaar` - Get all bazaar listings
-- `POST /api/bazaar/buy` - Buy item from bazaar
+### Phase 3 (Planned)
+- Crafting system
+- Events
+- Rarity progression
+- Ascension system
+- Leaderboards
 
-### Upgrades
-- `GET /api/upgrades` - Get available upgrades
-- `POST /api/upgrade` - Purchase upgrade
+### Phase 4 (Planned)
+- Warzone PvP
+- Real-time combat
+- Risk inventory system
+- Combat rewards
 
-### Breach System
-- `GET /api/breach-tools` - Get available breach tools
-- `POST /api/breach` - Execute breach attempt
-- `GET /api/players` - Get breachable players
+### Phase 5 (Planned)
+- Breaches
+- Advanced security
+- Battle Royale architecture
 
-### Leaderboard
-- `GET /api/leaderboard` - Get top 20 players
+## Testing
 
-## Socket.io Events
+Create multiple accounts to test multiplayer:
+1. Open http://localhost:5173
+2. Register as player1
+3. Open in incognito or different browser
+4. Register as player2
+5. See both players in the lobby moving in real-time
 
-### Client → Server
-- `join` - Join game with username
+## Troubleshooting
 
-### Server → Client
-- `bazaarUpdate` - Bazaar listings changed
-- `playerUpdate` - Player data updated
-- `generatorItem` - Auto-generator produced item
+### PostgreSQL Connection Issues
+- Ensure PostgreSQL is running: `docker ps` or check Windows services
+- Verify DATABASE_URL in server/.env
+- Check that the database exists
 
-## Deployment
+### Port Already in Use
+- Change PORT in server/.env
+- Update CORS_ORIGIN accordingly
 
-This game is designed for easy deployment. The architecture is a single web service that:
-1. Serves static frontend files from the `public/` directory
-2. Handles REST API endpoints
-3. Manages WebSocket connections via Socket.io
+### WebSocket Connection Failed
+- Check server is running
+- Verify token is valid
+- Check browser console for errors
 
-### Deployment Options
+## Security Notes
 
-1. **Render / Railway / Fly.io**: Deploy as a Node.js service
-2. **VPS**: Run with PM2 or systemd
-3. **Neon**: Use Neon for PostgreSQL hosting
+⚠️ **IMPORTANT**: Change the JWT_SECRET in production before deploying!
 
-Ensure your `DATABASE_URL` environment variable is set in your deployment platform.
+The game uses:
+- bcrypt for password hashing
+- JWT for session management
+- Server-authoritative game logic
+- Rate limiting on API endpoints
+- CORS protection
 
 ## License
 
-ISC
-
-## Credits
-
-Built with Node.js, Express, Socket.io, and Neon PostgreSQL.
+Proprietary - All rights reserved
