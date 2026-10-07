@@ -2,18 +2,15 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import GamePage from './pages/GamePage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (storedToken && storedUser) {
-      setToken(storedToken);
       setUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
     }
@@ -22,7 +19,6 @@ function App() {
   const handleLogin = (newToken: string, newUser: any) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
-    setToken(newToken);
     setUser(newUser);
     setIsAuthenticated(true);
   };
@@ -30,7 +26,6 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setToken(null);
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -42,7 +37,7 @@ function App() {
           path="/login"
           element={
             isAuthenticated ? (
-              <Navigate to="/game" replace />
+              <Navigate to="/" replace />
             ) : (
               <LoginPage onLogin={handleLogin} />
             )
@@ -52,23 +47,30 @@ function App() {
           path="/register"
           element={
             isAuthenticated ? (
-              <Navigate to="/game" replace />
+              <Navigate to="/" replace />
             ) : (
               <RegisterPage onLogin={handleLogin} />
             )
           }
         />
         <Route
-          path="/game"
+          path="/"
           element={
-            isAuthenticated && token ? (
-              <GamePage token={token} user={user} onLogout={handleLogout} />
+            isAuthenticated ? (
+              <div className="auth-container">
+                <div className="auth-box">
+                  <h1 className="auth-title">VAULTORIA</h1>
+                  <p className="auth-subtitle">Welcome, {user?.username}!</p>
+                  <button onClick={handleLogout} className="auth-button">
+                    Logout
+                  </button>
+                </div>
+              </div>
             ) : (
               <Navigate to="/login" replace />
             )
           }
         />
-        <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

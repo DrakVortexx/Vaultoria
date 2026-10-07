@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { hashPassword, verifyPassword, createSession, deleteAllUserSessions } from '../auth';
-import { GameConfig } from '@vaultoria/shared';
 import { validateUsername, validatePassword } from '../validation';
 
 const router = Router();
@@ -42,31 +41,6 @@ router.post('/register', async (req: Request, res: Response) => {
       },
     });
 
-    // Create player profile
-    const profile = await prisma.playerProfile.create({
-      data: {
-        userId: user.id,
-        money: GameConfig.startingMoney,
-        vaultLevel: GameConfig.startingVaultLevel,
-        ascension: 0,
-      },
-    });
-
-    // Create vault
-    await prisma.vault.create({
-      data: {
-        playerId: profile.id,
-        level: GameConfig.startingVaultLevel,
-        ascension: 0,
-        generatorLevel: GameConfig.startingGeneratorLevel,
-        storageLevel: GameConfig.startingStorageLevel,
-        securityLevel: GameConfig.startingSecurityLevel,
-        storageCapacity: GameConfig.storageCapacity[0],
-        currentStorage: 0,
-        value: 0,
-      },
-    });
-
     // Create session
     const token = await createSession(user.id);
 
@@ -76,12 +50,6 @@ router.post('/register', async (req: Request, res: Response) => {
       user: {
         id: user.id,
         username: user.username,
-      },
-      profile: {
-        id: profile.id,
-        money: profile.money,
-        vaultLevel: profile.vaultLevel,
-        ascension: profile.ascension,
       },
     });
   } catch (error) {
@@ -124,23 +92,12 @@ router.post('/login', async (req: Request, res: Response) => {
     // Create session
     const token = await createSession(user.id);
 
-    // Get profile
-    const profile = await prisma.playerProfile.findUnique({
-      where: { userId: user.id },
-    });
-
     res.json({
       success: true,
       token,
       user: {
         id: user.id,
         username: user.username,
-      },
-      profile: {
-        id: profile?.id,
-        money: profile?.money,
-        vaultLevel: profile?.vaultLevel,
-        ascension: profile?.ascension,
       },
     });
   } catch (error) {
