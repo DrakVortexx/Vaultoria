@@ -1,12 +1,27 @@
--- Create users table
-CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  x_position INTEGER DEFAULT 100,
-  y_position INTEGER DEFAULT 100,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Vaultoria persistent data schema for PostgreSQL / Neon.
+-- server.js also creates these tables automatically at startup.
+
+CREATE TABLE IF NOT EXISTS vaultoria_accounts (
+  username_key TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  salt TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  profile JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Create index on username for faster lookups
-CREATE INDEX IF NOT EXISTS idx_username ON users(username);
+CREATE TABLE IF NOT EXISTS vaultoria_sessions (
+  token_hash TEXT PRIMARY KEY,
+  username_key TEXT NOT NULL REFERENCES vaultoria_accounts(username_key) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vaultoria_market_listings (
+  id TEXT PRIMARY KEY,
+  listing JSONB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS vaultoria_buy_orders (
+  id TEXT PRIMARY KEY,
+  order_data JSONB NOT NULL
+);
