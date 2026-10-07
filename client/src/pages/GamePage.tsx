@@ -73,84 +73,76 @@ export default function GamePage({ token, user, onLogout }: GamePageProps) {
   }, [token, sendMessage, loadInventory, loadVault]);
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const message = JSON.parse(event.data);
-
-      switch (message.type) {
-        case MessageType.AUTH_SUCCESS:
-          setVault(message.data.vault);
-          setMoney(message.data.profile.money);
-          break;
-
-        case MessageType.PLAYER_JOIN:
-          setPlayers((prev) => [...prev, message.data]);
-          break;
-
-        case MessageType.PLAYER_LEAVE:
-          setPlayers((prev) => prev.filter((p) => p.id !== message.data.id));
-          break;
-
-        case MessageType.PLAYER_UPDATE:
-          if (message.data.players) {
-            setPlayers(message.data.players);
-          } else {
-            setPlayers((prev) =>
-              prev.map((p) =>
-                p.id === message.data.id
-                  ? { ...p, x: message.data.x, y: message.data.y }
-                  : p
-              )
-            );
-          }
-          break;
-
-        case MessageType.GENERATE_RESULT:
-          if (message.data.success) {
-            addNotification(`Generated ${message.data.item.name}!`, message.data.item.rarity);
-            loadInventory();
-          }
-          break;
-
-        case MessageType.SELL_RESULT:
-          if (message.data.success) {
-            addNotification(`Sold ${message.data.quantity} items for $${message.data.amount}`, 'COMMON');
-            loadInventory();
-          }
-          break;
-
-        case MessageType.UPGRADE_RESULT:
-          if (message.data.success) {
-            addNotification(`Upgraded ${message.data.upgradeType} to level ${message.data.newLevel}`, 'RARE');
-            loadVault();
-          }
-          break;
-
-        case MessageType.VAULT_UPDATE:
-          setVault(message.data);
-          break;
-
-        case MessageType.MONEY_UPDATE:
-          setMoney(message.data.money);
-          break;
-
-        case MessageType.ERROR:
-          addNotification(message.data.message, 'COMMON');
-          break;
-      }
-    };
-
     // Setup WebSocket message handler
     const ws = (window as any).gameWebSocket;
     if (ws) {
-      ws.addEventListener('message', handleMessage);
+      ws.on('AUTH_SUCCESS', (data: any) => {
+        setVault(data.vault);
+        setMoney(data.profile.money);
+      });
+      ws.on('PLAYER_JOIN', (data: any) => {
+        setPlayers((prev) => [...prev, data]);
+      });
+      ws.on('PLAYER_LEAVE', (data: any) => {
+        setPlayers((prev) => prev.filter((p) => p.id !== data.id));
+      });
+      ws.on('PLAYER_UPDATE', (data: any) => {
+        if (data.players) {
+          setPlayers(data.players);
+        } else {
+          setPlayers((prev) =>
+            prev.map((p) =>
+              p.id === data.id
+                ? { ...p, x: data.x, y: data.y }
+                : p
+            )
+          );
+        }
+      });
+      ws.on('GENERATE_RESULT', (data: any) => {
+        if (data.success) {
+          addNotification(`Generated ${data.item.name}!`, data.item.rarity);
+          loadInventory();
+        }
+      });
+      ws.on('SELL_RESULT', (data: any) => {
+        if (data.success) {
+          addNotification(`Sold ${data.quantity} items for $${data.amount}`, 'COMMON');
+          loadInventory();
+        }
+      });
+      ws.on('UPGRADE_RESULT', (data: any) => {
+        if (data.success) {
+          addNotification(`Upgraded ${data.upgradeType} to level ${data.newLevel}`, 'RARE');
+          loadVault();
+        }
+      });
+      ws.on('VAULT_UPDATE', (data: any) => {
+        setVault(data);
+      });
+      ws.on('MONEY_UPDATE', (data: any) => {
+        setMoney(data.money);
+      });
+      ws.on('ERROR', (data: any) => {
+        addNotification(data.message, 'COMMON');
+      });
     }
 
     return () => {
       if (ws) {
-        ws.removeEventListener('message', handleMessage);
+        ws.off('AUTH_SUCCESS');
+        ws.off('PLAYER_JOIN');
+        ws.off('PLAYER_LEAVE');
+        ws.off('PLAYER_UPDATE');
+        ws.off('GENERATE_RESULT');
+        ws.off('SELL_RESULT');
+        ws.off('UPGRADE_RESULT');
+        ws.off('VAULT_UPDATE');
+        ws.off('MONEY_UPDATE');
+        ws.off('ERROR');
       }
     };
-  }, [sendMessage]);
+  }, [sendMessage, loadInventory, loadVault]);
 
   const addNotification = (message: string, rarity: string) => {
     const notification = {
@@ -160,7 +152,7 @@ export default function GamePage({ token, user, onLogout }: GamePageProps) {
       timestamp: new Date(),
     };
     setNotifications((prev) => [notification, ...prev].slice(0, 5));
-    
+
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
     }, 5000);
@@ -192,7 +184,7 @@ export default function GamePage({ token, user, onLogout }: GamePageProps) {
   return (
     <div className="game-container">
       <div id="phaser-game" />
-      
+
       <div className="game-ui">
         <div className="top-bar">
           <div className="player-info">
