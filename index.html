@@ -92,7 +92,6 @@
     border: 1px solid rgba(255,255,255,0.12); outline: none; transition: border 0.2s;
   }
   #authForm input:focus { border-color: #6d4dff; box-shadow: 0 0 0 3px rgba(109,77,255,0.2); }
-  .auth-note { text-align: center; color: #5a6188; font-size: 12px; margin-top: 18px; font-style: italic; }
 
   /* dashboard */
   #dashScreen { justify-content: flex-start; padding: 0; background: radial-gradient(circle at 50% -10%, rgba(109,77,255,0.22), transparent 55%), #05060f; overflow-y: auto; background-size: 200% 200%, auto; animation: screenIn 0.4s ease both, bgDrift 24s ease-in-out infinite alternate; }
@@ -277,6 +276,14 @@
   .ach .ach-desc { font-size: 11px; color: #5a6188; margin-top: 3px; }
   .ach .ach-reward { font-size: 11px; color: #7bdc78; font-weight: 700; margin-top: 6px; }
 
+  /* spotlight: dim everything except the tutorial card */
+  #spotlight {
+    position: fixed; inset: 0; z-index: 38; pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, rgba(2,3,9,0.55), rgba(2,3,9,0.82));
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+  #spotlight.on { opacity: 1; }
+
   /* tutorial - bottom-left so it never covers the generator GUI */
   #tutorial {
     position: fixed; left: 16px; bottom: 16px; z-index: 40;
@@ -333,7 +340,6 @@
         <div class="err" id="authError"></div>
         <button type="submit" id="authSubmit" class="btn big">Sign In</button>
       </form>
-      <div class="auth-note">No email required &mdash; just a username and password.</div>
     </div>
   </div>
 
@@ -479,6 +485,7 @@
     </div>
   </div>
 
+  <div id="spotlight"></div>
   <div id="tutorial" class="hidden">
     <div id="tutTitle">WELCOME TO VAULTORIA</div>
     <div id="tutText"></div>
@@ -576,6 +583,7 @@ let tutorialDone = false;
 let tutIdx = 0;
 let lastTutRender = -1;
 let tutTimer = null;
+let spotTimer = null;
 
 /* =============================================================
  * FX
@@ -1234,15 +1242,69 @@ function drawWorld(now) {
     drawCharacter(player.x, player.y, '#7c5cff', player.facing, player.moving, player.walk);
     drawNameTag(player.x + 20, player.y - 6, me.username, '#4fd1ff');
   }
-  if (!tutorialDone && tutIdx === 1 && mySlot >= 0) {
-    const p = VAULT_POS[mySlot];
-    const bob = Math.sin(now / 300) * 7;
+  drawGuideArrow(now);
+}
+function guideTarget() {
+  if (tutorialDone || mySlot < 0) return null;
+  if (tutIdx !== 1 && tutIdx !== 2) return null;
+  return VAULT_POS[mySlot];
+}
+function drawGuideArrow(now) {
+  const tgt = guideTarget();
+  if (!tgt) return;
+  const px = player.x + player.w / 2, py = player.y + player.h / 2;
+  const ang = Math.atan2(tgt.y - py, tgt.x - px);
+  const dist = Math.hypot(tgt.x - px, tgt.y - py);
+
+  // marching chevrons pointing the way
+  const gap = 62;
+  const march = (now / 240) % 1;
+  ctx.save();
+  for (let i = 0; i < 12; i++) {
+    const d = 76 + i * gap + march * gap;
+    if (d > dist - 96) break;
+    const x = px + Math.cos(ang) * d;
+    const y = py + Math.sin(ang) * d;
     ctx.save();
-    ctx.font = "800 40px 'Segoe UI', sans-serif"; ctx.textAlign = 'center';
-    ctx.fillStyle = '#4fd1ff'; ctx.shadowColor = '#4fd1ff'; ctx.shadowBlur = 18;
-    ctx.fillText('\u25BC', p.x, p.y - 118 + bob);
+    ctx.translate(x, y); ctx.rotate(ang);
+    ctx.globalAlpha = Math.max(0.12, 0.9 - i * 0.07);
+    ctx.fillStyle = '#4fd1ff'; ctx.shadowColor = '#4fd1ff'; ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.moveTo(15, 0); ctx.lineTo(-9, -12); ctx.lineTo(-3, 0); ctx.lineTo(-9, 12);
+    ctx.closePath(); ctx.fill();
     ctx.restore();
   }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  // bouncing pointer over the target
+  const bob = Math.sin(now / 300) * 7;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.font = "800 40px 'Segoe UI', sans-serif";
+  ctx.fillStyle = '#4fd1ff'; ctx.shadowColor = '#4fd1ff'; ctx.shadowBlur = 18;
+  ctx.fillText('\u25BC', tgt.x, tgt.y - 118 + bob);
+  ctx.restore();
+}
+function drawGuideHud(now) {
+  const tgt = guideTarget();
+  if (!tgt) return;
+  const sx = tgt.x - camX, sy = tgt.y - camY;
+  const m = 96;
+  if (sx > m && sx < viewW - m && sy > m && sy < viewH - m) return;
+  const cx = viewW / 2, cy = viewH / 2;
+  const ang = Math.atan2(sy - cy, sx - cx);
+  const ex = cx + Math.cos(ang) * (viewW / 2 - 70);
+  const ey = cy + Math.sin(ang) * (viewH / 2 - 90);
+  const pulse = 1 + Math.sin(now / 220) * 0.12;
+  ctx.save();
+  ctx.translate(ex, ey); ctx.rotate(ang); ctx.scale(pulse, pulse);
+  ctx.fillStyle = 'rgba(5,6,15,0.85)';
+  ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(79,209,255,0.6)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#4fd1ff'; ctx.shadowColor = '#4fd1ff'; ctx.shadowBlur = 18;
+  ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-10, -13); ctx.lineTo(-10, 13); ctx.closePath(); ctx.fill();
+  ctx.restore();
 }
 function drawVignette() {
   const g = ctx.createRadialGradient(viewW / 2, viewH / 2, Math.min(viewW, viewH) * 0.35, viewW / 2, viewH / 2, Math.max(viewW, viewH) * 0.72);
@@ -1308,6 +1370,7 @@ function frame(now) {
     drawWorld(now);
     ctx.restore();
     drawVignette();
+    drawGuideHud(now);
   }
 
   requestAnimationFrame(frame);
@@ -1640,6 +1703,9 @@ function showTutStep() {
   const d = $('tutDots'); d.innerHTML = '';
   TUTORIAL.forEach((_, i) => { const b = document.createElement('i'); if (i === tutIdx) b.className = 'on'; d.appendChild(b); });
   clearTimeout(tutTimer);
+  clearTimeout(spotTimer);
+  $('spotlight').classList.add('on');
+  spotTimer = setTimeout(() => $('spotlight').classList.remove('on'), 3200);
   if (s.info) tutTimer = setTimeout(() => { tutIdx++; lastTutRender = -1; refreshTutorial(); }, s.delay || 4000);
 }
 function refreshTutorial() {
@@ -1651,7 +1717,8 @@ function refreshTutorial() {
     break;
   }
   if (tutIdx >= TUTORIAL.length) {
-    tutorialDone = true; clearTimeout(tutTimer);
+    tutorialDone = true; clearTimeout(tutTimer); clearTimeout(spotTimer);
+    $('spotlight').classList.remove('on');
     $('tutorial').classList.add('hidden');
     state.tutorialDone = true; queueSave();
     return;
