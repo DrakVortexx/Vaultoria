@@ -537,6 +537,31 @@ app.delete('/api/friends/:id', dbReady, auth, async (req, res) => {
 });
 
 /* ---------------------------------------------------------------
+ * Leaderboard
+ * ------------------------------------------------------------- */
+app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, ps.money, ps.level
+         FROM users u
+         JOIN player_state ps ON ps.user_id = u.id
+        ORDER BY ps.money DESC
+        LIMIT 100`
+    );
+    res.json({
+      leaders: rows.map((r, i) => ({
+        rank: i + 1, id: r.id, username: r.username,
+        money: Number(r.money || 0), level: Number(r.level || 1),
+        me: r.id === req.user.id
+      }))
+    });
+  } catch (e) {
+    console.error('[leaderboard]', e.message);
+    res.status(500).json({ error: 'Could not load leaderboard' });
+  }
+});
+
+/* ---------------------------------------------------------------
  * Static hosting + health
  * ------------------------------------------------------------- */
 app.get('/healthz', (req, res) => res.json({ ok: true, db: !!DATABASE_URL }));
