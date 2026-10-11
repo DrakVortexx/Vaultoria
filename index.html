@@ -2,538 +2,1746 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vaultoria — Riftbound</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaultoria</title>
 <style>
-:root{color-scheme:dark;--bg:#090d18;--panel:#111a2b;--panel2:#17243a;--line:#263956;--text:#eef4ff;--muted:#92a4c1;--cyan:#58e1db;--purple:#a88bff;--gold:#ffd36e;--red:#ff6e88}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#17253d 0,transparent 45%),var(--bg);color:var(--text);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}button,input,select{font:inherit}button{color:var(--text);cursor:pointer;border:1px solid #395276;border-radius:10px;padding:10px 14px;background:linear-gradient(135deg,#263b5b,#1b2a42);font-weight:700;transition:.18s}button:hover{filter:brightness(1.2);transform:translateY(-1px)}button:disabled{opacity:.45;cursor:not-allowed;transform:none}.primary{background:linear-gradient(135deg,#39aaa9,#6260d6);border:0;color:white}.danger{border-color:#79384e;background:#442334}.small{padding:6px 9px;font-size:12px}.muted{color:var(--muted)}.gold{color:var(--gold)}.cyan{color:var(--cyan)}.wrap{max-width:1500px;padding:20px;margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.brand{font-size:22px;font-weight:900;letter-spacing:2px}.brand span{color:var(--cyan)}.top-right{display:flex;align-items:center;gap:10px}.pill{border:1px solid var(--line);background:#101a2a;padding:8px 12px;border-radius:999px;color:var(--muted)}.layout{display:grid;grid-template-columns:225px minmax(0,1fr);gap:18px}.sidebar,.panel,.card{background:linear-gradient(145deg,rgba(22,34,54,.97),rgba(13,21,36,.97));border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 50px #0003}.sidebar{padding:12px;align-self:start;position:sticky;top:16px}.nav{display:grid;gap:7px}.nav button{text-align:left;background:transparent;border-color:transparent;color:var(--muted)}.nav button.active,.nav button:hover{background:#1c2b43;border-color:#324965;color:white}.side-note{padding:14px 10px 4px;color:var(--muted);font-size:12px}.main{min-width:0}.view{display:none}.view.active{display:block}.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.section-head h1,.section-head h2{margin:0;font-size:22px}.panel{padding:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.stat{padding:13px;background:#0e1727;border:1px solid var(--line);border-radius:12px}.stat small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}.stat strong{font-size:20px}.card{padding:17px}.card h3{margin:0 0 9px;font-size:16px}.card p{margin:5px 0;color:var(--muted)}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.stack{display:grid;gap:10px}.world-panel{padding:12px}.canvas-wrap{position:relative;width:100%;overflow:hidden;border-radius:12px;background:#0b1422}.canvas-wrap canvas{display:block;width:100%;height:auto;aspect-ratio:1200/760}.world-hint{position:absolute;left:12px;bottom:10px;background:#07101ddd;padding:7px 10px;border:1px solid var(--line);border-radius:9px;color:#b6c6dd;font-size:12px}.event-banner{border:1px solid #5c4f8a;background:#211e3a;padding:12px 14px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;gap:12px}.inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}.item{padding:13px;border:1px solid var(--line);border-radius:12px;background:#0e1727;display:flex;justify-content:space-between;gap:10px}.tier{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--cyan)}.tier.Common{color:#bac8dd}.tier.Uncommon{color:#72e0a0}.tier.Rare{color:#76b9ff}.tier.Epic{color:#ba8cff}.tier.Legendary{color:#ffd36e}.tier.Mythic{color:#ff9a70}.tier.Divine,.tier.Celestial,.tier.Eternal,.tier.Omniversal{color:#ff80cb}input,select{color:var(--text);background:#0b1422;border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0}input::placeholder{color:#7183a0}.form{display:flex;gap:8px;flex-wrap:wrap}.form input,.form select{flex:1;min-width:140px}.table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{text-align:left;padding:10px;border-bottom:1px solid #24334b}.table th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px}.empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed #34445e;border-radius:12px}.toast-area{position:fixed;right:18px;top:18px;z-index:20;display:grid;gap:9px;max-width:min(380px,calc(100% - 36px))}.toast{padding:12px 15px;border-radius:11px;background:#18263b;border:1px solid #466080;box-shadow:0 8px 30px #0008}.toast.success{border-color:#278e7c}.toast.error{border-color:#a64661}.auth-overlay{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:#070b14eF}.auth-card{width:min(420px,100%);padding:28px;border:1px solid #354b6d;border-radius:18px;background:linear-gradient(145deg,#182740,#0c1422);box-shadow:0 24px 100px #0009}.auth-card h1{margin:0 0 4px;font-size:28px;letter-spacing:2px}.auth-card h1 span{color:var(--cyan)}.auth-card .form{display:grid;margin-top:20px}.auth-card input{width:100%}.auth-error{min-height:23px;color:#ff91a5;font-size:13px}.online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#5ee6a7;margin-right:7px}.hidden{display:none!important}.recipe{border-left:3px solid var(--purple);padding:9px 12px;background:#111a2b;border-radius:0 9px 9px 0}.footer-note{margin-top:14px;color:var(--muted);font-size:12px}
-@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:static}.nav{grid-template-columns:repeat(3,1fr)}.nav button{text-align:center;padding:9px 5px;font-size:12px}.side-note{display:none}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.wrap{padding:12px}.topbar{align-items:flex-start}.top-right{justify-content:flex-end;flex-wrap:wrap}.brand{font-size:17px}.grid{grid-template-columns:1fr}.section-head{flex-direction:column}.nav{grid-template-columns:repeat(2,1fr)}.pill{font-size:12px;padding:6px 9px}.panel{padding:13px}.table{font-size:12px}.table th,.table td{padding:8px 5px}}
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: #e8eaf2;
+    background: #05060f;
+    overflow: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: -25%; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(38% 38% at 22% 26%, rgba(109,77,255,0.20), transparent 62%),
+      radial-gradient(34% 34% at 78% 74%, rgba(79,209,255,0.15), transparent 62%),
+      radial-gradient(30% 30% at 66% 16%, rgba(177,77,255,0.13), transparent 62%);
+    animation: aurora 26s ease-in-out infinite alternate;
+  }
+  @keyframes aurora {
+    from { transform: translate3d(-3%, -2%, 0) scale(1) rotate(-1deg); }
+    to   { transform: translate3d(3%, 2%, 0) scale(1.12) rotate(1deg); }
+  }
+  .hidden { display: none !important; }
+
+  #game { position: fixed; inset: 0; display: block; z-index: 0; }
+
+  /* ---------- shared bits ---------- */
+  .btn {
+    position: relative; overflow: hidden;
+    font-family: inherit; font-weight: 700; letter-spacing: 1px; cursor: pointer;
+    border: none; border-radius: 12px; color: #fff; padding: 12px 22px;
+    background: linear-gradient(135deg, #6d4dff, #b14dff);
+    box-shadow: 0 8px 24px rgba(124, 92, 255, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.25s ease, opacity 0.2s;
+  }
+  .btn::after {
+    content: ""; position: absolute; top: 0; left: -60%; width: 45%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: skewX(-18deg); transition: left 0.5s ease; pointer-events: none;
+  }
+  .btn:hover:not(:disabled)::after { left: 120%; }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(124, 92, 255, 0.6); }
+  .btn:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .btn.ghost { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); box-shadow: none; }
+  .btn.ghost:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
+  .btn.green { background: linear-gradient(135deg, #7bdc78, #4fd1ff); box-shadow: 0 8px 24px rgba(123,220,120,0.35); }
+  .btn.big { width: 100%; padding: 15px; font-size: 16px; }
+  .err { color: #ff6b8a; font-size: 13px; min-height: 18px; font-weight: 600; }
+
+  /* ---------- screens ---------- */
+  .screen { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .screen:not(.hidden) { animation: screenIn 0.4s ease both; }
+  @keyframes screenIn { from { opacity: 0; transform: scale(0.99); } }
+
+  /* auth */
+  #authScreen {
+    background:
+      radial-gradient(circle at 30% 20%, rgba(109,77,255,0.25), transparent 55%),
+      radial-gradient(circle at 75% 80%, rgba(79,209,255,0.18), transparent 55%),
+      #05060f;
+    background-size: 200% 200%, 200% 200%, auto;
+    animation: screenIn 0.4s ease both, bgDrift 20s ease-in-out infinite alternate;
+  }
+  .auth-card {
+    width: min(420px, 92vw);
+    background: rgba(11, 13, 29, 0.9);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 24px; padding: 34px 30px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 60px rgba(124,92,255,0.18);
+    backdrop-filter: blur(10px);
+    animation: cardIn 0.55s cubic-bezier(0.2,0.9,0.3,1.1) both;
+  }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(18px) scale(0.97); } }
+  @keyframes bgDrift { from { background-position: 0% 0%, 100% 100%, 0 0; } to { background-position: 25% 15%, 75% 85%, 0 0; } }
+  .brand { font-size: 34px; font-weight: 800; letter-spacing: 10px; text-align: center;
+    color: #fff; text-shadow: 0 0 24px #4fd1ff, 0 0 60px #6d4dff; }
+  .brand.small { font-size: 20px; letter-spacing: 6px; text-shadow: 0 0 16px #4fd1ff; }
+  .brand-sub { text-align: center; color: #8b93bd; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; margin-bottom: 24px; }
+  .auth-tabs { display: flex; gap: 6px; padding: 6px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
+  .auth-tab { flex: 1; font-family: inherit; font-size: 14px; font-weight: 700; padding: 11px; border: none; border-radius: 10px; background: transparent; color: #8b93bd; cursor: pointer; transition: all 0.2s; }
+  .auth-tab.active { color: #fff; background: linear-gradient(135deg, #6d4dff, #b14dff); box-shadow: 0 6px 22px rgba(124,92,255,0.45); }
+  #authForm label { display: block; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #9aa2cc; margin-bottom: 14px; }
+  #authForm input {
+    display: block; width: 100%; margin-top: 7px; font-family: inherit; font-size: 15px;
+    padding: 13px 15px; border-radius: 12px; color: #fff; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12); outline: none; transition: border 0.2s;
+  }
+  #authForm input:focus { border-color: #6d4dff; box-shadow: 0 0 0 3px rgba(109,77,255,0.2); }
+  .auth-note { text-align: center; color: #5a6188; font-size: 12px; margin-top: 18px; font-style: italic; }
+
+  /* dashboard */
+  #dashScreen { justify-content: flex-start; padding: 0; background: radial-gradient(circle at 50% -10%, rgba(109,77,255,0.22), transparent 55%), #05060f; overflow-y: auto; background-size: 200% 200%, auto; animation: screenIn 0.4s ease both, bgDrift 24s ease-in-out infinite alternate; }
+  .dash-top { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .dash-user { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .chip { font-weight: 700; font-size: 13px; padding: 7px 14px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+  .chip.money { color: #7bdc78; border-color: rgba(123,220,120,0.35); }
+  .chip.level { color: #b98bff; border-color: rgba(185,139,255,0.35); }
+  .who { font-size: 13px; color: #8b93bd; }
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; width: min(920px, 92vw); margin: 48px auto 24px; }
+  .dash-card {
+    font-family: inherit; text-align: left; cursor: pointer; color: #e8eaf2;
+    background: rgba(11,13,29,0.85); border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 22px; padding: 28px 24px; transition: transform 0.2s, border 0.2s, box-shadow 0.2s;
+  }
+  .dash-card:hover { transform: translateY(-6px); border-color: rgba(124,92,255,0.6); box-shadow: 0 24px 60px rgba(124,92,255,0.3); }
+  .dc-icon { font-size: 34px; color: #4fd1ff; text-shadow: 0 0 20px #4fd1ff; margin-bottom: 12px; }
+  .dc-title { font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+  .dc-desc { font-size: 13px; color: #8b93bd; margin-top: 6px; line-height: 1.5; }
+  .play-card { background: linear-gradient(160deg, rgba(109,77,255,0.35), rgba(11,13,29,0.9)); border-color: rgba(124,92,255,0.5); }
+  .play-card .dc-icon { color: #b98bff; text-shadow: 0 0 22px #b14dff; }
+  .dash-panel { width: min(920px, 92vw); margin: 0 auto 48px; background: rgba(11,13,29,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 22px; }
+  .dash-panel h3 { margin: 0 0 16px; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
+  .row:last-child { border-bottom: none; }
+  .row .meta { font-size: 13px; color: #8b93bd; }
+  .row .name { font-weight: 700; font-size: 15px; }
+  .pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
+  .pill.on { color: #7bdc78; background: rgba(123,220,120,0.14); border: 1px solid rgba(123,220,120,0.4); }
+  .pill.off { color: #8b93bd; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); }
+  .inline-form { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .inline-form input { flex: 1; min-width: 160px; font-family: inherit; font-size: 14px; padding: 11px 14px; border-radius: 10px; color: #fff; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); outline: none; }
+  .inline-form input:focus { border-color: #6d4dff; }
+  .empty-note { color: #5a6188; font-style: italic; font-size: 13px; padding: 10px 4px; }
+  .spinner { color: #8b93bd; font-size: 13px; padding: 10px 4px; }
+
+  /* ---------- game HUD ---------- */
+  #gameHud { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+  .hud-bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 62px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 18px;
+    background: linear-gradient(180deg, rgba(5,6,15,0.92), rgba(5,6,15,0)); pointer-events: none;
+  }
+  .hud-left, .hud-right { display: flex; align-items: center; gap: 10px; pointer-events: auto; }
+  .hud-center { display: flex; align-items: center; gap: 8px; color: #c3c8e6; font-size: 13px; font-weight: 600; pointer-events: none; }
+  .hud-center .dot { width: 7px; height: 7px; border-radius: 50%; background: #7bdc78; box-shadow: 0 0 10px #7bdc78; }
+  .hud-btn {
+    pointer-events: auto; font-family: inherit; font-weight: 700; font-size: 13px; letter-spacing: 1px;
+    padding: 9px 16px; border-radius: 22px; color: #fff; cursor: pointer;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14); transition: all 0.18s;
+  }
+  .hud-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+  .hud-btn.bazaar { background: linear-gradient(135deg, #ffb648, #ff5c8a); border: none; box-shadow: 0 6px 20px rgba(255,140,80,0.4); }
+  .hud-btn.primary { background: linear-gradient(135deg, #6d4dff, #b14dff); border: none; box-shadow: 0 6px 20px rgba(124,92,255,0.4); }
+
+  #hint {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 4; pointer-events: none; font-size: 13px; letter-spacing: 1px; color: #8b93bd;
+    background: rgba(5,6,15,0.6); padding: 9px 18px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08);
+  }
+  #zone { position: fixed; top: 68px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
+    font-size: 14px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; color: #9fb4ff; opacity: 0.75; }
+
+  /* chat */
+  #chatBox { position: fixed; right: 16px; bottom: 16px; z-index: 5; width: 280px; pointer-events: none; }
+  #chatLog { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; scrollbar-width: thin; }
+  .chat-line { font-size: 12px; color: #c3c8e6; background: rgba(5,6,15,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 5px 10px; }
+  .chat-line b { color: #b98bff; }
+  .chat-line.sys { color: #7bdc78; font-style: italic; }
+  #chatForm { pointer-events: auto; }
+  #chatInput { width: 100%; font-family: inherit; font-size: 13px; padding: 10px 14px; border-radius: 18px; color: #fff; background: rgba(5,6,15,0.75); border: 1px solid rgba(255,255,255,0.12); outline: none; }
+  #chatInput:focus { border-color: #6d4dff; }
+
+  /* ---------- modals ---------- */
+  .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2,3,9,0.68); backdrop-filter: blur(4px); }
+  .modal-card {
+    width: min(560px, 96vw); max-height: 94vh; overflow-y: auto; scrollbar-width: thin;
+    background: rgba(5,6,15,0.92); border: 1px solid rgba(255,255,255,0.09); border-radius: 24px; padding: 20px 22px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(124,92,255,0.15);
+    animation: cardIn 0.4s cubic-bezier(0.2,0.9,0.3,1.1) both;
+  }
+  .modal { animation: modalFade 0.3s ease both; }
+  @keyframes modalFade { from { opacity: 0; } }
+  .modal-card.wide { width: min(760px, 96vw); }
+  .modal-card::-webkit-scrollbar { width: 6px; }
+  .modal-card::-webkit-scrollbar-thumb { background: rgba(124,92,255,0.4); border-radius: 6px; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .modal-title { font-size: 16px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #b98bff; }
+  .x { font-family: inherit; font-size: 22px; line-height: 1; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; color: #c3c8e6; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
+  .x:hover { background: rgba(255,90,120,0.25); }
+
+  .resource-bar { display: flex; align-items: center; gap: 12px; padding: 9px 22px; border-radius: 40px; background: rgba(123,220,120,0.07); border: 1px solid rgba(123,220,120,0.28); font-weight: 700; }
+  .resource-bar .label { color: #9fe09c; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
+  .resource-bar .value { color: #fff; font-size: 18px; }
+  .resource-bar .icon { color: #7bdc78; font-size: 16px; }
+
+  .tabs { display: flex; gap: 6px; padding: 6px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
+  .tab { font-family: inherit; font-size: 14px; font-weight: 600; padding: 10px 20px; border: none; border-radius: 10px; background: transparent; color: #8b93bd; cursor: pointer; transition: all 0.2s; }
+  .tab:hover { color: #cfd4f5; }
+  .tab.active { color: #fff; background: linear-gradient(135deg, #6d4dff, #b14dff); box-shadow: 0 6px 24px rgba(124,92,255,0.45); }
+  .panel { display: none; flex-direction: column; align-items: center; width: 100%; }
+  .panel.active { display: flex; animation: fadeUp 0.35s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } }
+
+  /* generator */
+  .generator-wrap { position: relative; width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+  .ring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #6d4dff, #4fd1ff, #b14dff, #ff4fb0, #6d4dff); opacity: 0.9; filter: blur(2px); animation: spin 8s linear infinite; }
+  .ring::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: #070818; }
+  .core { position: relative; width: 166px; height: 166px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2f5c, #0a0c1e 70%); border: 2px solid rgba(124,92,255,0.5); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 60px rgba(124,92,255,0.35), 0 0 50px rgba(124,92,255,0.25); transition: transform 0.3s ease; }
+  .core .glyph { font-size: 56px; filter: drop-shadow(0 0 18px rgba(79,209,255,0.7)); }
+  .generator-wrap.charging .ring { animation-duration: 1s; }
+  .generator-wrap.charging .core { animation: pulse 0.8s ease-in-out infinite; border-color: #4fd1ff; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .countdown { position: absolute; font-size: 84px; font-weight: 800; color: #fff; text-shadow: 0 0 30px #4fd1ff, 0 0 60px #6d4dff; display: none; }
+  .generator-wrap.charging .glyph { display: none; }
+  .generator-wrap.charging .countdown { display: block; }
+  .gen-level-tag { margin-bottom: 8px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; }
+  .gen-level-tag b { color: #b98bff; }
+  .gen-luck { font-size: 12px; color: #6fd8ff; margin-bottom: 16px; }
+  .gen-luck b { color: #4fd1ff; }
+  #gen { font-family: inherit; font-size: 16px; font-weight: 800; letter-spacing: 1.5px; padding: 14px 44px; border: none; border-radius: 14px; color: #fff; cursor: pointer; background: linear-gradient(135deg, #6d4dff, #b14dff); box-shadow: 0 12px 34px rgba(124,92,255,0.5); transition: transform 0.15s, box-shadow 0.25s; }
+  #gen:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); }
+  #gen:disabled { opacity: 0.55; cursor: not-allowed; }
+  #last { margin-top: 16px; min-height: 34px; font-size: 20px; font-weight: 800; color: #4fd1ff; opacity: 0; transform: scale(0.8); text-shadow: 0 0 24px rgba(79,209,255,0.8); }
+  #last.show { animation: reveal 0.5s cubic-bezier(0.2,1.5,0.4,1) forwards; }
+  @keyframes reveal { to { opacity: 1; transform: scale(1); } }
+
+  /* upgrades */
+  .upgrade-card { width: min(460px, 92vw); border-radius: 18px; padding: 4px; background: linear-gradient(135deg, rgba(124,92,255,0.6), rgba(177,77,255,0.4)); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .upgrade-inner { background: #0b0d1d; border-radius: 15px; padding: 22px 24px; display: flex; flex-direction: column; align-items: center; }
+  .upgrade-head { display: flex; align-items: center; gap: 16px; width: 100%; margin-bottom: 16px; }
+  .mini-badge { width: 62px; height: 62px; border-radius: 50%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 35% 30%, #2a2f5c, #0a0c1e 70%); border: 2px solid #6d4dff; box-shadow: 0 0 25px rgba(124,92,255,0.5); }
+  .mini-badge .num { font-size: 21px; font-weight: 800; color: #fff; text-shadow: 0 0 12px #b14dff; line-height: 1; }
+  .mini-badge .lbl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; margin-top: 2px; }
+  .upgrade-info { flex: 1; }
+  .upgrade-info .title { font-weight: 800; font-size: 16px; }
+  .upgrade-info .effect { font-size: 13px; color: #8b93bd; }
+  .upgrade-info .effect b { color: #4fd1ff; }
+  .progress { width: 100%; height: 12px; border-radius: 20px; background: rgba(255,255,255,0.07); overflow: hidden; margin: 4px 0 10px; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 20px; background: linear-gradient(90deg, #7bdc78, #b98bff, #ffb648); transition: width 0.4s ease; }
+  .buy { width: 100%; font-family: inherit; font-size: 15px; font-weight: 700; padding: 14px; border: none; border-radius: 12px; color: #fff; cursor: pointer; background: linear-gradient(135deg, #7bdc78, #4fd1ff); box-shadow: 0 8px 24px rgba(123,220,120,0.35); transition: transform 0.15s, opacity 0.2s; }
+  .buy:hover:not(:disabled) { transform: translateY(-2px); }
+  .buy:disabled { opacity: 0.45; cursor: not-allowed; }
+  .buy.maxed { background: linear-gradient(135deg, #ffb648, #ff5c8a); opacity: 1; }
+  .progress-label { font-size: 13px; color: #7a82a8; margin-bottom: 14px; text-align: center; }
+
+  /* inventory + bazaar lists */
+  .inv-head { display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; margin-bottom: 8px; gap: 12px; flex-wrap: wrap; }
+  .inv-head h2 { margin: 0; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; }
+  .inv-worth { font-size: 13px; color: #7bdc78; font-weight: 700; }
+  ul.list { list-style: none; margin: 0; padding: 0; width: 100%; max-height: 340px; overflow-y: auto; scrollbar-width: thin; }
+  ul.list li { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; gap: 10px; border-radius: 8px; animation: rowIn 0.25s ease; }
+  ul.list li:hover { background: rgba(124,92,255,0.12); }
+  @keyframes rowIn { from { opacity: 0; transform: translateX(8px); } }
+  .item-left { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .item-name { font-weight: 700; font-size: 14px; }
+  .rarity { align-self: flex-start; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 2px 10px; border-radius: 12px; }
+  .item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .item-count { font-weight: 700; font-size: 13px; color: #8b93bd; }
+  .item-value { font-weight: 700; font-size: 13px; color: #7bdc78; min-width: 52px; text-align: right; }
+  .sell-btn, .mini-btn { font-family: inherit; font-size: 12px; font-weight: 700; padding: 6px 14px; border: none; border-radius: 8px; color: #fff; cursor: pointer; background: linear-gradient(135deg, #7bdc78, #4fd1ff); transition: transform 0.15s; }
+  .sell-btn:hover, .mini-btn:hover { transform: translateY(-1px); }
+  .mini-btn.orange { background: linear-gradient(135deg, #ffb648, #ff8c42); }
+  .mini-btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); }
+  .empty { color: #5a6188; justify-content: center; font-style: italic; text-align: center; padding: 20px !important; }
+
+  /* sell form rows */
+  .sell-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
+  .sell-row .item-left { flex: 1; }
+  .sell-row input { width: 78px; font-family: inherit; font-size: 13px; padding: 7px 10px; border-radius: 8px; color: #fff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); outline: none; }
+  .sell-row input:focus { border-color: #6d4dff; }
+  .sell-row label { font-size: 10px; color: #8b93bd; text-transform: uppercase; letter-spacing: 1px; display: block; }
+  .sell-field { display: flex; flex-direction: column; gap: 3px; }
+
+  /* achievements */
+  #achList { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; list-style: none; margin: 0; padding: 0; }
+  .ach { background: #0b0d1d; border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.07); }
+  .ach.done { border-color: rgba(255,182,72,0.55); box-shadow: 0 0 22px rgba(255,182,72,0.2); background: linear-gradient(160deg, #191226, #0b0d1d); }
+  .ach.done .ach-name { color: #ffb648; }
+  .ach .ach-name { font-weight: 700; font-size: 13px; color: #8b93bd; }
+  .ach .ach-desc { font-size: 11px; color: #5a6188; margin-top: 3px; }
+  .ach .ach-reward { font-size: 11px; color: #7bdc78; font-weight: 700; margin-top: 6px; }
+
+  /* tutorial - bottom-left so it never covers the generator GUI */
+  #tutorial {
+    position: fixed; left: 16px; bottom: 16px; z-index: 40;
+    width: min(320px, 84vw); background: rgba(9,11,26,0.95);
+    border: 1px solid rgba(79,209,255,0.4); border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 14px 50px rgba(0,0,0,0.6), 0 0 34px rgba(79,209,255,0.15);
+    transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+  }
+  #tutorial.hidden { opacity: 0; transform: translateY(14px) scale(0.97); }
+  #tutTitle { font-weight: 800; font-size: 13px; letter-spacing: 1px; color: #4fd1ff; }
+  #tutText { font-size: 13px; color: #c3c8e6; margin-top: 5px; line-height: 1.45; }
+  #tutDots { display: flex; gap: 5px; margin-top: 10px; }
+  #tutDots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.18); transition: all 0.25s; }
+  #tutDots i.on { background: #4fd1ff; box-shadow: 0 0 10px #4fd1ff; transform: scale(1.15); }
+  .tut-focus { outline: 3px solid #4fd1ff !important; outline-offset: 5px; border-radius: 12px; }
+
+  /* transition */
+  #transition { position: fixed; inset: 0; z-index: 55; pointer-events: none; opacity: 0; transition: opacity 0.25s ease; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 45%, rgba(79,209,255,0.3), rgba(5,6,15,0.94)); font-size: clamp(30px, 7vw, 70px); font-weight: 800; letter-spacing: 10px; color: #fff; text-shadow: 0 0 34px #4fd1ff, 0 0 80px #6d4dff; }
+  #transition.on { opacity: 1; }
+
+  /* toasts / floaters / confetti */
+  #toasts { position: fixed; top: 78px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 10px; align-items: center; pointer-events: none; }
+  .toast { background: rgba(13,15,32,0.94); border: 1px solid rgba(124,92,255,0.6); border-radius: 14px; padding: 11px 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6); animation: toastIn 0.4s cubic-bezier(0.2,1.4,0.4,1); }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.85); } }
+  .toast .t-title { font-weight: 800; font-size: 15px; }
+  .toast .t-desc { font-size: 12px; color: #b9bfe0; margin-top: 2px; }
+  .toast .t-reward { font-size: 12px; color: #7bdc78; font-weight: 700; margin-top: 3px; }
+  .float { position: fixed; z-index: 200; font-weight: 800; font-size: 19px; pointer-events: none; animation: floatUp 1.1s ease forwards; text-shadow: 0 0 12px rgba(0,0,0,0.6); }
+  @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%,0) scale(0.6); } 12% { opacity: 1; transform: translate(-50%,-16px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%,-84px) scale(1); } }
+  #confettiLayer { position: fixed; inset: 0; pointer-events: none; z-index: 300; overflow: hidden; }
+  .confetti { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: confettiFly 1.2s ease-out forwards; }
+  @keyframes confettiFly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
 </style>
 </head>
 <body>
-<div class="auth-overlay" id="authOverlay"><div class="auth-card"><h1><span>VAULT</span>ORIA</h1><p class="muted">Build your vault. Enter the Warzone. Claim the unknown.</p><div class="form"><input id="authUsername" maxlength="18" placeholder="Username" autocomplete="username"><input id="authPassword" type="password" placeholder="Password (6+ characters)" autocomplete="current-password"><div class="row"><button class="primary" id="loginBtn">Login</button><button id="registerBtn">Create account</button></div><div id="authError" class="auth-error"></div></div><small class="muted">Your profile, inventory, sessions, and Bazaar data are saved in Neon.</small></div></div>
-<div class="toast-area" id="toastArea"></div>
-<div class="wrap">
-<header class="topbar"><div class="brand"><span>VAULT</span>ORIA <small class="muted">/ RIFTBOUND</small></div><div class="top-right"><span class="pill"><span class="online-dot"></span><span id="connection">Connecting</span></span><span class="pill">◈ <b id="topCash">0</b> credits</span><span class="pill" id="playerName">Guest</span><button class="small danger" id="logoutBtn">Log out</button></div></header>
-<div class="layout"><aside class="sidebar"><nav class="nav" id="nav"><button class="active" data-view="world">◉ &nbsp;World</button><button data-view="vault">⬡ &nbsp;Vault</button><button data-view="inventory">▣ &nbsp;Inventory</button><button data-view="bazaar">⇄ &nbsp;Bazaar</button><button data-view="crafting">⚒ &nbsp;Crafting</button><button data-view="leaderboard">♜ &nbsp;Leaders</button></nav><div class="side-note">A shared universe, split into rooms of up to 8 explorers. The central diamond is a PvP zone.</div></aside>
-<main class="main">
-<section class="view active" id="view-world"><div class="section-head"><div><h1>Shared Rift</h1><div class="muted">Explore the lobby, find your portal, and risk it all in the Warzone.</div></div><div class="pill">Room <b id="roomName">—</b></div></div><div class="event-banner"><div><strong id="eventName">Quiet Markets</strong><div id="eventDescription" class="muted">Waiting for the world's next event.</div></div><span class="gold">GLOBAL EVENT</span></div><div class="panel world-panel"><div class="canvas-wrap"><canvas id="worldCanvas" width="1200" height="760"></canvas><div class="world-hint">Move: WASD / Arrows &nbsp; • &nbsp; Face an opponent, attack: Space</div></div></div><p class="footer-note">Your movement is validated and synchronized by the server. Defeated Warzone players lose 10% of carried credits and one random item.</p></section>
-<section class="view" id="view-vault"><div class="section-head"><div><h1>Your Vault</h1><div class="muted">Upgrade your sanctuary and power its generator.</div></div></div><div class="stats"><div class="stat"><small>Vault level</small><strong id="vaultLevel">1</strong></div><div class="stat"><small>Security</small><strong id="security">1</strong></div><div class="stat"><small>Ascensions</small><strong id="ascensions">0</strong></div><div class="stat"><small>Offline cache</small><strong id="cache">0 ◈</strong></div></div><div class="grid"><article class="card"><h3>Generator</h3><p>Roll the 10-tier rarity table. Higher vault levels and ascensions improve your odds.</p><p>Next activation: <b class="gold" id="generatorCost">42 credits</b></p><button class="primary" id="generateBtn">Activate Generator</button></article><article class="card"><h3>Vault upgrades</h3><p id="upgradeDescription">Raise your vault's level and permanent security.</p><p>Upgrade cost: <b class="gold" id="upgradeCost">250 credits</b></p><button id="upgradeBtn">Upgrade Vault</button><hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><p>Level 10 breakthrough resets your level, raises security, and improves generator odds.</p><button class="danger" id="ascendBtn">Ascend · 5,000 credits</button></article></div><article class="card" style="margin-top:14px"><h3>Rarity matrix</h3><p>Common 55% · Uncommon 23% · Rare 11% · Epic 5% · Legendary 2.8% · Mythic 1.5% · Divine 0.8% · Celestial 0.45% · Eternal 0.25% · Omniversal 0.2%</p></article></section>
-<section class="view" id="view-inventory"><div class="section-head"><div><h1>Inventory</h1><div class="muted">Items you carry can be traded, crafted, or risked in the Warzone.</div></div><button class="small" id="buyKeyBtn">Buy Breach Key · 250 ◈</button></div><div id="inventoryItems" class="inventory-grid"></div><p class="footer-note">A Breach Key can be used below. The server selects a random online vault and never reveals its identity to the attacker.</p></section>
-<section class="view" id="view-bazaar"><div class="section-head"><div><h1>The Bazaar</h1><div class="muted">Fixed-price item listings and escrow-backed player buy orders.</div></div></div><div class="grid"><article class="card"><h3>Sell an item</h3><div class="form"><select id="sellItem"></select><input id="sellPrice" type="number" min="1" placeholder="Price in credits"><button class="primary" id="listItemBtn">List item</button></div><p>Listed items are held in secure market escrow until sale or cancellation.</p></article><article class="card"><h3>Place a buy order</h3><div class="form"><select id="orderItem"></select><input id="orderQuantity" type="number" min="1" max="20" value="1" placeholder="Quantity"><input id="orderPrice" type="number" min="1" placeholder="Per-item bounty"><button id="placeOrderBtn">Place order</button></div><p>Credits are held in escrow; unused funds return when your order fills or is cancelled.</p></article></div><article class="card" style="margin-top:14px"><h3>Open item listings</h3><div id="listings"></div></article><article class="card" style="margin-top:14px"><h3>Open buy orders</h3><div id="orders"></div></article></section>
-<section class="view" id="view-crafting"><div class="section-head"><div><h1>Crafting & Breaches</h1><div class="muted">Combine components into high-tier assets or test another vault's defenses.</div></div></div><div class="grid"><article class="card"><h3>Eternal Reactor recipe</h3><div class="recipe">3 × Common Scrap<br>2 × Uncommon Core<br><span class="muted">Crafting Holiday reduces the Scrap requirement to 2.</span></div><p>Components are consumed only when the server validates the full recipe.</p><button class="primary" id="craftBtn">Craft Eternal Reactor</button></article><article class="card"><h3>Blind vault breach</h3><p>Buy a Breach Key from Inventory. The server randomly chooses an online target and resolves offense against vault security.</p><p class="muted">Target identity stays hidden to reduce targeted harassment.</p><button class="danger" id="breachBtn">Use a Breach Key</button></article></div><article class="card" style="margin-top:14px"><h3>World events</h3><p id="eventDetail">Events periodically change generator prices or crafting recipes for every room.</p></article></section>
-<section class="view" id="view-leaderboard"><div class="section-head"><div><h1>Hall of Ascendants</h1><div class="muted">Server-wide progression rankings.</div></div><button class="small" id="refreshLeaders">Refresh</button></div><article class="card"><div id="leaderboard"></div></article></section>
-</main></div></div>
-<script src="/socket.io/socket.io.js"></script>
+  <canvas id="game"></canvas>
+
+  <!-- ============ AUTH ============ -->
+  <div id="authScreen" class="screen">
+    <div class="auth-card">
+      <div class="brand">VAULTORIA</div>
+      <div class="brand-sub">Hoard &middot; Trade &middot; Rule</div>
+      <div class="auth-tabs">
+        <button id="tabLogin" class="auth-tab active" type="button">Sign In</button>
+        <button id="tabRegister" class="auth-tab" type="button">Register</button>
+      </div>
+      <form id="authForm" autocomplete="on">
+        <label>Username
+          <input id="authUser" maxlength="20" autocomplete="username" placeholder="keeper name">
+        </label>
+        <label>Password
+          <input id="authPass" type="password" autocomplete="current-password" placeholder="at least 4 characters">
+        </label>
+        <div class="err" id="authError"></div>
+        <button type="submit" id="authSubmit" class="btn big">Sign In</button>
+      </form>
+      <div class="auth-note">No email required &mdash; just a username and password.</div>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div id="dashScreen" class="screen hidden">
+    <div class="dash-top">
+      <div class="brand small">VAULTORIA</div>
+      <div class="dash-user">
+        <span class="chip money" id="dashMoney">$0</span>
+        <span class="chip level" id="dashLevel">Lv 1</span>
+        <span class="who" id="dashWho"></span>
+        <button id="logoutBtn" class="btn ghost" type="button">Log Out</button>
+      </div>
+    </div>
+    <div class="dash-grid">
+      <button class="dash-card play-card" id="playBtn" type="button">
+        <div class="dc-icon">&#9654;</div>
+        <div class="dc-title">Play</div>
+        <div class="dc-desc">Jump straight into an open world and start hoarding.</div>
+      </button>
+      <button class="dash-card" id="serversBtn" type="button">
+        <div class="dc-icon">&#9635;</div>
+        <div class="dc-title">Servers</div>
+        <div class="dc-desc">Browse open worlds or create your own. 8 keepers per world.</div>
+      </button>
+      <button class="dash-card" id="friendsBtn" type="button">
+        <div class="dc-icon">&#10022;</div>
+        <div class="dc-title">Friends</div>
+        <div class="dc-desc">Add other keepers and see who is online.</div>
+      </button>
+    </div>
+    <div id="dashPanel" class="dash-panel hidden"></div>
+  </div>
+
+  <!-- ============ GAME ============ -->
+  <div id="gameHud" class="hidden">
+    <div class="hud-bar">
+      <div class="hud-left">
+        <span class="chip money">$<span id="hudMoney">0</span></span>
+        <span class="chip level">Lv <span id="hudLevel">1</span></span>
+      </div>
+      <div class="hud-center">
+        <span id="hudServer">World</span>
+        <span class="dot"></span>
+        <span id="hudOnline">1 / 8 online</span>
+      </div>
+      <div class="hud-right">
+        <button class="hud-btn primary" id="vaultBtn" type="button">Vault</button>
+        <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
+        <button class="hud-btn" id="leaveBtn" type="button">Leave</button>
+      </div>
+    </div>
+    <div id="zone">WORLD</div>
+    <div id="hint">WASD / Arrows to walk &middot; E to open your vault</div>
+    <div id="chatBox">
+      <div id="chatLog"></div>
+      <form id="chatForm"><input id="chatInput" maxlength="140" autocomplete="off" placeholder="Say something..."></form>
+    </div>
+  </div>
+
+  <!-- Vault modal -->
+  <div id="vaultModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">Your Vault</div>
+        <div class="resource-bar">
+          <span class="icon">$</span><span class="label">Money</span><span class="value" id="money">$0</span>
+        </div>
+        <button class="x" data-close="vaultModal" type="button">&times;</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="generator" type="button">Generator</button>
+        <button class="tab" data-tab="upgrades" type="button">Upgrades</button>
+        <button class="tab" data-tab="inventory" type="button">Inventory</button>
+        <button class="tab" data-tab="achievements" type="button">Achievements</button>
+      </div>
+
+      <div id="panel-generator" class="panel active">
+        <div class="generator-wrap" id="generator">
+          <div class="ring"></div>
+          <div class="core">
+            <span class="glyph">&#9670;</span>
+            <span class="countdown" id="countdown">3</span>
+          </div>
+        </div>
+        <div class="gen-level-tag">Generator Level <b id="genLevel">1</b></div>
+        <div class="gen-luck">Legendary+ luck: <b id="luckDisplay">0%</b></div>
+        <button id="gen" type="button">GENERATE ITEM</button>
+        <div id="last"></div>
+      </div>
+
+      <div id="panel-upgrades" class="panel">
+        <div class="upgrade-card">
+          <div class="upgrade-inner">
+            <div class="upgrade-head">
+              <div class="mini-badge"><span class="num" id="badgeLevel">1</span><span class="lbl">Level</span></div>
+              <div class="upgrade-info">
+                <div class="title">Generator Level</div>
+                <div class="effect">Raises sell value x<b id="itemMult">1</b> &amp; rare luck</div>
+              </div>
+            </div>
+            <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-label" id="progressLabel">$0 / $10 to Level 2</div>
+            <button class="buy" id="genBuy" type="button">Upgrade to Level 2 &mdash; $10</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-inventory" class="panel">
+        <div class="inv-head">
+          <h2>Inventory</h2>
+          <span class="inv-worth" id="invWorth">Worth: $0</span>
+          <button id="sellAll" class="sell-btn" type="button">Sell All</button>
+        </div>
+        <ul class="list" id="items"><li class="empty">Nothing yet...<br>Generate items and sell them here.</li></ul>
+      </div>
+
+      <div id="panel-achievements" class="panel">
+        <ul id="achList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bazaar modal -->
+  <div id="bazaarModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <div class="modal-title">The Bazaar</div>
+        <div class="resource-bar"><span class="icon">$</span><span class="label">Money</span><span class="value" id="bMoney">$0</span></div>
+        <button class="x" data-close="bazaarModal" type="button">&times;</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-btab="browse" type="button">Browse Listings</button>
+        <button class="tab" data-btab="sell" type="button">Sell Items</button>
+      </div>
+      <div id="bpanel-browse" class="panel active">
+        <ul class="list" id="browseList"><li class="empty">Loading bazaar...</li></ul>
+      </div>
+      <div id="bpanel-sell" class="panel">
+        <ul class="list" id="sellList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="tutorial" class="hidden">
+    <div id="tutTitle">WELCOME TO VAULTORIA</div>
+    <div id="tutText"></div>
+    <div id="tutDots"></div>
+  </div>
+
+  <div id="transition"></div>
+  <div id="toasts"></div>
+  <div id="confettiLayer"></div>
+
 <script>
-const socket = io();
+'use strict';
+
+/* =============================================================
+ * DATA
+ * ============================================================= */
+const RARITIES = [
+  { key: 'common',    name: 'Common',    color: '#9aa0b4', base: 4,      weight: 1000 },
+  { key: 'uncommon',  name: 'Uncommon',  color: '#5cd66b', base: 15,     weight: 300 },
+  { key: 'rare',      name: 'Rare',      color: '#4fa8ff', base: 80,     weight: 80 },
+  { key: 'epic',      name: 'Epic',      color: '#b15cff', base: 600,    weight: 20 },
+  { key: 'legendary', name: 'Legendary', color: '#ffb648', base: 7000,   weight: 5 },
+  { key: 'mythic',    name: 'Mythic',    color: '#ff4fb0', base: 100000, weight: 1 }
+];
+const ITEMS_BY_RARITY = {
+  common: ["Rotten Tomato","Floppy Disk","Used Toenail","Wet Sock","Broken Umbrella","Expired Yogurt","Chewed Pencil","Soggy Cardboard","Cracked Mug","Dull Scissors","Moldy Bread","Bent Paperclip","Dead Battery","Torn Sponge","Singed Hairball","Sticky Penny","Smashed Earwig","Empty Lighter","Rusty Nail","Clipped Nail","Dried Gum","Tangled Earbuds","Leaky Pen","Stale Chip","Wilted Lettuce","Balding Mop","Chipped Plate","Frayed Shoelace"],
+  uncommon: ["Damp Towel","Half a Sticker","Bent Key","Chipped DVD","Loose Button","Stale Tuna Sandwich","Questionable Sock","Slightly Used Diaper","Warped Record","Freeze-Dried Banana"],
+  rare: ["Vintage Floppy Disk","Collectible Pringle","Autographed Sock","Antique Dust","Shiny Hubcap","First Edition Napkin","Haunted Sock","Limited Soggy Cardboard"],
+  epic: ["Golden Banana Peel","Cursed Toenail Clipper","Mystic Mayo Jar","Sentient Mold","Royal Cheese Rind","Enchanted Plastic Fork"],
+  legendary: ["The Holy Toaster","Certified Mold Cheese","Singularity Bell","Pope's Old Lighter","Relic VHS Tape","Demon Coffee Mug"],
+  mythic: ["The Vaultoria Crown","Egg of Nefarious","Sacred Trash King","Index of All Items"]
+};
+const MAX_LEVEL = 100;
+const SUF = ["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","UDc","DDc","TDc","QaDc","QiDc","SxDc"];
+const GEN_TIME = 3000;
+const SERVER_CAPACITY = 8;
+
+const SLOT_COLORS = ['#4fd1ff','#b14dff','#ff5c8a','#ffb648','#7bdc78','#ff8c42','#5c8cff','#ff4fd8'];
+const VAULT_POS = [
+  { x: 380,  y: 300 },  { x: 1050, y: 300 },  { x: 1720, y: 300 },  { x: 2390, y: 300 },
+  { x: 380,  y: 1400 }, { x: 1050, y: 1400 }, { x: 1720, y: 1400 }, { x: 2390, y: 1400 }
+];
+const WORLD_W = 2800, WORLD_H = 1700, WALL = 24, SPAWN = { x: 1400, y: 850 };
+
+/* =============================================================
+ * HELPERS / STATE
+ * ============================================================= */
 const $ = id => document.getElementById(id);
-let username = localStorage.getItem('vaultoria.username') || '';
-let token = localStorage.getItem('vaultoria.token') || '';
-let gameState = null;
-let remotePlayers = [];
-const held = new Set();
-const canvas = $('worldCanvas');
-const ctx = canvas.getContext('2d');
-let localPosition = { x: 80, y: 80 };
-let lastFrame = 0;
-
-function toast(text, kind='info') {
-  const node = document.createElement('div'); node.className = `toast ${kind}`; node.textContent = text;
-  $('toastArea').appendChild(node); setTimeout(() => node.remove(), 4200);
+function fmt(n) {
+  n = Math.floor(Number(n) || 0);
+  if (n < 1000) return '' + n;
+  let i = 0;
+  while (n >= 1000 && i < SUF.length - 1) { n /= 1000; i++; }
+  if (n >= 100) return n.toFixed(0) + SUF[i];
+  if (n >= 10) return n.toFixed(1) + SUF[i];
+  return n.toFixed(2) + SUF[i];
 }
-function authSubmit(mode) {
-  const name = $('authUsername').value.trim(); const password = $('authPassword').value;
+const itemMult = () => Math.pow(1.35, state.level - 1);
+const genCost = () => Math.floor(10 * Math.pow(1.1, state.level - 1));
+function rarityWeights() { return RARITIES.map(r => r.weight); }
+function pickRarity() {
+  const ws = rarityWeights();
+  let r = Math.random() * ws.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < ws.length; i++) { r -= ws[i]; if (r <= 0) return RARITIES[i]; }
+  return RARITIES[RARITIES.length - 1];
+}
+function rarityFor(name) {
+  for (const r of RARITIES) if (ITEMS_BY_RARITY[r.key].indexOf(name) !== -1) return r;
+  return RARITIES[0];
+}
+function itemValue(rar) { return rar.base * itemMult(); }
+function legendaryLuck() {
+  const ws = rarityWeights();
+  return ((ws[4] + ws[5]) / ws.reduce((a, b) => a + b, 0) * 100).toFixed(2);
+}
+
+let token = localStorage.getItem('vaultoria_token') || null;
+let me = null;
+let state = null;
+let inGame = false;
+let currentServer = null;
+let mySlot = -1;
+let members = [];
+const others = {};
+let ws = null;
+let wsTimer = null;
+let saveTimer = null;
+let hideTimeout = null;
+let salesCount = 0;
+let bazaarOpened = false;
+let vaultOpen = false;
+let generating = false;
+let genEnd = 0;
+let tutorialDone = false;
+let tutIdx = 0;
+let lastTutRender = -1;
+let tutTimer = null;
+
+/* =============================================================
+ * FX
+ * ============================================================= */
+let actx = null;
+function ac() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return actx; }
+function tone(freq, dur, type, vol, when, slide) {
+  const c = ac(); if (!c) return;
+  const t = c.currentTime + (when || 0);
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+  g.gain.setValueAtTime(vol || 0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+function sfxGen(r) { const b = [220,330,440,550,660,880][Math.min(r,5)]; tone(b,0.08,'square',0.05); tone(b*1.5,0.1,'square',0.04,0.06); if(r>=3)tone(b*2,0.15,'triangle',0.08,0.03); if(r>=4){tone(b*2.5,0.18,'sine',0.1,0.12);tone(b*3.5,0.22,'sine',0.09,0.24);} }
+function sfxSell() { tone(880,0.05,'square',0.06); tone(1318,0.1,'square',0.05,0.06); tone(1760,0.12,'square',0.04,0.12); }
+function sfxBuy() { tone(500,0.1,'triangle',0.1); tone(740,0.12,'triangle',0.1,0.08); tone(1000,0.2,'triangle',0.1,0.16); }
+function sfxToast() { tone(660,0.12,'sine',0.12); tone(990,0.2,'sine',0.1,0.1); }
+function sfxDoor() { tone(180,0.25,'sawtooth',0.06,0,90); tone(240,0.18,'sine',0.05,0.05); }
+function sfxStep() { tone(90,0.06,'triangle',0.02); }
+
+function float(x, y, text, color) {
+  const el = document.createElement('div');
+  el.className = 'float'; el.textContent = text;
+  el.style.left = (x - 6) + 'px'; el.style.top = y + 'px'; el.style.color = color || '#7bdc78';
+  document.body.appendChild(el); setTimeout(() => el.remove(), 1200);
+}
+function burst(x, y, rar) {
+  const layer = $('confettiLayer');
+  const colors = [rar.color, '#fff', '#4fd1ff', '#ffb648'];
+  for (let i = 0; i < 44; i++) {
+    const c = document.createElement('div'); c.className = 'confetti';
+    c.style.left = x + 'px'; c.style.top = y + 'px'; c.style.background = colors[i % colors.length];
+    c.style.setProperty('--dx', (Math.random() * 2 - 1) * 170 + 'px');
+    c.style.setProperty('--dy', (-60 - Math.random() * 170) + 'px');
+    c.style.setProperty('--rot', (Math.random() * 760 - 380) + 'deg');
+    c.style.animationDuration = (0.9 + Math.random() * 1.1) + 's';
+    layer.appendChild(c); setTimeout(() => c.remove(), 2100);
+  }
+}
+function toast(title, desc, reward, color) {
+  const box = $('toasts');
+  const el = document.createElement('div'); el.className = 'toast';
+  el.innerHTML = '<div class="t-title" style="color:' + (color || '#ffb648') + '">' + title + '</div>' +
+    (desc ? '<div class="t-desc">' + desc + '</div>' : '') +
+    (reward ? '<div class="t-reward">+' + reward + '</div>' : '');
+  box.appendChild(el);
+  while (box.children.length > 4) box.removeChild(box.firstChild);
+  setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = 0; setTimeout(() => el.remove(), 420); }, 3200);
+}
+
+/* =============================================================
+ * API
+ * ============================================================= */
+async function api(path, opts) {
+  opts = opts || {};
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch('/api' + path, Object.assign({}, opts, { headers }));
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) { const err = new Error(data.error || ('Request failed (' + res.status + ')')); err.status = res.status; throw err; }
+  return data;
+}
+
+/* =============================================================
+ * SCREENS
+ * ============================================================= */
+function showScreen(name) {
+  $('authScreen').classList.toggle('hidden', name !== 'auth');
+  $('dashScreen').classList.toggle('hidden', name !== 'dash');
+  $('gameHud').classList.toggle('hidden', name !== 'game');
+  inGame = (name === 'game');
+  if (name !== 'game') closeAllModals();
+}
+
+/* =============================================================
+ * AUTH
+ * ============================================================= */
+let authMode = 'login';
+$('tabLogin').addEventListener('click', () => setAuthMode('login'));
+$('tabRegister').addEventListener('click', () => setAuthMode('register'));
+function setAuthMode(m) {
+  authMode = m;
+  $('tabLogin').classList.toggle('active', m === 'login');
+  $('tabRegister').classList.toggle('active', m === 'register');
+  $('authSubmit').textContent = m === 'login' ? 'Sign In' : 'Create Account';
+  $('authPass').setAttribute('autocomplete', m === 'login' ? 'current-password' : 'new-password');
   $('authError').textContent = '';
-  socket.emit(`auth:${mode}`, { username: name, password }, response => {
-    if (!response?.ok) $('authError').textContent = response?.message || 'Could not authenticate.';
-  });
 }
-$('loginBtn').onclick = () => authSubmit('login');
-$('registerBtn').onclick = () => authSubmit('register');
-$('authPassword').addEventListener('keydown', event => { if (event.key === 'Enter') authSubmit('login'); });
-$('logoutBtn').onclick = () => { localStorage.removeItem('vaultoria.token'); localStorage.removeItem('vaultoria.username'); location.reload(); };
-socket.on('connect', () => {
-  $('connection').textContent = 'Online';
-  if (token) socket.emit('auth:resume', { token });
-});
-socket.on('disconnect', () => $('connection').textContent = 'Reconnecting');
-socket.on('auth:error', data => { token = ''; localStorage.removeItem('vaultoria.token'); $('authOverlay').classList.remove('hidden'); $('authError').textContent = data.message; });
-socket.on('auth:success', data => {
-  username = data.username; token = data.token;
-  localStorage.setItem('vaultoria.username', username); localStorage.setItem('vaultoria.token', token);
-  $('playerName').textContent = username; $('authOverlay').classList.add('hidden');
-  if (data.offlineCache) toast(`Offline cache earned ${data.offlineCache} credits.`, 'success');
-});
-socket.on('notice', data => toast(data.text, data.kind));
-socket.on('game:state', data => { gameState = data; remotePlayers = data.players || []; updateUI(); });
-socket.on('world:players', data => {
-  remotePlayers = data || [];
-  const self = remotePlayers.find(player => player.username === username);
-  if (self) {
-    localPosition.x += (self.x - localPosition.x) * 0.35;
-    localPosition.y += (self.y - localPosition.y) * 0.35;
+$('authForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const username = $('authUser').value.trim();
+  const password = $('authPass').value;
+  $('authError').textContent = '';
+  if (!username || !password) { $('authError').textContent = 'Enter a username and password'; return; }
+  $('authSubmit').disabled = true;
+  try {
+    const data = await api('/' + (authMode === 'login' ? 'login' : 'register'), {
+      method: 'POST', body: JSON.stringify({ username, password })
+    });
+    token = data.token; localStorage.setItem('vaultoria_token', token);
+    me = data.user;
+    await loadMe();
+    $('authPass').value = '';
+    toast('WELCOME', 'Signed in as ' + me.username, null, '#4fd1ff');
+  } catch (err) {
+    $('authError').textContent = err.message;
+  } finally {
+    $('authSubmit').disabled = false;
   }
-  drawWorld();
 });
-socket.on('market:update', data => { if (gameState) gameState.market = data; renderMarket(data); });
-socket.on('event:update', data => { if (gameState) gameState.event = data; renderEvent(data); });
-socket.on('leaderboard:data', renderLeaderboard);
 
-$('nav').addEventListener('click', event => {
-  const button = event.target.closest('[data-view]'); if (!button) return;
-  document.querySelectorAll('.nav button').forEach(node => node.classList.toggle('active', node === button));
-  document.querySelectorAll('.view').forEach(node => node.classList.toggle('active', node.id === `view-${button.dataset.view}`));
-  if (button.dataset.view === 'leaderboard') socket.emit('leaderboard:get');
-  if (button.dataset.view === 'world') drawWorld();
+async function loadMe() {
+  const data = await api('/me');
+  me = data.user;
+  state = data.state;
+  tutorialDone = !!state.tutorialDone;
+  $('dashPanel').classList.add('hidden');
+  renderDash();
+  renderVault();
+  showScreen('dash');
+}
+
+$('logoutBtn').addEventListener('click', () => {
+  saveNow();
+  token = null; me = null; state = null;
+  localStorage.removeItem('vaultoria_token');
+  disconnectWS();
+  showScreen('auth');
 });
-function updateUI() {
-  if (!gameState) return;
-  const profile = gameState.profile;
-  $('topCash').textContent = profile.cash.toLocaleString(); $('roomName').textContent = gameState.room;
-  $('vaultLevel').textContent = profile.vaultLevel; $('security').textContent = profile.security;
-  $('ascensions').textContent = profile.ascensions; $('cache').textContent = `${profile.cache.toLocaleString()} ◈`;
-  const generatorCost = Math.floor((30 + profile.vaultLevel * 12) * (gameState.event.type === 'surge' ? .8 : gameState.event.type === 'shock' ? 1.2 : 1));
-  $('generatorCost').textContent = `${generatorCost} credits`; $('upgradeCost').textContent = `${profile.vaultLevel * 250} credits`;
-  $('upgradeBtn').disabled = profile.vaultLevel >= 10; $('ascendBtn').disabled = profile.vaultLevel < 10 || profile.cash < 5000;
-  if (gameState.players) remotePlayers = gameState.players;
-  const self = remotePlayers.find(player => player.username === username);
-  if (self) localPosition = { x: self.x, y: self.y };
-  renderInventory(profile.inventory); renderMarket(gameState.market); renderEvent(gameState.event); drawWorld();
-}
-function renderInventory(items=[]) {
-  const container = $('inventoryItems');
-  $('sellItem').innerHTML = '<option value="">Choose inventory item</option>';
-  $('orderItem').innerHTML = Object.entries({Common:['Common Scrap','Copper Shard','Dusty Relic'],Uncommon:['Uncommon Core','Charged Coil','Verdant Sigil'],Rare:['Aether Lens','Prism Fang','Runic Engine'],Epic:['Void Catalyst','Stormheart','Echo Matrix'],Legendary:['Solar Crown','Dragon Circuit','Starforged Gear'],Mythic:['Abyssal Crown','Phoenix Reactor','Worldbreaker'],Divine:['Divine Keystone','Godspark Engine'],Celestial:['Celestial Prism','Astral Singularity'],Eternal:['Eternal Reactor','Timeless Core'],Omniversal:['Omniversal Heart','Origin Engine']}).flatMap(([tier,names])=>names.map(name=>`<option value="${name}">${name} · ${tier}</option>`)).join('');
-  if (!items.length) { container.innerHTML = '<div class="empty">Your inventory is empty. Activate the Vault Generator to find items.</div>'; return; }
-  container.innerHTML = '';
-  items.forEach(item => {
-    const card = document.createElement('div'); card.className = 'item';
-    card.innerHTML = `<div><strong>${escapeHtml(item.name)}</strong><div class="tier ${escapeHtml(item.tier)}">${escapeHtml(item.tier)}</div></div><button class="small" data-breach="${item.id}" ${item.name === 'Breach Key' ? '' : 'disabled'}>Use key</button>`;
-    container.appendChild(card);
-    const option = document.createElement('option'); option.value = item.id; option.textContent = `${item.name} · ${item.tier}`; $('sellItem').appendChild(option);
-  });
-  container.querySelectorAll('[data-breach]').forEach(button => button.onclick = () => socket.emit('breach:launch'));
-}
-function renderMarket(market={listings:[],orders:[]}) {
-  const listings = $('listings'), orders = $('orders'); if (!listings || !orders) return;
-  const visibleListings = market.listings || [], visibleOrders = market.orders || [];
-  listings.innerHTML = visibleListings.length ? `<table class="table"><thead><tr><th>Item</th><th>Tier</th><th>Seller</th><th>Price</th><th></th></tr></thead><tbody>${visibleListings.map(item=>`<tr><td>${escapeHtml(item.item.name)}</td><td>${escapeHtml(item.item.tier)}</td><td>${escapeHtml(item.username)}</td><td>${item.price.toLocaleString()} ◈</td><td>${item.username===username?`<button class="small" data-cancel-listing="${item.id}">Cancel</button>`:`<button class="small primary" data-buy="${item.id}">Buy</button>`}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No items listed yet.</div>';
-  orders.innerHTML = visibleOrders.length ? `<table class="table"><thead><tr><th>Wanted item</th><th>Buyer</th><th>Remaining</th><th>Bounty each</th><th></th></tr></thead><tbody>${visibleOrders.map(order=>`<tr><td>${escapeHtml(order.itemName)}</td><td>${escapeHtml(order.username)}</td><td>${order.remaining}/${order.quantity}</td><td>${order.price.toLocaleString()} ◈</td><td>${order.username===username?`<button class="small" data-cancel-order="${order.id}">Cancel</button>`:''}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No open buy orders.</div>';
-  listings.querySelectorAll('[data-buy]').forEach(button=>button.onclick=()=>socket.emit('market:buy',{id:button.dataset.buy}));
-  listings.querySelectorAll('[data-cancel-listing]').forEach(button=>button.onclick=()=>socket.emit('market:cancel-listing',{id:button.dataset.cancelListing}));
-  orders.querySelectorAll('[data-cancel-order]').forEach(button=>button.onclick=()=>socket.emit('market:cancel-order',{id:button.dataset.cancelOrder}));
-}
-function renderEvent(event={}) { $('eventName').textContent=event.name||'Global event'; $('eventDescription').textContent=event.description||''; $('eventDetail').textContent=`${event.description||''} Global effects apply across all active rooms.`; }
-function renderLeaderboard(rows=[]) {
-  $('leaderboard').innerHTML = rows.length ? `<table class="table"><thead><tr><th>#</th><th>Explorer</th><th>Ascensions</th><th>Vault</th><th>Kills</th><th>Credits</th></tr></thead><tbody>${rows.map((row,index)=>`<tr><td>${index+1}</td><td>${escapeHtml(row.username)}</td><td>${row.ascensions}</td><td>${row.vaultLevel}</td><td>${row.kills}</td><td>${row.cash.toLocaleString()} ◈</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No ranked explorers yet.</div>';
-}
-function escapeHtml(value) { return String(value).replace(/[&<>"']/g, character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character])); }
 
-$('generateBtn').onclick=()=>socket.emit('vault:generate');
-$('upgradeBtn').onclick=()=>socket.emit('vault:upgrade');
-$('ascendBtn').onclick=()=>socket.emit('vault:ascend');
-$('buyKeyBtn').onclick=()=>socket.emit('shop:breach-key');
-$('craftBtn').onclick=()=>socket.emit('craft:reactor');
-$('breachBtn').onclick=()=>socket.emit('breach:launch');
-$('listItemBtn').onclick=()=>socket.emit('market:list',{itemId:$('sellItem').value,price:$('sellPrice').value});
-$('placeOrderBtn').onclick=()=>socket.emit('market:order',{itemName:$('orderItem').value,quantity:$('orderQuantity').value,price:$('orderPrice').value});
-$('refreshLeaders').onclick=()=>socket.emit('leaderboard:get');
-
-function keyDirection(event, down) {
-  const key = event.key.toLowerCase();
-  const map = {arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right'};
-  if (map[key]) { event.preventDefault(); down ? held.add(map[key]) : held.delete(map[key]); }
-  if (down && event.code === 'Space' && !event.repeat) { event.preventDefault(); socket.emit('combat:attack'); }
+/* =============================================================
+ * DASHBOARD
+ * ============================================================= */
+function renderDash() {
+  if (!me) return;
+  $('dashWho').textContent = 'Signed in as ' + me.username;
+  $('dashMoney').textContent = '$' + fmt(state.money);
+  $('dashLevel').textContent = 'Lv ' + state.level;
 }
-window.addEventListener('keydown',event=>keyDirection(event,true));
-window.addEventListener('keyup',event=>keyDirection(event,false));
-window.addEventListener('blur',()=>{held.clear(); socket.emit('move',{});});
-function sendMove() { socket.emit('move',{up:held.has('up'),down:held.has('down'),left:held.has('left'),right:held.has('right')}); }
-function frame(time) {
-  const delta = Math.min((time-lastFrame)/1000||0,.05); lastFrame=time;
-  if (held.size && gameState) {
-    let dx=Number(held.has('right'))-Number(held.has('left')),dy=Number(held.has('down'))-Number(held.has('up'));
-    if(dx&&dy){dx*=Math.SQRT1_2;dy*=Math.SQRT1_2;}
-    localPosition.x=Math.max(20,Math.min(1180,localPosition.x+dx*230*delta));
-    localPosition.y=Math.max(20,Math.min(740,localPosition.y+dy*230*delta));
+function openDashPanel(which) {
+  const p = $('dashPanel');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="spinner">Loading...</div>';
+  if (which === 'servers') renderServersPanel();
+  else if (which === 'friends') renderFriendsPanel();
+}
+$('playBtn').addEventListener('click', play);
+$('serversBtn').addEventListener('click', () => openDashPanel('servers'));
+$('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
+
+async function play() {
+  try {
+    const p = $('dashPanel');
+    p.classList.remove('hidden'); p.innerHTML = '<div class="spinner">Finding an open world...</div>';
+    const { servers } = await api('/servers');
+    let target = servers.find(s => s.members < s.capacity);
+    if (!target && servers.length) target = servers[0];
+    if (!target) {
+      const created = await api('/servers', { method: 'POST', body: JSON.stringify({ name: 'Keepers World' }) });
+      target = created.server;
+    }
+    await enterServer(target.id, target.name);
+  } catch (err) {
+    toast('OOPS', err.message, null, '#ff6b8a');
   }
-  drawWorld(); requestAnimationFrame(frame);
 }
-setInterval(sendMove,50);
-function drawWorld() {
-  if (!ctx) return;
-  const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h);
-  ctx.fillStyle='#0b1422';ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle='rgba(110,145,190,.09)';ctx.lineWidth=1;
-  for(let x=0;x<=w;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
-  for(let y=0;y<=h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-  const portals=gameState?.portals||[{x:80,y:80},{x:600,y:55},{x:1120,y:80},{x:1120,y:380},{x:1120,y:680},{x:600,y:705},{x:80,y:680},{x:80,y:380}];
-  portals.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,28,0,Math.PI*2);ctx.fillStyle='rgba(74,203,200,.11)';ctx.fill();ctx.strokeStyle='#4bcac3';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#86e8e0';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(`VAULT ${i+1}`,p.x,p.y+4);});
-  ctx.beginPath();ctx.moveTo(600,235);ctx.lineTo(845,380);ctx.lineTo(600,525);ctx.lineTo(355,380);ctx.closePath();ctx.fillStyle='rgba(183,57,95,.13)';ctx.fill();ctx.strokeStyle='#e35478';ctx.lineWidth=3;ctx.stroke();
-  ctx.fillStyle='#ff8097';ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillText('WARZONE',600,373);ctx.font='12px system-ui';ctx.fillText('PVP ACTIVE • ENTER AT YOUR OWN RISK',600,396);
-  remotePlayers.forEach(player=>{
-    if(player.username===username)return;
-    ctx.beginPath();ctx.arc(player.x,player.y,16,0,Math.PI*2);ctx.fillStyle=player.inWarzone?'#ff6e88':'#a88bff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
-    ctx.fillStyle='#eaf0ff';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(player.username,player.x,player.y-23);
+
+async function renderServersPanel() {
+  const p = $('dashPanel');
+  try {
+    const { servers } = await api('/servers');
+    let html = '<h3>Open Servers</h3>' +
+      '<div class="inline-form"><input id="newServerName" maxlength="40" placeholder="New world name"><button class="btn green" id="createServerBtn" type="button">Create World</button></div>';
+    if (!servers.length) html += '<div class="empty-note">No open servers yet. Create one!</div>';
+    for (const s of servers) {
+      const full = s.members >= s.capacity;
+      html += '<div class="row"><div><div class="name">' + esc(s.name) + '</div>' +
+        '<div class="meta">' + s.members + ' / ' + s.capacity + ' keepers</div></div>' +
+        '<button class="btn ' + (full ? 'ghost' : 'green') + '" data-join="' + s.id + '" data-name="' + esc(s.name) + '" ' + (full ? 'disabled' : '') + '>' +
+        (full ? 'Full' : 'Join') + '</button></div>';
+    }
+    p.innerHTML = html;
+    p.querySelector('#createServerBtn').addEventListener('click', async () => {
+      const name = (p.querySelector('#newServerName').value || '').trim() || 'My World';
+      try { await api('/servers', { method: 'POST', body: JSON.stringify({ name }) }); renderServersPanel(); }
+      catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+    });
+    p.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => {
+      enterServer(parseInt(b.dataset.join, 10), b.dataset.name);
+    }));
+  } catch (err) {
+    p.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
+  }
+}
+
+async function renderFriendsPanel() {
+  const p = $('dashPanel');
+  try {
+    const data = await api('/friends');
+    let html = '<h3>Friends</h3>' +
+      '<div class="inline-form"><input id="friendName" maxlength="20" placeholder="Add by username"><button class="btn" id="addFriendBtn" type="button">Send Request</button></div>';
+    if (data.incoming.length) {
+      html += '<h3 style="margin-top:18px">Requests to you</h3>';
+      for (const f of data.incoming) {
+        html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div><div class="meta">wants to be friends</div></div>' +
+          '<span><button class="btn green" data-accept="' + f.id + '" type="button">Accept</button> <button class="btn ghost" data-remove="' + f.id + '" type="button">Decline</button></span></div>';
+      }
+    }
+    if (data.outgoing.length) {
+      html += '<h3 style="margin-top:18px">Sent</h3>';
+      for (const f of data.outgoing) {
+        html += '<div class="row"><div class="name">' + esc(f.username) + '</div><span class="pill off">pending</span></div>';
+      }
+    }
+    html += '<h3 style="margin-top:18px">Your Friends</h3>';
+    if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
+    for (const f of data.friends) {
+      html += '<div class="row"><div class="name">' + esc(f.username) + '</div>' +
+        '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + f.id + '" type="button">Remove</button></span></div>';
+    }
+    p.innerHTML = html;
+    p.querySelector('#addFriendBtn').addEventListener('click', async () => {
+      const username = (p.querySelector('#friendName').value || '').trim();
+      try { await api('/friends/request', { method: 'POST', body: JSON.stringify({ username }) }); toast('REQUEST SENT', username, null, '#4fd1ff'); renderFriendsPanel(); }
+      catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+    });
+    p.querySelectorAll('[data-accept]').forEach(b => b.addEventListener('click', async () => {
+      try { await api('/friends/' + b.dataset.accept + '/accept', { method: 'POST' }); renderFriendsPanel(); } catch (e) {}
+    }));
+    p.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', async () => {
+      try { await api('/friends/' + b.dataset.remove, { method: 'DELETE' }); renderFriendsPanel(); } catch (e) {}
+    }));
+  } catch (err) {
+    p.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
+  }
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+/* =============================================================
+ * GAME ENTRY / NETWORK
+ * ============================================================= */
+async function enterServer(sid, name) {
+  try {
+    const r = await api('/servers/' + sid + '/join', { method: 'POST' });
+    mySlot = r.slot;
+    currentServer = { id: sid, name: name || 'World' };
+    state.tutorialDone = tutorialDone;
+    const savedOk = state.px > WALL && state.px < WORLD_W - WALL && state.py > WALL && state.py < WORLD_H - WALL;
+    if (!savedOk || !tutorialDone) { player.x = SPAWN.x; player.y = SPAWN.y; }
+    else { player.x = state.px; player.y = state.py; }
+    showScreen('game');
+    resize();
+    transitionTo(currentServer.name);
+    $('hint').textContent = 'WASD / Arrows to walk \u00b7 E to open your vault';
+    connectWS();
+    refreshTutorial();
+    renderVault();
+    addChat('sys', 'You joined ' + currentServer.name + ' (slot ' + (mySlot + 1) + '/8).');
+  } catch (err) {
+    toast('OOPS', err.message, null, '#ff6b8a');
+  }
+}
+
+function connectWS() {
+  disconnectWS();
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(proto + '://' + location.host + '/ws?token=' + encodeURIComponent(token));
+  ws.addEventListener('open', () => {
+    ws.send(JSON.stringify({ type: 'join', serverId: currentServer.id, x: player.x, y: player.y }));
   });
-  if(gameState){ctx.beginPath();ctx.arc(localPosition.x,localPosition.y,18,0,Math.PI*2);ctx.fillStyle='#58e1db';ctx.shadowColor='#58e1db';ctx.shadowBlur=20;ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='white';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(username,localPosition.x,localPosition.y-25);}
+  ws.addEventListener('message', ev => {
+    let msg; try { msg = JSON.parse(ev.data); } catch (e) { return; }
+    if (msg.type === 'members') onMembers(msg.members);
+    else if (msg.type === 'move') onRemoteMove(msg);
+    else if (msg.type === 'say') addChat('chat', msg.name, msg.text);
+  });
+  ws.addEventListener('close', () => {
+    if (inGame && token) { clearTimeout(wsTimer); wsTimer = setTimeout(connectWS, 1800); }
+  });
+  ws.addEventListener('error', () => {});
 }
+function disconnectWS() {
+  clearTimeout(wsTimer);
+  if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
+  for (const k in others) delete others[k];
+  members = [];
+}
+function wsSend(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+
+function onMembers(list) {
+  members = list;
+  const seen = {};
+  for (const m of list) {
+    seen[m.id] = true;
+    if (m.id === me.id) continue;
+    if (!others[m.id]) {
+      others[m.id] = { id: m.id, username: m.username, slot: m.slot,
+        x: m.x == null ? VAULT_POS[m.slot].x : m.x, y: m.y == null ? VAULT_POS[m.slot].y : m.y,
+        tx: m.x == null ? VAULT_POS[m.slot].x : m.x, ty: m.y == null ? VAULT_POS[m.slot].y : m.y,
+        online: m.online, moving: false, facing: { x: 1, y: 0 }, walk: 0, hue: (m.slot * 47 + 180) % 360 };
+    } else {
+      others[m.id].online = m.online;
+      if (m.x != null) { others[m.id].tx = m.x; others[m.id].ty = m.y; }
+    }
+  }
+  for (const id in others) if (!seen[id]) delete others[id];
+  updateHudMeta();
+}
+function onRemoteMove(msg) {
+  const o = others[msg.id];
+  if (!o) return;
+  o.tx = msg.x; o.ty = msg.y; o.moving = msg.moving; o.facing = msg.facing || o.facing;
+  o.zone = msg.zone || 'world';
+}
+function updateHudMeta() {
+  const online = members.filter(m => m.online).length || (inGame ? 1 : 0);
+  $('hudServer').textContent = currentServer ? currentServer.name : 'World';
+  $('hudOnline').textContent = online + ' / ' + SERVER_CAPACITY + ' online';
+}
+
+/* =============================================================
+ * WORLD
+ * ============================================================= */
+const canvas = $('game');
+const ctx = canvas.getContext('2d');
+let viewW = 0, viewH = 0, dpr = 1;
+let camX = 0, camY = 0, camSet = false;
+let lastStep = 0, lastSent = 0;
+
+const player = { x: SPAWN.x, y: SPAWN.y, w: 40, h: 58, facing: { x: 1, y: 0 }, walk: 0, moving: false };
+const solidList = [];
+
+const MOTES = [];
+(function () {
+  const cols = ['#4fd1ff', '#b14dff', '#ffb648', '#7bdc78', '#ffffff'];
+  for (let i = 0; i < 52; i++) {
+    MOTES.push({
+      x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
+      r: 0.8 + Math.random() * 1.8, a: 0.15 + Math.random() * 0.35,
+      p: Math.random() * Math.PI * 2, sp: 1200 + Math.random() * 2600,
+      sp2: 1500 + Math.random() * 3000, tw: 800 + Math.random() * 1800,
+      rise: 4 + Math.random() * 14, color: cols[i % cols.length]
+    });
+  }
+})();
+function addSolid(x, y, w, h) { solidList.push({ x, y, w, h }); }
+function buildSolids() {
+  solidList.length = 0;
+  addSolid(0, 0, WORLD_W, WALL);
+  addSolid(0, WORLD_H - WALL, WORLD_W, WALL);
+  addSolid(0, 0, WALL, WORLD_H);
+  addSolid(WORLD_W - WALL, 0, WALL, WORLD_H);
+  addSolid(1350, 140, 100, 100);
+  addSolid(1350, 1460, 100, 100);
+  addSolid(660, 800, 100, 100);
+  addSolid(2040, 800, 100, 100);
+}
+function aabb(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+function solidAt(body) { for (const s of solidList) if (aabb(body, s)) return true; return false; }
+function movePlayer(dx, dy) {
+  const nx = { x: player.x + dx, y: player.y, w: player.w, h: player.h };
+  if (nx.x >= WALL && nx.x + nx.w <= WORLD_W - WALL && !solidAt(nx)) player.x = nx.x;
+  const ny = { x: player.x, y: player.y + dy, w: player.w, h: player.h };
+  if (ny.y >= WALL && ny.y + ny.h <= WORLD_H - WALL && !solidAt(ny)) player.y = ny.y;
+}
+const keys = {};
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '].indexOf(k) !== -1) {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    e.preventDefault();
+  }
+  if (document.activeElement && document.activeElement.tagName === 'INPUT' && k !== 'escape') return;
+  if (k === 'e' && !e.repeat && inGame && !anyModalOpen()) { ac(); toggleVault(); return; }
+  if (k === 'escape') { closeAllModals(); return; }
+  keys[k] = true; ac();
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  viewW = window.innerWidth; viewH = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+
+function nearMyVault() {
+  if (mySlot < 0) return false;
+  const p = VAULT_POS[mySlot];
+  const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+  return Math.hypot(cx - p.x, cy - p.y) < 96;
+}
+function vaultAtPosition(slot) { return members.find(m => m.slot === slot) || null; }
+
+/* ---------- drawing ---------- */
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function drawFloor() {
+  const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+  g.addColorStop(0, '#111634'); g.addColorStop(0.5, '#0d1027'); g.addColorStop(1, '#080a18');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+  // checkerboard tiles
+  const tile = 160;
+  ctx.fillStyle = 'rgba(124,92,255,0.028)';
+  for (let x = 0; x < WORLD_W; x += tile) {
+    for (let y = 0; y < WORLD_H; y += tile) {
+      if (((x / tile) + (y / tile)) % 2 === 0) ctx.fillRect(x, y, tile, tile);
+    }
+  }
+
+  // grid
+  ctx.strokeStyle = 'rgba(124,92,255,0.06)'; ctx.lineWidth = 1;
+  for (let x = 0; x <= WORLD_W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); ctx.stroke(); }
+  for (let y = 0; y <= WORLD_H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke(); }
+
+  // center emblem
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.font = "800 90px 'Segoe UI', sans-serif"; ctx.fillStyle = 'rgba(124,92,255,0.07)';
+  ctx.shadowColor = 'rgba(124,92,255,0.5)'; ctx.shadowBlur = 40;
+  ctx.fillText('VAULTORIA', WORLD_W / 2, WORLD_H / 2 - 20);
+  ctx.font = "800 30px 'Segoe UI', sans-serif"; ctx.fillStyle = 'rgba(79,209,255,0.08)';
+  ctx.fillText('THE SHARED WORLD', WORLD_W / 2, WORLD_H / 2 + 40);
+  ctx.restore();
+
+  // decorative emblem rings
+  ctx.save();
+  ctx.translate(WORLD_W / 2, WORLD_H / 2 - 20);
+  ctx.strokeStyle = 'rgba(79,209,255,0.06)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, 230, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 300, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+function drawMotes(now) {
+  ctx.save();
+  for (const m of MOTES) {
+    const dx = Math.sin(now / m.sp + m.p) * 26;
+    const dy = Math.cos(now / m.sp2 + m.p) * 20 - (now / 1000 * m.rise) % (WORLD_H + 200);
+    const y = ((m.y + dy) % (WORLD_H + 80) + WORLD_H + 80) % (WORLD_H + 80) - 40;
+    const x = ((m.x + dx) % (WORLD_W + 80) + WORLD_W + 80) % (WORLD_W + 80) - 40;
+    const tw = 0.35 + 0.65 * Math.abs(Math.sin(now / m.tw + m.p));
+    ctx.globalAlpha = m.a * tw;
+    ctx.fillStyle = m.color;
+    ctx.shadowColor = m.color; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(x, y, m.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+function drawWall(s) {
+  const g = ctx.createLinearGradient(s.x, s.y, s.x, s.y + s.h);
+  g.addColorStop(0, '#262a48'); g.addColorStop(1, '#14172b');
+  ctx.fillStyle = g; ctx.fillRect(s.x, s.y, s.w, s.h);
+  // top bevel highlight
+  const hl = ctx.createLinearGradient(s.x, s.y, s.x, s.y + Math.min(8, s.h));
+  hl.addColorStop(0, 'rgba(150,160,220,0.35)'); hl.addColorStop(1, 'rgba(150,160,220,0)');
+  ctx.fillStyle = hl; ctx.fillRect(s.x, s.y, s.w, Math.min(8, s.h));
+  // dashed inner grid for thicker walls
+  if (s.w > 30 && s.h > 30) {
+    ctx.strokeStyle = 'rgba(124,92,255,0.10)'; ctx.lineWidth = 1;
+    ctx.strokeRect(s.x + 6, s.y + 6, s.w - 12, s.h - 12);
+  }
+  ctx.strokeStyle = 'rgba(124,92,255,0.35)'; ctx.lineWidth = 2;
+  ctx.shadowColor = 'rgba(124,92,255,0.5)'; ctx.shadowBlur = 10;
+  ctx.strokeRect(s.x, s.y, s.w, s.h);
+  ctx.shadowBlur = 0;
+}
+function drawVaultPad(slot) {
+  const pos = VAULT_POS[slot];
+  const owner = vaultAtPosition(slot);
+  const mine = slot === mySlot;
+  const t = performance.now() / 1000;
+  const isMine = !!owner && owner.id === me.id;
+  const base = isMine ? '#4fd1ff' : SLOT_COLORS[slot % SLOT_COLORS.length];
+  const cx = pos.x, cy = pos.y;
+
+  const pulse = 1 + Math.sin(t * 2.2 + slot) * 0.06;
+  const glowR = 108 * pulse;
+  const grad = ctx.createRadialGradient(cx, cy, 8, cx, cy, glowR);
+  grad.addColorStop(0, hexA(base, owner ? 0.45 : 0.16));
+  grad.addColorStop(0.55, hexA(base, owner ? 0.14 : 0.05));
+  grad.addColorStop(1, hexA(base, 0));
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(cx, cy, glowR, 0, Math.PI * 2); ctx.fill();
+
+  // platform base
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(cx, cy + 46, 66, 20, 0, 0, Math.PI * 2); ctx.fill();
+
+  // rotating outer arc
+  ctx.save();
+  ctx.translate(cx, cy); ctx.rotate(t * (isMine ? 0.5 : 0.2));
+  ctx.strokeStyle = hexA(base, owner ? 0.75 : 0.35); ctx.lineWidth = 3;
+  ctx.setLineDash([26, 20]);
+  ctx.beginPath(); ctx.arc(0, 0, 84, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  ctx.fillStyle = '#0b0d1d';
+  ctx.beginPath(); ctx.arc(cx, cy, 64, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = base; ctx.lineWidth = isMine ? 4 : 2.5;
+  ctx.shadowColor = base; ctx.shadowBlur = isMine ? 22 : 12;
+  ctx.setLineDash(owner ? [] : [6, 8]);
+  ctx.beginPath(); ctx.arc(cx, cy, 64, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.shadowBlur = 0;
+
+  // vault door glyph
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = base; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.stroke();
+  for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3 + t * (isMine ? 0.6 : 0.15);
+    ctx.beginPath(); ctx.moveTo(Math.cos(a) * 15, Math.sin(a) * 15); ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 30); ctx.stroke();
+  }
+  ctx.fillStyle = base;
+  ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // labels
+  ctx.textAlign = 'center';
+  if (owner) {
+    ctx.font = "800 16px 'Segoe UI', sans-serif";
+    ctx.fillStyle = isMine ? '#4fd1ff' : '#e8eaf2';
+    ctx.shadowColor = base; ctx.shadowBlur = 12;
+    ctx.fillText(owner.username + (isMine ? ' (you)' : ''), cx, cy - 84);
+    ctx.shadowBlur = 0;
+    const online = owner.online && owner.id !== me.id;
+    ctx.font = "700 12px 'Segoe UI', sans-serif";
+    if (isMine) { ctx.fillStyle = '#7bdc78'; ctx.fillText('YOUR VAULT', cx, cy + 92); }
+    else if (online) { ctx.fillStyle = '#7bdc78'; ctx.fillText('LOCKED \u00b7 ONLINE', cx, cy + 92); }
+    else { ctx.fillStyle = '#8b93bd'; ctx.fillText('LOCKED \u00b7 OFFLINE', cx, cy + 92); }
+  } else {
+    ctx.font = "700 12px 'Segoe UI', sans-serif"; ctx.fillStyle = 'rgba(139,147,189,0.5)';
+    ctx.fillText('EMPTY SLOT ' + (slot + 1), cx, cy + 92);
+  }
+}
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+function drawCharacter(x, y, color, facing, moving, walkPhase) {
+  const w = 40, h = 58;
+  const cx = x + w / 2;
+  const bob = moving ? Math.abs(Math.sin(walkPhase)) * 2.5 : 0;
+  const feet = y + h;
+  const step = moving ? Math.sin(walkPhase) * 5 : 0;
+
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.ellipse(cx, feet - 2, moving ? 21 : 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+  // legs
+  ctx.fillStyle = '#22263f';
+  rr(cx - 11, feet - 15 + step * 0.35, 9, 14 - step * 0.35, 3); ctx.fill();
+  rr(cx + 2, feet - 15 - step * 0.35, 9, 14 + step * 0.35, 3); ctx.fill();
+
+  const top = y + 14 - bob;
+  // body gradient
+  const bg = ctx.createLinearGradient(cx - 14, top, cx + 14, top + (h - 28));
+  bg.addColorStop(0, color); bg.addColorStop(1, shade(color, -0.35));
+  ctx.fillStyle = bg;
+  ctx.shadowColor = color; ctx.shadowBlur = 14;
+  rr(cx - 14, top, 28, h - 28, 8); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // collar / highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  rr(cx - 14, top + 8, 28, 8, 4); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.fillRect(cx - 14, top + (h - 28) * 0.55, 28, 2);
+
+  // arms
+  const armSwing = moving ? Math.sin(walkPhase) * 3 : 0;
+  ctx.fillStyle = shade(color, -0.45);
+  rr(cx - 19, top + 2, 6, 22 + armSwing, 3); ctx.fill();
+  rr(cx + 13, top + 2, 6, 22 - armSwing, 3); ctx.fill();
+
+  // head
+  const hy = top - 3;
+  ctx.fillStyle = '#e8c39e';
+  ctx.beginPath(); ctx.arc(cx, hy, 12, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.beginPath(); ctx.arc(cx + 3, hy + 2, 12, -0.6, 1.2); ctx.fill();
+  // hair
+  ctx.fillStyle = '#1b1e33';
+  ctx.beginPath(); ctx.arc(cx, hy - 4, 12, Math.PI, 0); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, hy - 4, 12, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+  // eyes
+  const eo = (facing ? facing.x : 1) * 4;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx - 5 + eo, hy - 2, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 5 + eo, hy - 2, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#101222';
+  ctx.beginPath(); ctx.arc(cx - 5 + eo * 1.4, hy - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 5 + eo * 1.4, hy - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+}
+function shade(color, amt) {
+  if (color[0] === '#') {
+    const n = parseInt(color.slice(1), 16);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v + v * amt))));
+    return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+  }
+  const m = color.match(/hsl\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
+  if (m) {
+    const l = Math.max(0, Math.min(100, parseFloat(m[3]) * (1 + amt)));
+    return 'hsl(' + m[1] + ',' + m[2] + '%,' + l + '%)';
+  }
+  return color;
+}
+function drawNameTag(x, y, text, color) {
+  ctx.textAlign = 'center';
+  ctx.font = "700 12px 'Segoe UI', sans-serif";
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  const w = ctx.measureText(text).width + 14;
+  rr(x - w / 2, y - 14, w, 18, 9); ctx.fill();
+  ctx.fillStyle = color || '#e8eaf2';
+  ctx.fillText(text, x, y);
+}
+function drawWorld(now) {
+  drawFloor();
+  drawMotes(now);
+  for (let i = 0; i < 8; i++) drawVaultPad(i);
+  for (const s of solidList) drawWall(s);
+  if (inGame) {
+    const px = player.x + player.w / 2, py = player.y + player.h / 2;
+    const lg = ctx.createRadialGradient(px, py, 10, px, py, 220);
+    lg.addColorStop(0, 'rgba(124,92,255,0.18)');
+    lg.addColorStop(1, 'rgba(124,92,255,0)');
+    ctx.fillStyle = lg;
+    ctx.beginPath(); ctx.arc(px, py, 220, 0, Math.PI * 2); ctx.fill();
+  }
+  for (const id in others) {
+    const o = others[id];
+    const color = 'hsl(' + o.hue + ', 65%, 58%)';
+    if (o.zone === 'vault') continue;
+    drawCharacter(o.x, o.y, color, o.facing, o.moving, o.walk);
+    drawNameTag(o.x + 20, o.y - 6, o.username + (o.online ? '' : ' (afk)'), o.online ? color : '#8b93bd');
+  }
+  if (inGame) {
+    drawCharacter(player.x, player.y, '#7c5cff', player.facing, player.moving, player.walk);
+    drawNameTag(player.x + 20, player.y - 6, me.username, '#4fd1ff');
+  }
+  if (!tutorialDone && tutIdx === 1 && mySlot >= 0) {
+    const p = VAULT_POS[mySlot];
+    const bob = Math.sin(now / 300) * 7;
+    ctx.save();
+    ctx.font = "800 40px 'Segoe UI', sans-serif"; ctx.textAlign = 'center';
+    ctx.fillStyle = '#4fd1ff'; ctx.shadowColor = '#4fd1ff'; ctx.shadowBlur = 18;
+    ctx.fillText('\u25BC', p.x, p.y - 118 + bob);
+    ctx.restore();
+  }
+}
+function drawVignette() {
+  const g = ctx.createRadialGradient(viewW / 2, viewH / 2, Math.min(viewW, viewH) * 0.35, viewW / 2, viewH / 2, Math.max(viewW, viewH) * 0.72);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(2,3,9,0.75)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
+}
+
+/* =============================================================
+ * MAIN LOOP
+ * ============================================================= */
+let lastFrame = performance.now();
+function frame(now) {
+  const dt = Math.min(64, now - lastFrame) / 1000;
+  lastFrame = now;
+
+  if (inGame) {
+    refreshTutorial();
+
+    const blocked = anyModalOpen();
+    let ix = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+    let iy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+    const moving = !blocked && (ix !== 0 || iy !== 0);
+    if (moving) {
+      player.moving = true;
+      if (ix) { player.facing.x = ix; player.facing.y = 0; } else { player.facing.y = iy; player.facing.x = 0; }
+      const mag = Math.hypot(ix, iy);
+      player.walk += dt * 11 * mag;
+      movePlayer(ix / mag * 260 * dt, iy / mag * 260 * dt);
+      if (now - lastStep > 460) { lastStep = now; sfxStep(); }
+    } else {
+      player.moving = false;
+    }
+
+    // send own position (throttled)
+    if (now - lastSent > 70) {
+      lastSent = now;
+      wsSend({ type: 'move', x: player.x, y: player.y, zone: vaultOpen ? 'vault' : 'world', moving: player.moving, facing: player.facing });
+    }
+
+    // interpolate other players
+    for (const id in others) {
+      const o = others[id];
+      const k = Math.min(1, dt * 8);
+      o.x += (o.tx - o.x) * k;
+      o.y += (o.ty - o.y) * k;
+      if (o.moving) o.walk = (o.walk || 0) + dt * 11;
+    }
+
+    updateHudMeta();
+    updateHint();
+
+    const maxCamX = Math.max(0, WORLD_W - viewW), maxCamY = Math.max(0, WORLD_H - viewH);
+    const tx = Math.max(0, Math.min(maxCamX, player.x + player.w / 2 - viewW / 2));
+    const ty = Math.max(0, Math.min(maxCamY, player.y + player.h / 2 - viewH / 2));
+    if (!camSet) { camX = tx; camY = ty; camSet = true; }
+    else { const k = Math.min(1, dt * 6); camX += (tx - camX) * k; camY += (ty - camY) * k; }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, viewW, viewH);
+    ctx.save();
+    ctx.translate(-camX, -camY);
+    drawWorld(now);
+    ctx.restore();
+    drawVignette();
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function updateHint() {
+  const h = $('hint');
+  if (nearMyVault()) {
+    h.textContent = 'Press E to open your vault';
+    $('zone').textContent = 'YOUR VAULT';
+  } else {
+    h.textContent = 'WASD / Arrows to walk \u00b7 E opens your vault at your pad';
+    $('zone').textContent = currentServer ? currentServer.name : 'WORLD';
+  }
+  const vb = $('vaultBtn');
+  vb.textContent = nearMyVault() ? 'Open Vault' : 'Vault';
+}
+
+/* =============================================================
+ * VAULT UI
+ * ============================================================= */
+function anyModalOpen() { return !$('vaultModal').classList.contains('hidden') || !$('bazaarModal').classList.contains('hidden'); }
+function closeAllModals() {
+  $('vaultModal').classList.add('hidden');
+  $('bazaarModal').classList.add('hidden');
+  vaultOpen = false;
+}
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
+  $(b.dataset.close).classList.add('hidden');
+  if (b.dataset.close === 'vaultModal') vaultOpen = false;
+  saveNow();
+}));
+$('vaultBtn').addEventListener('click', () => { ac(); toggleVault(); });
+function toggleVault() {
+  if (!inGame) return;
+  if (vaultOpen) { closeAllModals(); return; }
+  if (!nearMyVault()) { toast('FIND YOUR VAULT', 'Walk onto your glowing pad, then press E.', null, '#4fd1ff'); return; }
+  $('bazaarModal').classList.add('hidden');
+  $('vaultModal').classList.remove('hidden');
+  vaultOpen = true;
+  sfxDoor();
+  renderVault();
+  refreshTutorial();
+}
+document.querySelectorAll('.tab[data-tab]').forEach(tab => tab.addEventListener('click', () => {
+  ac();
+  document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#vaultModal .panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  $('panel-' + tab.dataset.tab).classList.add('active');
+}));
+
+function renderVault() {
+  if (!state) return;
+  $('money').textContent = '$' + fmt(state.money);
+  $('bMoney').textContent = '$' + fmt(state.money);
+  $('hudMoney').textContent = fmt(state.money);
+  $('hudLevel').textContent = state.level;
+  $('genLevel').textContent = state.level;
+  $('luckDisplay').textContent = legendaryLuck() + '%';
+  $('badgeLevel').textContent = state.level;
+  $('itemMult').textContent = 'x' + fmt(itemMult());
+
+  const gb = $('genBuy');
+  if (state.level >= MAX_LEVEL) {
+    gb.textContent = 'MAX LEVEL REACHED'; gb.className = 'buy maxed'; gb.disabled = true;
+    $('progressFill').style.width = '100%'; $('progressLabel').textContent = 'Maximum generator power achieved';
+  } else {
+    const c = genCost();
+    $('progressFill').style.width = Math.min(100, (state.money / c) * 100) + '%';
+    $('progressLabel').textContent = '$' + fmt(Math.min(state.money, c)) + ' / $' + fmt(c) + ' to Level ' + (state.level + 1);
+    gb.className = 'buy'; gb.textContent = 'Upgrade to Level ' + (state.level + 1) + ' \u2014 $' + fmt(c);
+    gb.disabled = state.money < c;
+  }
+
+  let total = 0, worth = 0;
+  for (const it in state.counts) { total += state.counts[it]; worth += itemValue(rarityFor(it)) * state.counts[it]; }
+  $('sellAll').disabled = total === 0;
+  $('invWorth').textContent = 'Worth: $' + fmt(worth);
+
+  const list = $('items');
+  if (total === 0) {
+    list.innerHTML = '<li class="empty">Nothing yet...<br>Generate items and sell them here.</li>';
+  } else {
+    list.innerHTML = '';
+    const entries = Object.entries(state.counts).sort((a, b) => itemValue(rarityFor(b[0])) - itemValue(rarityFor(a[0])));
+    for (const [it, count] of entries) {
+      const rar = rarityFor(it);
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span class="item-left"><span class="item-name" style="color:' + rar.color + '">' + esc(it) + '</span>' +
+        '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
+        '<span class="item-right"><span class="item-count">x' + count + '</span>' +
+        '<span class="item-value">$' + fmt(itemValue(rar) * count) + '</span>' +
+        '<button class="sell-btn">SELL</button></span>';
+      li.querySelector('.sell-btn').addEventListener('click', e => sellItem(it, e));
+      list.appendChild(li);
+    }
+  }
+  renderAch();
+  renderDash();
+  if (!$('bazaarModal').classList.contains('hidden')) renderSellList();
+}
+
+/* generator */
+$('gen').addEventListener('click', () => { ac(); beginGen(); });
+function beginGen() {
+  if (generating || !vaultOpen) return;
+  generating = true; genEnd = performance.now() + GEN_TIME;
+  $('gen').disabled = true; $('generator').classList.add('charging'); $('last').classList.remove('show');
+}
+function finishGen() {
+  generating = false;
+  $('generator').classList.remove('charging'); $('gen').disabled = false;
+  const rar = pickRarity();
+  const pool = ITEMS_BY_RARITY[rar.key];
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  state.counts[item] = (state.counts[item] || 0) + 1;
+  state.stats.ig = (state.stats.ig || 0) + 1;
+  if (!state.stats.seen) state.stats.seen = [];
+  if (state.stats.seen.indexOf(item) === -1) state.stats.seen.push(item);
+  const idx = RARITIES.indexOf(rar);
+  if (state.stats.best == null) state.stats.best = -1;
+  if (idx > state.stats.best) state.stats.best = idx;
+
+  const el = $('last');
+  el.textContent = rar.name + ': ' + item; el.style.color = rar.color; el.style.textShadow = '0 0 24px ' + rar.color;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  sfxGen(idx);
+  float(window.innerWidth / 2, window.innerHeight * 0.42, rar.name + '!', rar.color);
+  if (idx >= 3) burst(window.innerWidth / 2, window.innerHeight * 0.4, rar);
+  if (idx >= 4) toast(rar.name.toUpperCase() + ' ITEM!', item, null, rar.color);
+  renderVault(); checkAch(); queueSave(); refreshTutorial();
+}
+setInterval(() => {
+  if (!generating) return;
+  const remain = genEnd - performance.now();
+  if (remain <= 0) finishGen();
+  else {
+    const el = $('countdown'); const val = Math.max(1, Math.ceil(remain / 1000));
+    if (el.textContent != val) { el.textContent = val; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = 'pop 0.8s ease'; }
+  }
+}, 100);
+
+/* sell */
+function sellItem(item, ev) {
+  const count = state.counts[item]; if (!count) return;
+  const gain = itemValue(rarityFor(item)) * count;
+  state.money += gain; state.stats.earned = (state.stats.earned || 0) + gain;
+  delete state.counts[item]; salesCount++; sfxSell();
+  const r = (ev && (ev.currentTarget || ev.target)).getBoundingClientRect();
+  float(r.left + r.width / 2, r.top, '+' + fmt(gain), '#7bdc78');
+  renderVault(); checkAch(); queueSave();
+}
+$('sellAll').addEventListener('click', () => {
+  let gain = 0, any = false;
+  for (const it in state.counts) { gain += itemValue(rarityFor(it)) * state.counts[it]; any = true; }
+  if (!any) return;
+  state.money += gain; state.stats.earned = (state.stats.earned || 0) + gain;
+  state.counts = {}; salesCount++; sfxSell();
+  const r = $('sellAll').getBoundingClientRect();
+  float(r.left + r.width / 2, r.top, '+' + fmt(gain), '#7bdc78');
+  if (gain >= 1e6) { burst(r.left, r.top, RARITIES[4]); toast('MASSIVE PAYOUT!', null, '$' + fmt(gain), '#ffb648'); }
+  renderVault(); checkAch(); queueSave();
+});
+$('genBuy').addEventListener('click', () => {
+  if (state.level >= MAX_LEVEL || state.money < genCost()) return;
+  state.money -= genCost(); state.level++; sfxBuy(); renderVault(); checkAch(); queueSave(); refreshTutorial();
+});
+
+/* achievements */
+const ACH = [
+  { id: 'first', name: 'Item Dealer', desc: 'Generate your first item', reward: 50, check: () => state.stats.ig >= 1 },
+  { id: 'c100',  name: 'Rookie Collector', desc: 'Generate 100 items', reward: 250, check: () => state.stats.ig >= 100 },
+  { id: 'c500',  name: 'Item Magnate', desc: 'Generate 500 items', reward: 2000, check: () => state.stats.ig >= 500 },
+  { id: 's10k',  name: 'Pocket Change', desc: 'Earn $10K total', reward: 1000, check: () => state.stats.earned >= 1e4 },
+  { id: 's1m',   name: 'Millionaire', desc: 'Earn $1M total', reward: 10000, check: () => state.stats.earned >= 1e6 },
+  { id: 's1b',   name: 'Vault Billionaire', desc: 'Earn $1B total', reward: 1000000, check: () => state.stats.earned >= 1e9 },
+  { id: 'l10',   name: 'Powered Up', desc: 'Reach Level 10', reward: 2000, check: () => state.level >= 10 },
+  { id: 'l25',   name: 'Well Oiled', desc: 'Reach Level 25', reward: 10000, check: () => state.level >= 25 },
+  { id: 'l100',  name: 'VAULTORIA', desc: 'Reach Level 100', reward: 10000000, check: () => state.level >= 100 },
+  { id: 'r1',    name: 'Shiny Trash', desc: 'Get a Rare item', reward: 1000, check: () => state.stats.best >= 2 },
+  { id: 'e1',    name: 'Glamour Trash', desc: 'Get an Epic item', reward: 5000, check: () => state.stats.best >= 3 },
+  { id: 'l1',    name: 'Blessed Trash', desc: 'Get a Legendary item', reward: 50000, check: () => state.stats.best >= 4 },
+  { id: 'm1',    name: 'VAULT GOD', desc: 'Get a Mythic item', reward: 1000000, check: () => state.stats.best >= 5 },
+  { id: 'col10', name: 'Getting Closer', desc: 'Collect 10 item types', reward: 1000, check: () => (state.stats.seen || []).length >= 10 },
+  { id: 'col50', name: 'Hoarding Fever', desc: 'Collect 50 item types', reward: 50000, check: () => (state.stats.seen || []).length >= 50 },
+  { id: 'trader', name: 'Trader', desc: 'Complete a bazaar sale', reward: 2500, check: () => (state.stats.trades || 0) >= 1 }
+];
+function checkAch() {
+  if (!state.achievements) state.achievements = [];
+  for (const a of ACH) {
+    if (state.achievements.indexOf(a.id) !== -1) continue;
+    if (a.check()) {
+      state.achievements.push(a.id);
+      state.money += a.reward; state.stats.earned = (state.stats.earned || 0) + a.reward;
+      toast('ACHIEVEMENT', a.name, '$' + fmt(a.reward), '#ffb648'); sfxToast();
+      burst(window.innerWidth / 2, window.innerHeight * 0.3, RARITIES[3]);
+    }
+  }
+}
+function renderAch() {
+  const list = $('achList'); list.innerHTML = '';
+  for (const a of ACH) {
+    const done = (state.achievements || []).indexOf(a.id) !== -1;
+    const li = document.createElement('li');
+    li.className = 'ach' + (done ? ' done' : '');
+    li.innerHTML = '<div class="ach-name">' + a.name + (done ? ' \u2713' : '') + '</div>' +
+      '<div class="ach-desc">' + a.desc + '</div>' +
+      '<div class="ach-reward">Reward: $' + fmt(a.reward) + '</div>';
+    list.appendChild(li);
+  }
+}
+
+/* =============================================================
+ * BAZAAR
+ * ============================================================= */
+$('bazaarBtn').addEventListener('click', () => { ac(); openBazaar(); });
+function openBazaar() {
+  if (!inGame) return;
+  closeAllModals();
+  $('bazaarModal').classList.remove('hidden');
+  bazaarOpened = true;
+  renderSellList();
+  loadBazaar();
+  refreshTutorial();
+}
+document.querySelectorAll('.tab[data-btab]').forEach(tab => tab.addEventListener('click', () => {
+  document.querySelectorAll('.tab[data-btab]').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#bazaarModal .panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  $('bpanel-' + tab.dataset.btab).classList.add('active');
+  if (tab.dataset.btab === 'browse') loadBazaar(); else renderSellList();
+}));
+async function loadBazaar() {
+  const list = $('browseList');
+  list.innerHTML = '<li class="empty">Loading bazaar...</li>';
+  try {
+    const { listings } = await api('/bazaar');
+    if (!listings.length) { list.innerHTML = '<li class="empty">No listings right now. Be the first to sell!</li>'; return; }
+    list.innerHTML = '';
+    for (const l of listings) {
+      const rar = rarityFor(l.itemName);
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span class="item-left"><span class="item-name" style="color:' + rar.color + '">' + esc(l.itemName) + ' x' + l.quantity + '</span>' +
+        '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
+        '<span class="item-right"><span class="item-value">$' + fmt(l.price) + '</span>' +
+        (l.mine
+          ? '<button class="mini-btn ghost" data-cancel="' + l.id + '">Cancel</button>'
+          : '<button class="mini-btn" data-buy="' + l.id + '">Buy</button>') + '</span>';
+      li.querySelector('[data-buy]') && li.querySelector('[data-buy]').addEventListener('click', () => buyListing(l.id));
+      li.querySelector('[data-cancel]') && li.querySelector('[data-cancel]').addEventListener('click', () => cancelListing(l.id));
+      list.appendChild(li);
+    }
+  } catch (err) {
+    list.innerHTML = '<li class="empty">' + esc(err.message) + '</li>';
+  }
+}
+async function buyListing(id) {
+  try {
+    const r = await api('/bazaar/' + id + '/buy', { method: 'POST' });
+    state = r.state;
+    state.stats.trades = (state.stats.trades || 0) + 1;
+    sfxBuy(); toast('PURCHASE', 'Item added to your vault', null, '#7bdc78');
+    renderVault(); checkAch(); loadBazaar();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+async function cancelListing(id) {
+  try {
+    const r = await api('/bazaar/' + id, { method: 'DELETE' });
+    state = r.state; toast('CANCELLED', 'Item returned to your vault', null, '#ffb648');
+    renderVault(); loadBazaar();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+function renderSellList() {
+  const list = $('sellList');
+  const entries = Object.entries(state.counts || {});
+  if (!entries.length) { list.innerHTML = '<li class="empty">You have no items to sell. Generate some first!</li>'; return; }
+  list.innerHTML = '';
+  entries.sort((a, b) => itemValue(rarityFor(b[0])) - itemValue(rarityFor(a[0])));
+  for (const [it, count] of entries) {
+    const rar = rarityFor(it);
+    const li = document.createElement('li');
+    li.className = 'sell-row';
+    li.innerHTML =
+      '<span class="item-left"><span class="item-name" style="color:' + rar.color + '">' + esc(it) + '</span>' +
+      '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
+      '<span class="sell-field"><label>Qty</label><input type="number" min="1" max="' + count + '" value="1" data-qty></span>' +
+      '<span class="sell-field"><label>Price ($)</label><input type="number" min="1" value="' + Math.max(1, Math.floor(itemValue(rar) * count)) + '" data-price></span>' +
+      '<button class="mini-btn orange" data-list>List</button>';
+    li.querySelector('[data-list]').addEventListener('click', () => {
+      const qty = Math.max(1, Math.min(count, parseInt(li.querySelector('[data-qty]').value, 10) || 1));
+      const price = Math.max(1, parseInt(li.querySelector('[data-price]').value, 10) || 1);
+      listItem(it, rar, qty, price);
+    });
+    list.appendChild(li);
+  }
+}
+async function listItem(itemName, rar, quantity, price) {
+  try {
+    const r = await api('/bazaar', { method: 'POST', body: JSON.stringify({ itemName, rarity: rar.key, quantity, price }) });
+    state = r.state; sfxBuy(); toast('LISTED', itemName + ' x' + quantity + ' for $' + fmt(price), null, '#ffb648');
+    renderVault(); loadBazaar();
+    document.querySelector('.tab[data-btab="browse"]').click();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+
+/* =============================================================
+ * TUTORIAL (bottom-left, never covers the generator)
+ * ============================================================= */
+const TUTORIAL = [
+  { info: true, title: 'WELCOME TO VAULTORIA', text: 'You are a keeper in a shared world. Move around with W A S D or the ARROW KEYS.', delay: 4200,
+    check: () => keys.a || keys.d || keys.w || keys.s || keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright },
+  { title: 'FIND YOUR VAULT', text: 'Each keeper has their own vault. Walk onto the glowing blue pad marked (you).', check: () => nearMyVault() },
+  { title: 'OPEN YOUR VAULT', text: 'Press E to open your vault menu. Other keepers\u2019 vaults stay locked.', check: () => vaultOpen },
+  { title: 'GENERATE ITEMS', text: 'Click GENERATE ITEM. Rarer items are worth far more money.', check: () => (state.stats.ig || 0) >= 1 },
+  { title: 'SELL YOUR ITEMS', text: 'Open the INVENTORY tab and press SELL ALL to cash in.', check: () => (state.stats.earned || 0) > 0 || salesCount > 0 },
+  { title: 'UPGRADE', text: 'Spend money in the UPGRADES tab to raise your generator level.', check: () => state.level > 1 },
+  { title: 'THE BAZAAR', text: 'Use the BAZAAR button on your HUD to buy and sell items with other keepers.', check: () => bazaarOpened },
+  { info: true, title: 'YOU\u2019RE READY, KEEPER', text: 'Hoard, trade and climb to Level 100. Rule the item empire.', delay: 4600 }
+];
+function showTutStep() {
+  if (lastTutRender === tutIdx) return;
+  lastTutRender = tutIdx;
+  const s = TUTORIAL[tutIdx]; if (!s) return;
+  $('tutorial').classList.remove('hidden');
+  $('tutTitle').textContent = s.title;
+  $('tutText').textContent = s.text;
+  const d = $('tutDots'); d.innerHTML = '';
+  TUTORIAL.forEach((_, i) => { const b = document.createElement('i'); if (i === tutIdx) b.className = 'on'; d.appendChild(b); });
+  clearTimeout(tutTimer);
+  if (s.info) tutTimer = setTimeout(() => { tutIdx++; lastTutRender = -1; refreshTutorial(); }, s.delay || 4000);
+}
+function refreshTutorial() {
+  if (tutorialDone || !inGame) return;
+  let guard = 0;
+  while (guard++ < TUTORIAL.length + 2) {
+    const s = TUTORIAL[tutIdx];
+    if (s && s.check && s.check()) { tutIdx++; clearTimeout(tutTimer); continue; }
+    break;
+  }
+  if (tutIdx >= TUTORIAL.length) {
+    tutorialDone = true; clearTimeout(tutTimer);
+    $('tutorial').classList.add('hidden');
+    state.tutorialDone = true; queueSave();
+    return;
+  }
+  showTutStep();
+}
+
+/* =============================================================
+ * CHAT
+ * ============================================================= */
+function addChat(kind, name, text) {
+  const log = $('chatLog');
+  const el = document.createElement('div');
+  el.className = 'chat-line' + (kind === 'sys' ? ' sys' : '');
+  if (kind === 'sys') el.textContent = text;
+  else el.innerHTML = '<b>' + esc(name) + '</b> ' + esc(text);
+  log.appendChild(el);
+  while (log.children.length > 30) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+$('chatForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const inp = $('chatInput');
+  const text = inp.value.trim();
+  if (text) { wsSend({ type: 'say', text }); addChat('chat', me.username, text); }
+  inp.value = '';
+});
+
+/* =============================================================
+ * SAVE
+ * ============================================================= */
+function queueSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 1200); }
+function payload() {
+  return {
+    money: state.money, level: state.level, counts: state.counts, stats: state.stats,
+    achievements: state.achievements, tutorialDone: tutorialDone,
+    px: player.x, py: player.y
+  };
+}
+async function saveNow() {
+  if (!token || !state) return;
+  try {
+    const body = JSON.stringify(payload());
+    await fetch('/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body, keepalive: true });
+  } catch (e) {}
+}
+setInterval(saveNow, 8000);
+window.addEventListener('beforeunload', () => {
+  if (!token || !state) return;
+  try {
+    const blob = new Blob([JSON.stringify(payload())], { type: 'application/json' });
+    navigator.sendBeacon && navigator.sendBeacon('/api/save?token=' + encodeURIComponent(token), blob);
+  } catch (e) {}
+});
+
+/* =============================================================
+ * LEAVE / TRANSITION
+ * ============================================================= */
+$('leaveBtn').addEventListener('click', async () => {
+  await saveNow();
+  disconnectWS();
+  closeAllModals();
+  if (currentServer && token) { try { await api('/servers/' + currentServer.id + '/leave', { method: 'POST' }); } catch (e) {} }
+  currentServer = null; mySlot = -1;
+  await loadMe();
+});
+function transitionTo(text) {
+  const t = $('transition');
+  t.textContent = text; t.classList.add('on');
+  clearTimeout(hideTimeout);
+  hideTimeout = setTimeout(() => t.classList.remove('on'), 650);
+}
+
+/* =============================================================
+ * BOOT
+ * ============================================================= */
+buildSolids();
+resize();
+setAuthMode('login');
 requestAnimationFrame(frame);
+
+(async function boot() {
+  if (!token) { showScreen('auth'); return; }
+  try {
+    await loadMe();
+  } catch (e) {
+    token = null; localStorage.removeItem('vaultoria_token');
+    showScreen('auth');
+  }
+})();
 </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vaultoria</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-    }
-    .auth-container {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      padding: 2.5rem;
-      border-radius: 20px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-      max-width: 400px;
-      width: 90%;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    h1 {
-      text-align: center;
-      color: #fff;
-      margin-bottom: 0.5rem;
-      font-size: 2.5rem;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-    .subtitle {
-      text-align: center;
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 2rem;
-      font-size: 0.9rem;
-    }
-    input {
-      width: 100%;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s;
-    }
-    input:focus {
-      outline: none;
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.4);
-    }
-    input::placeholder {
-      color: rgba(255, 255, 255, 0.5);
-    }
-    button {
-      width: 100%;
-      padding: 1rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    .secondary {
-      background: transparent;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      margin-top: 0.5rem;
-    }
-    .secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    .message {
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 10px;
-      text-align: center;
-      font-size: 0.9rem;
-    }
-    .success {
-      background: rgba(212, 237, 218, 0.2);
-      color: #155724;
-      border: 1px solid rgba(212, 237, 218, 0.4);
-    }
-    .error {
-      background: rgba(248, 215, 218, 0.2);
-      color: #721c24;
-      border: 1px solid rgba(248, 215, 218, 0.4);
-    }
-
-    /* Game area */
-    #game {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-    .game-container {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    }
-    .player {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 50%;
-      transition: all 0.1s ease-out;
-      box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-    }
-    .player-label {
-      position: absolute;
-      top: -25px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-    .logout-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px 20px;
-      background: rgba(255, 0, 0, 0.7);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      z-index: 1000;
-    }
-    .logout-btn:hover {
-      background: rgba(255, 0, 0, 0.9);
-    }
-  </style>
-</head>
-<body>
-  <div class="auth-container" id="auth">
-    <h1>VAULTORIA</h1>
-    <p class="subtitle">Move. Explore. Connect.</p>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="register()">Register</button>
-    <button onclick="login()" class="secondary">Login</button>
-    <div id="message" class="message"></div>
-  </div>
-
-  <div id="game">
-    <button class="logout-btn" onclick="logout()">Logout</button>
-    <div class="game-container" id="gameContainer"></div>
-  </div>
-
-  <script>
-    let token = localStorage.getItem('token');
-    let username = localStorage.getItem('username');
-    let myPlayer = null;
-    let players = new Map();
-
-    if (token && username) {
-      showGame();
-    }
-
-    async function register() {
-      const enteredUsername = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: enteredUsername, password })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        await login();
-      } else {
-        showMessage(data.message, 'error');
-      }
-    }
-
-    async function login() {
-      const enteredUsername = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: enteredUsername, password })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
-        token = data.token;
-        username = data.username;
-        showGame();
-      } else {
-        showMessage(data.message, 'error');
-      }
-    }
-
-    function showGame() {
-      document.getElementById('auth').style.display = 'none';
-      document.getElementById('game').style.display = 'block';
-      loadPlayers();
-      createMyPlayer();
-      setInterval(savePosition, 1000);
-      setInterval(loadPlayers, 2000);
-    }
-
-    function createMyPlayer() {
-      const player = document.createElement('div');
-      player.className = 'player';
-      player.id = 'myPlayer';
-      player.style.left = '100px';
-      player.style.top = '100px';
-
-      const label = document.createElement('div');
-      label.className = 'player-label';
-      label.textContent = username;
-      player.appendChild(label);
-
-      document.getElementById('gameContainer').appendChild(player);
-      myPlayer = player;
-
-      setupMovement();
-    }
-
-    function setupMovement() {
-      const keys = {};
-      const speed = 20;
-
-      document.addEventListener('keydown', (e) => {
-        keys[e.key] = true;
-      });
-
-      document.addEventListener('keyup', (e) => {
-        keys[e.key] = false;
-      });
-
-      function move() {
-        const rect = myPlayer.getBoundingClientRect();
-        let x = rect.left;
-        let y = rect.top;
-
-        if (keys['ArrowUp'] || keys['w'] || keys['W']) y -= speed;
-        if (keys['ArrowDown'] || keys['s'] || keys['S']) y += speed;
-        if (keys['ArrowLeft'] || keys['a'] || keys['A']) x -= speed;
-        if (keys['ArrowRight'] || keys['d'] || keys['D']) x += speed;
-
-        // Keep within bounds
-        x = Math.max(0, Math.min(window.innerWidth - 40, x));
-        y = Math.max(0, Math.min(window.innerHeight - 40, y));
-
-        myPlayer.style.left = x + 'px';
-        myPlayer.style.top = y + 'px';
-
-        requestAnimationFrame(move);
-      }
-
-      move();
-    }
-
-    async function savePosition() {
-      if (!myPlayer) return;
-      const x = parseInt(myPlayer.style.left);
-      const y = parseInt(myPlayer.style.top);
-
-      await fetch('/api/position', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ x, y })
-      });
-    }
-
-    async function loadPlayers() {
-      const res = await fetch('/api/users');
-      const users = await res.json();
-
-      // Remove old players
-      players.forEach((player, username) => {
-        if (!users.find(u => u.username === username)) {
-          player.remove();
-          players.delete(username);
-        }
-      });
-
-      // Add/update players
-      users.forEach(user => {
-        if (user.username === username) return; // Skip self
-
-        let player = players.get(user.username);
-        if (!player) {
-          player = document.createElement('div');
-          player.className = 'player';
-          player.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%)';
-
-          const label = document.createElement('div');
-          label.className = 'player-label';
-          label.textContent = user.username;
-          player.appendChild(label);
-
-          document.getElementById('gameContainer').appendChild(player);
-          players.set(user.username, player);
-        }
-
-        player.style.left = user.x_position + 'px';
-        player.style.top = user.y_position + 'px';
-      });
-    }
-
-    function logout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('username');
-      location.reload();
-    }
-
-    function showMessage(text, type) {
-      const el = document.getElementById('message');
-      el.textContent = text;
-      el.className = `message ${type}`;
-    }
-  </script>
 </body>
 </html>
