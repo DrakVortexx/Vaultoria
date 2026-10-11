@@ -27,6 +27,115 @@ const JWT_SECRET = process.env.JWT_SECRET || 'vaultoria-dev-secret-change-me';
 const DATABASE_URL = process.env.DATABASE_URL || '';
 const SERVER_CAPACITY = 8;
 
+/* ---------------------------------------------------------------
+ * Server-authoritative economy
+ * The client only ever sends intents; all money, item rolls, sells,
+ * upgrades and achievement rewards are computed and stored here.
+ * ------------------------------------------------------------- */
+const RARITIES = [
+  { key: 'common',    name: 'Common',    base: 4,      weight: 1000 },
+  { key: 'uncommon',  name: 'Uncommon',  base: 15,     weight: 300 },
+  { key: 'rare',      name: 'Rare',      base: 80,     weight: 80 },
+  { key: 'epic',      name: 'Epic',      base: 600,    weight: 20 },
+  { key: 'legendary', name: 'Legendary', base: 7000,   weight: 5 },
+  { key: 'mythic',    name: 'Mythic',    base: 100000, weight: 1 }
+];
+const ITEMS_BY_RARITY = {
+  common: ["Rotten Tomato","Floppy Disk","Used Toenail","Wet Sock","Broken Umbrella","Expired Yogurt","Chewed Pencil","Soggy Cardboard","Cracked Mug","Dull Scissors","Moldy Bread","Bent Paperclip","Dead Battery","Torn Sponge","Singed Hairball","Sticky Penny","Smashed Earwig","Empty Lighter","Rusty Nail","Clipped Nail","Dried Gum","Tangled Earbuds","Leaky Pen","Stale Chip","Wilted Lettuce","Balding Mop","Chipped Plate","Frayed Shoelace"],
+  uncommon: ["Damp Towel","Half a Sticker","Bent Key","Chipped DVD","Loose Button","Stale Tuna Sandwich","Questionable Sock","Slightly Used Diaper","Warped Record","Freeze-Dried Banana"],
+  rare: ["Vintage Floppy Disk","Collectible Pringle","Autographed Sock","Antique Dust","Shiny Hubcap","First Edition Napkin","Haunted Sock","Limited Soggy Cardboard"],
+  epic: ["Golden Banana Peel","Cursed Toenail Clipper","Mystic Mayo Jar","Sentient Mold","Royal Cheese Rind","Enchanted Plastic Fork"],
+  legendary: ["The Holy Toaster","Certified Mold Cheese","Singularity Bell","Pope's Old Lighter","Relic VHS Tape","Demon Coffee Mug"],
+  mythic: ["The Vaultoria Crown","Egg of Nefarious","Sacred Trash King","Index of All Items"]
+};
+const ITEM_RARITY = {};
+RARITIES.forEach((r, i) => (ITEMS_BY_RARITY[r.key] || []).forEach(it => { ITEM_RARITY[it] = i; }));
+const LUCK_PER_LEVEL = 0.02;
+const MAX_LEVEL = 100;
+const GEN_TIME = 3000;
+const GEN_GRACE = 250;
+
+function luckMult(level) { return 1 + (Number(level) - 1) * LUCK_PER_LEVEL; }
+function genCost(level) {
+  const n = Number(level) + 1;
+  if (n <= 10) return Math.floor(10 * Math.pow(2.6, n - 2));
+  return Math.floor(20000 * Math.pow(2.2, n - 10));
+}
+function pickRarity(level) {
+  const luck = luckMult(level);
+  const ws = RARITIES.map((r, i) => (i >= 2 ? r.weight * luck : r.weight));
+  let roll = Math.random() * ws.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < ws.length; i++) { roll -= ws[i]; if (roll <= 0) return i; }
+  return RARITIES.length - 1;
+}
+
+const ACH = [
+  { id: 'first',  reward: 50,       check: v => (v.ig || 0) >= 1 },
+  { id: 'c100',   reward: 250,      check: v => (v.ig || 0) >= 100 },
+  { id: 'c500',   reward: 2000,     check: v => (v.ig || 0) >= 500 },
+  { id: 's10k',   reward: 1000,     check: v => (v.earned || 0) >= 1e4 },
+  { id: 's1m',    reward: 10000,    check: v => (v.earned || 0) >= 1e6 },
+  { id: 's10m',   reward: 1000000,  check: v => (v.earned || 0) >= 1e7 },
+  { id: 'l10',    reward: 2000,     check: v => (v.level || 1) >= 10 },
+  { id: 'l25',    reward: 10000,    check: v => (v.level || 1) >= 25 },
+  { id: 'l100',   reward: 10000000, check: v => (v.level || 1) >= 100 },
+  { id: 'r1',     reward: 1000,     check: v => (v.best == null ? -1 : v.best) >= 2 },
+  { id: 'e1',     reward: 5000,     check: v => (v.best == null ? -1 : v.best) >= 3 },
+  { id: 'l1',     reward: 50000,    check: v => (v.best == null ? -1 : v.best) >= 4 },
+  { id: 'm1',     reward: 1000000,  check: v => (v.best == null ? -1 : v.best) >= 5 },
+  { id: 'col10',  reward: 1000,     check: v => (v.seen || []).length >= 10 },
+  { id: 'col50',  reward: 50000,    check: v => (v.seen || []).length >= 50 },
+  { id: 'trader', reward: 2500,     check: v => (v.trades || 0) >= 1 }
+];
+
+function defaultStats() { return { ig: 0, earned: 0, seen: [], best: -1, trades: 0 }; }
+function statsOf(row) {
+  const s = Object.assign(defaultStats(), row && row.stats ? row.stats : {});
+  if (!Array.isArray(s.seen)) s.seen = [];
+  return s;
+}
+// Awards every newly satisfied achievement (cascades), mutating stats/achievements.
+function evaluateAch(stats, level, achievements) {
+  const have = new Set(achievements);
+  const earned = [];
+  let reward = 0, changed = true;
+  while (changed) {
+    changed = false;
+    const v = Object.assign({}, stats, { level });
+    for (const a of ACH) {
+      if (have.has(a.id)) continue;
+      if (a.check(v)) {
+        have.add(a.id); achievements.push(a.id);
+        stats.earned = (stats.earned || 0) + a.reward; reward += a.reward;
+        earned.push(a.id); changed = true;
+      }
+    }
+  }
+  return { earned, reward };
+}
+
+/* ---------------------------------------------------------------
+ * In-memory worlds (NOT persisted). Reset whenever the server restarts.
+ * ------------------------------------------------------------- */
+const worlds = new Map(); // id -> { id, name, members: Map<userId, slot> }
+let nextWorldId = 1;
+const lastGen = new Map(); // userId -> timestamp of last generate
+
+function createWorld(name) {
+  const id = nextWorldId++;
+  const w = { id, name: (String(name || '').trim().slice(0, 40) || ('World ' + id)), members: new Map() };
+  worlds.set(id, w);
+  return w;
+}
+function worldPublic(w) {
+  return { id: w.id, name: w.name, members: w.members.size, capacity: SERVER_CAPACITY };
+}
+function freeSlot(w) {
+  const used = new Set(w.members.values());
+  for (let i = 0; i < SERVER_CAPACITY; i++) if (!used.has(i)) return i;
+  return -1;
+}
+
 const pool = new Pool({
   connectionString: DATABASE_URL || undefined,
   ssl: DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)
@@ -44,15 +153,13 @@ app.use(express.json({ limit: '1mb' }));
 async function initDb() {
   if (!DATABASE_URL) {
     console.warn('[vaultoria] DATABASE_URL is not set. Add your Neon connection string to start the game.');
+    if (!worlds.size) createWorld('The Grand Bazaar');
     return;
   }
   const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   await pool.query(sql);
 
-  const { rows } = await pool.query('SELECT COUNT(*)::int AS c FROM servers');
-  if (rows[0].c === 0) {
-    await pool.query('INSERT INTO servers (name, is_open) VALUES ($1, TRUE)', ['The Grand Bazaar']);
-  }
+  if (!worlds.size) createWorld('The Grand Bazaar');
   console.log('[vaultoria] database ready');
 }
 
@@ -87,6 +194,12 @@ const clampInt = (v, min, max, dflt) => {
   return Math.max(min, Math.min(max, n));
 };
 
+const clampNum = (v, min, max, dflt) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  return Math.max(min, Math.min(max, n));
+};
+
 async function stateFor(client, userId) {
   const q = c => c.query('SELECT * FROM player_state WHERE user_id = $1', [userId]);
   let { rows } = await q(client);
@@ -97,18 +210,40 @@ async function stateFor(client, userId) {
   return rows[0];
 }
 
+// Same as stateFor but takes a row lock so concurrent economy actions serialize.
+async function stateForUpdate(client, userId) {
+  let { rows } = await client.query('SELECT * FROM player_state WHERE user_id = $1 FOR UPDATE', [userId]);
+  if (!rows[0]) {
+    await client.query('INSERT INTO player_state (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [userId]);
+    ({ rows } = await client.query('SELECT * FROM player_state WHERE user_id = $1 FOR UPDATE', [userId]));
+  }
+  return rows[0];
+}
+
 function publicState(row) {
   return {
     money: Number(row.money || 0),
     level: Number(row.level || 1),
     counts: row.counts || {},
-    stats: row.stats || { ig: 0, earned: 0, seen: [], best: -1 },
+    stats: row.stats || defaultStats(),
     achievements: row.achievements || [],
     tutorialDone: !!row.tutorial_done,
     px: Number(row.px || 0),
-    py: Number(row.py || 0),
-    serverId: row.server_id || null
+    py: Number(row.py || 0)
   };
+}
+
+// Shared helper: persist a mutated player_state row plus any newly earned achievements.
+async function persistProgress(client, userId, st, counts, stats, achievements, money) {
+  const level = Number(st.level || 1);
+  const res = evaluateAch(stats, level, achievements);
+  money += res.reward;
+  await client.query(
+    `UPDATE player_state SET money = $2, counts = $3, stats = $4, achievements = $5, updated_at = NOW()
+      WHERE user_id = $1`,
+    [userId, money, JSON.stringify(counts), JSON.stringify(stats), JSON.stringify(achievements)]
+  );
+  return res.earned;
 }
 
 /* ---------------------------------------------------------------
@@ -135,6 +270,7 @@ app.post('/api/register', dbReady, async (req, res) => {
     await pool.query('INSERT INTO player_state (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [rows[0].id]);
     res.json({ token: signToken(rows[0]), user: { id: rows[0].id, username: rows[0].username } });
   } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'That username is already taken' });
     console.error('[register]', e.message);
     res.status(500).json({ error: 'Could not create account' });
   }
@@ -168,21 +304,16 @@ app.get('/api/me', dbReady, auth, async (req, res) => {
 app.post('/api/save', dbReady, auth, async (req, res) => {
   try {
     const b = req.body || {};
+    // Only non-economic fields are client-controllable. Money, items, level,
+    // stats and achievements are server-authoritative and never trusted here.
     await pool.query(
-      `UPDATE player_state SET
-         money = $2, level = $3, counts = $4, stats = $5, achievements = $6,
-         tutorial_done = $7, px = $8, py = $9, updated_at = NOW()
-       WHERE user_id = $1`,
+      `UPDATE player_state SET px = $2, py = $3, tutorial_done = $4, updated_at = NOW()
+        WHERE user_id = $1`,
       [
         req.user.id,
-        clampInt(b.money, 0, Number.MAX_SAFE_INTEGER, 0),
-        clampInt(b.level, 1, 100, 1),
-        JSON.stringify(b.counts || {}),
-        JSON.stringify(b.stats || {}),
-        JSON.stringify(Array.isArray(b.achievements) ? b.achievements : []),
-        !!b.tutorialDone,
-        Number(b.px) || 0,
-        Number(b.py) || 0
+        clampNum(b.px, 0, 100000, 0),
+        clampNum(b.py, 0, 100000, 0),
+        !!b.tutorialDone
       ]
     );
     res.json({ ok: true });
@@ -193,119 +324,198 @@ app.post('/api/save', dbReady, auth, async (req, res) => {
 });
 
 /* ---------------------------------------------------------------
- * Servers
+ * Economy actions (server-authoritative)
  * ------------------------------------------------------------- */
-app.get('/api/servers', dbReady, auth, async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT s.id, s.name, s.is_open, s.created_at,
-              (SELECT COUNT(*)::int FROM server_members m WHERE m.server_id = s.id) AS members
-         FROM servers s
-        WHERE s.is_open = TRUE
-        ORDER BY s.id ASC`
-    );
-    res.json({
-      servers: rows.map(r => ({
-        id: r.id, name: r.name, isOpen: r.is_open,
-        members: r.members, capacity: SERVER_CAPACITY
-      }))
-    });
-  } catch (e) {
-    console.error('[servers]', e.message);
-    res.status(500).json({ error: 'Could not load servers' });
-  }
-});
-
-app.post('/api/servers', dbReady, auth, async (req, res) => {
-  try {
-    const name = String((req.body && req.body.name) || 'My Server').trim().slice(0, 40) || 'My Server';
-    const { rows } = await pool.query(
-      'INSERT INTO servers (name, is_open) VALUES ($1, TRUE) RETURNING id, name',
-      [name]
-    );
-    res.json({ server: { id: rows[0].id, name: rows[0].name, members: 0, capacity: SERVER_CAPACITY } });
-  } catch (e) {
-    console.error('[create server]', e.message);
-    res.status(500).json({ error: 'Could not create server' });
-  }
-});
-
-app.post('/api/servers/:id/join', dbReady, auth, async (req, res) => {
-  const sid = parseInt(req.params.id, 10);
+app.post('/api/generate', dbReady, auth, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const srv = await client.query('SELECT * FROM servers WHERE id = $1 AND is_open = TRUE', [sid]);
-    if (!srv.rowCount) {
+    const st = await stateForUpdate(client, req.user.id);
+    const now = Date.now();
+    const last = lastGen.get(req.user.id) || 0;
+    if (now - last < GEN_TIME - GEN_GRACE) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'That server is unavailable' });
+      return res.status(429).json({ error: 'Generator still cooling down' });
     }
-    const existing = await client.query(
-      'SELECT slot FROM server_members WHERE server_id = $1 AND user_id = $2',
-      [sid, req.user.id]
-    );
-    if (existing.rowCount) {
-      await client.query('COMMIT');
-      return res.json({ ok: true, slot: existing.rows[0].slot });
-    }
-    const used = await client.query('SELECT slot FROM server_members WHERE server_id = $1', [sid]);
-    const usedSet = new Set(used.rows.map(r => r.slot));
-    let slot = -1;
-    for (let i = 0; i < SERVER_CAPACITY; i++) {
-      if (!usedSet.has(i)) { slot = i; break; }
-    }
-    if (slot < 0) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({ error: 'That server is full (8/8)' });
-    }
-    await client.query(
-      'INSERT INTO server_members (server_id, user_id, slot) VALUES ($1, $2, $3)',
-      [sid, req.user.id, slot]
-    );
-    await client.query('UPDATE player_state SET server_id = $2 WHERE user_id = $1', [req.user.id, sid]);
+    const level = Number(st.level || 1);
+    const ri = pickRarity(level);
+    const pool = ITEMS_BY_RARITY[RARITIES[ri].key];
+    const item = pool[Math.floor(Math.random() * pool.length)];
+
+    const counts = Object.assign({}, st.counts || {});
+    counts[item] = Number(counts[item] || 0) + 1;
+    const stats = statsOf(st);
+    stats.ig = (stats.ig || 0) + 1;
+    if (stats.seen.indexOf(item) === -1) stats.seen.push(item);
+    if (stats.best == null) stats.best = -1;
+    if (ri > stats.best) stats.best = ri;
+
+    const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
+    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, Number(st.money || 0));
     await client.query('COMMIT');
-    res.json({ ok: true, slot });
+    lastGen.set(req.user.id, now);
+
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, item, rarity: RARITIES[ri].key, state: publicState(fresh), newAch });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('[join]', e.message);
-    res.status(500).json({ error: 'Could not join server' });
+    console.error('[generate]', e.message);
+    res.status(500).json({ error: 'Could not generate item' });
   } finally {
     client.release();
   }
 });
 
-app.post('/api/servers/:id/leave', dbReady, auth, async (req, res) => {
-  const sid = parseInt(req.params.id, 10);
+app.post('/api/sell', dbReady, auth, async (req, res) => {
+  const client = await pool.connect();
   try {
-    await pool.query('DELETE FROM server_members WHERE server_id = $1 AND user_id = $2', [sid, req.user.id]);
-    await pool.query('UPDATE player_state SET server_id = NULL WHERE user_id = $1 AND server_id = $2', [req.user.id, sid]);
-    broadcastMembers(sid).catch(() => {});
-    res.json({ ok: true });
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, req.user.id);
+    const counts = Object.assign({}, st.counts || {});
+    const body = req.body || {};
+    let gain = 0;
+
+    if (body.all) {
+      for (const it in counts) {
+        const ri = ITEM_RARITY[it];
+        if (ri == null) continue;
+        gain += RARITIES[ri].base * Number(counts[it] || 0);
+        delete counts[it];
+      }
+    } else {
+      const it = String(body.item || '');
+      const ri = ITEM_RARITY[it];
+      if (ri == null) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Unknown item' });
+      }
+      const c = Number(counts[it] || 0);
+      if (c <= 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'You do not have that item' });
+      }
+      gain += RARITIES[ri].base * c;
+      delete counts[it];
+    }
+    if (gain <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Nothing to sell' });
+    }
+
+    const stats = statsOf(st);
+    stats.earned = (stats.earned || 0) + gain;
+    const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
+    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, Number(st.money || 0) + gain);
+    await client.query('COMMIT');
+
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, gain, state: publicState(fresh), newAch });
   } catch (e) {
-    console.error('[leave]', e.message);
-    res.status(500).json({ error: 'Could not leave server' });
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[sell]', e.message);
+    res.status(500).json({ error: 'Could not sell items' });
+  } finally {
+    client.release();
   }
 });
 
-app.get('/api/servers/:id/members', dbReady, auth, async (req, res) => {
+app.post('/api/upgrade', dbReady, auth, async (req, res) => {
+  const client = await pool.connect();
   try {
-    const sid = parseInt(req.params.id, 10);
-    const { rows } = await pool.query(
-      `SELECT m.slot, m.user_id, u.username, ps.money, ps.level
-         FROM server_members m
-         JOIN users u ON u.id = m.user_id
-         LEFT JOIN player_state ps ON ps.user_id = m.user_id
-        WHERE m.server_id = $1
-        ORDER BY m.slot ASC`,
-      [sid]
-    );
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, req.user.id);
+    const level = Number(st.level || 1);
+    if (level >= MAX_LEVEL) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Maximum level reached' });
+    }
+    const cost = genCost(level);
+    const money = Number(st.money || 0);
+    if (money < cost) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Not enough money' });
+    }
+    const counts = Object.assign({}, st.counts || {});
+    const stats = statsOf(st);
+    const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
+    const newLevel = level + 1;
+    const levelRow = { level: newLevel };
+    const newAch = await persistProgress(client, req.user.id, levelRow, counts, stats, achievements, money - cost);
+    await client.query('UPDATE player_state SET level = $2 WHERE user_id = $1', [req.user.id, newLevel]);
+    await client.query('COMMIT');
+
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, level: newLevel, cost, state: publicState(fresh), newAch });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[upgrade]', e.message);
+    res.status(500).json({ error: 'Could not upgrade' });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------------------------------------------------------------
+ * Worlds (in-memory, never written to the database)
+ * ------------------------------------------------------------- */
+app.get('/api/servers', dbReady, auth, (req, res) => {
+  res.json({ servers: [...worlds.values()].map(worldPublic) });
+});
+
+app.post('/api/servers', dbReady, auth, (req, res) => {
+  const name = String((req.body && req.body.name) || 'My Server').trim().slice(0, 40) || 'My Server';
+  const w = createWorld(name);
+  res.json({ server: worldPublic(w) });
+});
+
+app.post('/api/servers/:id/join', dbReady, auth, (req, res) => {
+  const sid = parseInt(req.params.id, 10);
+  const w = worlds.get(sid);
+  if (!w) return res.status(404).json({ error: 'That world is unavailable' });
+  let slot = w.members.get(req.user.id);
+  if (slot == null) {
+    slot = freeSlot(w);
+    if (slot < 0) return res.status(409).json({ error: 'That world is full (8/8)' });
+    w.members.set(req.user.id, slot);
+  }
+  res.json({ ok: true, slot });
+});
+
+app.post('/api/servers/:id/leave', dbReady, auth, (req, res) => {
+  const sid = parseInt(req.params.id, 10);
+  const w = worlds.get(sid);
+  if (w) w.members.delete(req.user.id);
+  broadcastMembers(sid).catch(() => {});
+  res.json({ ok: true });
+});
+
+app.get('/api/servers/:id/members', dbReady, auth, async (req, res) => {
+  const sid = parseInt(req.params.id, 10);
+  const w = worlds.get(sid);
+  if (!w) return res.json({ members: [] });
+  try {
+    const ids = [...w.members.keys()];
+    const byId = new Map();
+    if (ids.length) {
+      const { rows } = await pool.query(
+        `SELECT u.id, u.username, ps.money, ps.level
+           FROM users u
+           LEFT JOIN player_state ps ON ps.user_id = u.id
+          WHERE u.id = ANY($1::int[])`,
+        [ids]
+      );
+      for (const r of rows) byId.set(r.id, r);
+    }
     const room = presence.get(sid) || new Map();
     res.json({
-      members: rows.map(r => ({
-        id: r.user_id, username: r.username, slot: r.slot,
-        money: Number(r.money || 0), level: Number(r.level || 1),
-        online: room.has(r.user_id)
-      }))
+      members: [...w.members.entries()].map(([id, slot]) => {
+        const r = byId.get(id) || {};
+        return {
+          id, username: r.username || '?', slot,
+          money: Number(r.money || 0), level: Number(r.level || 1),
+          online: room.has(id)
+        };
+      })
     });
   } catch (e) {
     console.error('[members]', e.message);
@@ -344,14 +554,15 @@ app.post('/api/bazaar', dbReady, auth, async (req, res) => {
   const client = await pool.connect();
   try {
     const b = req.body || {};
-    const itemName = String(b.itemName || '').slice(0, 80);
-    const rarity = String(b.rarity || 'common').slice(0, 20);
+    const itemName = String(b.itemName || '');
+    const ri = ITEM_RARITY[itemName];
+    if (ri == null) return res.status(400).json({ error: 'Unknown item' });
+    const rarity = RARITIES[ri].key; // never trust the client's rarity
     const quantity = clampInt(b.quantity, 1, 9999, 1);
     const price = clampInt(b.price, 1, Number.MAX_SAFE_INTEGER, 1);
-    if (!itemName) return res.status(400).json({ error: 'Pick an item to sell' });
 
     await client.query('BEGIN');
-    const st = await stateFor(client, req.user.id);
+    const st = await stateForUpdate(client, req.user.id);
     const counts = Object.assign({}, st.counts || {});
     const have = Number(counts[itemName] || 0);
     if (have < quantity) {
@@ -394,16 +605,20 @@ app.post('/api/bazaar/:id/buy', dbReady, auth, async (req, res) => {
       return res.status(400).json({ error: 'You cannot buy your own listing' });
     }
     const price = Number(listing.price);
-    const buyer = await stateFor(client, req.user.id);
+    const buyer = await stateForUpdate(client, req.user.id);
     if (Number(buyer.money) < price) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'You cannot afford that' });
     }
     const bCounts = Object.assign({}, buyer.counts || {});
     bCounts[listing.item_name] = Number(bCounts[listing.item_name] || 0) + Number(listing.quantity);
+    const bStats = statsOf(buyer);
+    bStats.trades = (bStats.trades || 0) + 1;
+    const achievements = Array.isArray(buyer.achievements) ? buyer.achievements.slice() : [];
+    const newAch = evaluateAch(bStats, Number(buyer.level || 1), achievements).earned;
     await client.query(
-      'UPDATE player_state SET money = money - $2, counts = $3, updated_at = NOW() WHERE user_id = $1',
-      [req.user.id, price, JSON.stringify(bCounts)]
+      'UPDATE player_state SET money = money - $2, counts = $3, stats = $4, achievements = $5, updated_at = NOW() WHERE user_id = $1',
+      [req.user.id, price, JSON.stringify(bCounts), JSON.stringify(bStats), JSON.stringify(achievements)]
     );
     await client.query(
       'UPDATE player_state SET money = money + $2, updated_at = NOW() WHERE user_id = $1',
@@ -412,7 +627,7 @@ app.post('/api/bazaar/:id/buy', dbReady, auth, async (req, res) => {
     await client.query('UPDATE bazaar_listings SET sold = TRUE, quantity = 0 WHERE id = $1', [id]);
     await client.query('COMMIT');
     const fresh = await stateFor(pool, req.user.id);
-    res.json({ ok: true, state: publicState(fresh) });
+    res.json({ ok: true, state: publicState(fresh), newAch });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     console.error('[bazaar buy]', e.message);
@@ -433,7 +648,7 @@ app.delete('/api/bazaar/:id', dbReady, auth, async (req, res) => {
       return res.status(404).json({ error: 'Listing not found' });
     }
     if (!l.rows[0].sold) {
-      const st = await stateFor(client, req.user.id);
+      const st = await stateForUpdate(client, req.user.id);
       const counts = Object.assign({}, st.counts || {});
       counts[l.rows[0].item_name] = Number(counts[l.rows[0].item_name] || 0) + Number(l.rows[0].quantity);
       await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1',
@@ -565,8 +780,12 @@ app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
  * Static hosting + health
  * ------------------------------------------------------------- */
 app.get('/healthz', (req, res) => res.json({ ok: true, db: !!DATABASE_URL }));
-app.use(express.static(__dirname, { extensions: ['html'] }));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+const INDEX_HTML = path.join(__dirname, 'index.html');
+app.get('/', (req, res) => res.sendFile(INDEX_HTML));
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+  res.sendFile(INDEX_HTML);
+});
 
 /* ---------------------------------------------------------------
  * WebSocket presence
@@ -591,26 +810,32 @@ function broadcast(serverId, obj, exceptId) {
 }
 
 async function broadcastMembers(serverId) {
-  if (!DATABASE_URL) return;
+  if (!DATABASE_URL) { broadcast(serverId, { type: 'members', members: [] }); return; }
+  const w = worlds.get(serverId);
+  const room = presence.get(serverId) || new Map();
+  if (!w) { broadcast(serverId, { type: 'members', members: [] }); return; }
   try {
-    const { rows } = await pool.query(
-      `SELECT m.slot, m.user_id, u.username, ps.money, ps.level
-         FROM server_members m
-         JOIN users u ON u.id = m.user_id
-         LEFT JOIN player_state ps ON ps.user_id = m.user_id
-        WHERE m.server_id = $1
-        ORDER BY m.slot ASC`,
-      [serverId]
-    );
-    const room = presence.get(serverId) || new Map();
+    const ids = [...w.members.keys()];
+    const byId = new Map();
+    if (ids.length) {
+      const { rows } = await pool.query(
+        `SELECT u.id, u.username, ps.money, ps.level
+           FROM users u
+           LEFT JOIN player_state ps ON ps.user_id = u.id
+          WHERE u.id = ANY($1::int[])`,
+        [ids]
+      );
+      for (const r of rows) byId.set(r.id, r);
+    }
     broadcast(serverId, {
       type: 'members',
-      members: rows.map(r => {
-        const c = room.get(r.user_id);
+      members: [...w.members.entries()].map(([id, slot]) => {
+        const r = byId.get(id) || {};
+        const c = room.get(id);
         return {
-          id: r.user_id,
-          username: r.username,
-          slot: r.slot,
+          id,
+          username: r.username || '?',
+          slot,
           money: Number(r.money || 0),
           level: Number(r.level || 1),
           online: !!c,
@@ -648,21 +873,20 @@ wss.on('connection', (ws, req) => {
     if (msg.type === 'join') {
       const sid = parseInt(msg.serverId, 10);
       if (!Number.isFinite(sid)) return;
-      try {
-        const m = await pool.query('SELECT slot FROM server_members WHERE server_id = $1 AND user_id = $2', [sid, user.id]);
-        if (!m.rowCount) { ws.send(JSON.stringify({ type: 'error', error: 'You are not a member of that server' })); return; }
-        if (ws.serverId && ws.serverId !== sid) {
-          const old = presence.get(ws.serverId);
-          if (old) old.delete(user.id);
-        }
-        ws.serverId = sid;
-        ws.slot = m.rows[0].slot;
-        const room = roomOf(sid);
-        room.set(user.id, { ws, x: Number(msg.x) || 0, y: Number(msg.y) || 0, zone: 'world' });
-        await broadcastMembers(sid);
-      } catch (e) {
-        console.error('[ws join]', e.message);
+      const w = worlds.get(sid);
+      if (!w || !w.members.has(user.id)) {
+        ws.send(JSON.stringify({ type: 'error', error: 'You are not a member of that world' }));
+        return;
       }
+      if (ws.serverId && ws.serverId !== sid) {
+        const old = presence.get(ws.serverId);
+        if (old) old.delete(user.id);
+      }
+      ws.serverId = sid;
+      ws.slot = w.members.get(user.id);
+      const room = roomOf(sid);
+      room.set(user.id, { ws, x: Number(msg.x) || 0, y: Number(msg.y) || 0, zone: 'world' });
+      await broadcastMembers(sid);
       return;
     }
 

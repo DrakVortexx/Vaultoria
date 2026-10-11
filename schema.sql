@@ -21,27 +21,25 @@ CREATE TABLE IF NOT EXISTS player_state (
   tutorial_done BOOLEAN     NOT NULL DEFAULT FALSE,
   px            REAL        NOT NULL DEFAULT 0,
   py            REAL        NOT NULL DEFAULT 0,
-  server_id     INTEGER,
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS servers (
-  id         SERIAL PRIMARY KEY,
-  name       VARCHAR(40) NOT NULL,
-  is_open    BOOLEAN     NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- One row of persistent game progress per player.
+CREATE TABLE IF NOT EXISTS player_state (
+  user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  money         BIGINT      NOT NULL DEFAULT 0,
+  level         INTEGER     NOT NULL DEFAULT 1,
+  counts        JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  stats         JSONB       NOT NULL DEFAULT '{"ig":0,"earned":0,"seen":[],"best":-1,"trades":0}'::jsonb,
+  achievements  JSONB       NOT NULL DEFAULT '[]'::jsonb,
+  tutorial_done BOOLEAN     NOT NULL DEFAULT FALSE,
+  px            REAL        NOT NULL DEFAULT 0,
+  py            REAL        NOT NULL DEFAULT 0,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 8 slots per server. A player's slot determines which vault is theirs.
-CREATE TABLE IF NOT EXISTS server_members (
-  id        SERIAL PRIMARY KEY,
-  server_id INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
-  user_id   INTEGER NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
-  slot      INTEGER NOT NULL,
-  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (server_id, user_id),
-  UNIQUE (server_id, slot)
-);
+-- NOTE: worlds/servers and their membership are kept in server memory
+-- (see server.js) and are intentionally NOT stored in the database.
 
 CREATE TABLE IF NOT EXISTS bazaar_listings (
   id         SERIAL PRIMARY KEY,
@@ -63,7 +61,27 @@ CREATE TABLE IF NOT EXISTS friendships (
   UNIQUE (user_id, friend_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_members_server   ON server_members (server_id);
 CREATE INDEX IF NOT EXISTS idx_bazaar_active     ON bazaar_listings (sold, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_friendships_user  ON friendships (user_id);
 CREATE INDEX IF NOT EXISTS idx_friendships_friend ON friendships (friend_id);
+
+-- Enforce case-insensitive usernames at the database level (guards against
+-- concurrent registrations race between the app-level check and the insert).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (lower(username));
+
+-- ------------------------------------------------------------
+-- Migrations: add columns that may be missing on older tables.
+-- CREATE TABLE IF NOT EXISTS never alters existing tables, so new
+-- columns must be added explicitly here. Safe to re-run.
+-- ------------------------------------------------------------
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS money         BIGINT      NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS level         INTEGER     NOT NULL DEFAULT 1;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS counts        JSONB       NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS stats         JSONB       NOT NULL DEFAULT '{"ig":0,"earned":0,"seen":[],"best":-1,"trades":0}'::jsonb;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS achievements  JSONB       NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS tutorial_done BOOLEAN     NOT NULL DEFAULT FALSE;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS px            REAL        NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS py            REAL        NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS quantity      INTEGER     NOT NULL DEFAULT 1;
+ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS sold          BOOLEAN     NOT NULL DEFAULT FALSE;

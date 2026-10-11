@@ -206,6 +206,7 @@
   .generator-wrap.charging .core { animation: pulse 0.8s ease-in-out infinite; border-color: #4fd1ff; }
   @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pop { 0% { transform: scale(0.55); opacity: 0.35; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .countdown { position: absolute; font-size: 84px; font-weight: 800; color: #fff; text-shadow: 0 0 30px #4fd1ff, 0 0 60px #6d4dff; display: none; }
   .generator-wrap.charging .glyph { display: none; }
   .generator-wrap.charging .countdown { display: block; }
@@ -570,7 +571,11 @@ function fmt(n) {
 }
 const LUCK_PER_LEVEL = 0.02;
 const luckMult = () => 1 + (state.level - 1) * LUCK_PER_LEVEL;
-const genCost = () => Math.floor(10 * Math.pow(1.13, state.level - 1));
+const genCost = () => {
+  const n = state.level + 1;
+  if (n <= 10) return Math.floor(10 * Math.pow(2.6, n - 2));
+  return Math.floor(20000 * Math.pow(2.2, n - 10));
+};
 function rarityWeights() {
   const luck = luckMult();
   return RARITIES.map((r, i) => (i >= 2 ? r.weight * luck : r.weight));
@@ -883,24 +888,28 @@ async function enterServer(sid, name) {
 function connectWS() {
   disconnectWS();
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(proto + '://' + location.host + '/ws?token=' + encodeURIComponent(token));
-  ws.addEventListener('open', () => {
-    ws.send(JSON.stringify({ type: 'join', serverId: currentServer.id, x: player.x, y: player.y }));
+  const sock = new WebSocket(proto + '://' + location.host + '/ws?token=' + encodeURIComponent(token));
+  ws = sock;
+  sock.addEventListener('open', () => {
+    if (sock !== ws || !currentServer) return;
+    sock.send(JSON.stringify({ type: 'join', serverId: currentServer.id, x: player.x, y: player.y }));
   });
-  ws.addEventListener('message', ev => {
+  sock.addEventListener('message', ev => {
+    if (sock !== ws) return;
     let msg; try { msg = JSON.parse(ev.data); } catch (e) { return; }
     if (msg.type === 'members') onMembers(msg.members);
     else if (msg.type === 'move') onRemoteMove(msg);
     else if (msg.type === 'say') addChat('chat', msg.name, msg.text);
   });
-  ws.addEventListener('close', () => {
-    if (inGame && token) { clearTimeout(wsTimer); wsTimer = setTimeout(connectWS, 1800); }
+  sock.addEventListener('close', () => {
+    if (sock !== ws) return;
+    if (inGame && token && currentServer) { clearTimeout(wsTimer); wsTimer = setTimeout(connectWS, 1800); }
   });
-  ws.addEventListener('error', () => {});
+  sock.addEventListener('error', () => {});
 }
 function disconnectWS() {
   clearTimeout(wsTimer);
-  if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
+  if (ws) { const old = ws; ws = null; try { old.close(); } catch (e) {} }
   for (const k in others) delete others[k];
   members = [];
 }
@@ -913,9 +922,10 @@ function onMembers(list) {
     seen[m.id] = true;
     if (m.id === me.id) continue;
     if (!others[m.id]) {
+      const vp = VAULT_POS[m.slot] || SPAWN;
       others[m.id] = { id: m.id, username: m.username, slot: m.slot,
-        x: m.x == null ? VAULT_POS[m.slot].x : m.x, y: m.y == null ? VAULT_POS[m.slot].y : m.y,
-        tx: m.x == null ? VAULT_POS[m.slot].x : m.x, ty: m.y == null ? VAULT_POS[m.slot].y : m.y,
+        x: m.x == null ? vp.x : m.x, y: m.y == null ? vp.y : m.y,
+        tx: m.x == null ? vp.x : m.x, ty: m.y == null ? vp.y : m.y,
         online: m.online, moving: false, facing: { x: 1, y: 0 }, walk: 0, hue: (m.slot * 47 + 180) % 360 };
     } else {
       others[m.id].online = m.online;
@@ -1578,7 +1588,7 @@ const ACH = [
   { id: 'c500',  name: 'Item Magnate', desc: 'Generate 500 items', reward: 2000, check: () => state.stats.ig >= 500 },
   { id: 's10k',  name: 'Pocket Change', desc: 'Earn $10K total', reward: 1000, check: () => state.stats.earned >= 1e4 },
   { id: 's1m',   name: 'Millionaire', desc: 'Earn $1M total', reward: 10000, check: () => state.stats.earned >= 1e6 },
-  { id: 's1b',   name: 'Vault Billionaire', desc: 'Earn $1B total', reward: 1000000, check: () => state.stats.earned >= 1e9 },
+  { id: 's10m',  name: 'Vault Tycoon', desc: 'Earn $10M total', reward: 1000000, check: () => state.stats.earned >= 1e7 },
   { id: 'l10',   name: 'Powered Up', desc: 'Reach Level 10', reward: 2000, check: () => state.level >= 10 },
   { id: 'l25',   name: 'Well Oiled', desc: 'Reach Level 25', reward: 10000, check: () => state.level >= 25 },
   { id: 'l100',  name: 'VAULTORIA', desc: 'Reach Level 100', reward: 10000000, check: () => state.level >= 100 },
@@ -1697,7 +1707,6 @@ async function buyListing(id) {
   try {
     const r = await api('/bazaar/' + id + '/buy', { method: 'POST' });
     state = r.state;
-    state.stats.trades = (state.stats.trades || 0) + 1;
     sfxBuy(); toast('PURCHASE', 'Item added to your vault', null, '#7bdc78');
     renderVault(); checkAch(); loadBazaar();
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
@@ -1723,11 +1732,17 @@ function renderSellList() {
       '<span class="item-left"><span class="item-name" style="color:' + rar.color + '">' + esc(it) + '</span>' +
       '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
       '<span class="sell-field"><label>Qty</label><input type="number" min="1" max="' + count + '" value="1" data-qty></span>' +
-      '<span class="sell-field"><label>Price ($)</label><input type="number" min="1" value="' + Math.max(1, Math.floor(itemValue(rar) * count)) + '" data-price></span>' +
+      '<span class="sell-field"><label>Price ($)</label><input type="number" min="1" value="' + Math.max(1, Math.floor(itemValue(rar))) + '" data-price></span>' +
       '<button class="mini-btn orange" data-list>List</button>';
+    const qtyInp = li.querySelector('[data-qty]');
+    const priceInp = li.querySelector('[data-price]');
+    qtyInp.addEventListener('input', () => {
+      const q = Math.max(1, Math.min(count, parseInt(qtyInp.value, 10) || 1));
+      priceInp.value = Math.max(1, Math.floor(itemValue(rar) * q));
+    });
     li.querySelector('[data-list]').addEventListener('click', () => {
-      const qty = Math.max(1, Math.min(count, parseInt(li.querySelector('[data-qty]').value, 10) || 1));
-      const price = Math.max(1, parseInt(li.querySelector('[data-price]').value, 10) || 1);
+      const qty = Math.max(1, Math.min(count, parseInt(qtyInp.value, 10) || 1));
+      const price = Math.max(1, parseInt(priceInp.value, 10) || 1);
       listItem(it, rar, qty, price);
     });
     list.appendChild(li);
