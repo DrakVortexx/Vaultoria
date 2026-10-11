@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   id            SERIAL PRIMARY KEY,
   username      VARCHAR(20) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
+  is_admin      BOOLEAN     NOT NULL DEFAULT FALSE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -74,6 +75,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (lower(usern
 -- CREATE TABLE IF NOT EXISTS never alters existing tables, so new
 -- columns must be added explicitly here. Safe to re-run.
 -- ------------------------------------------------------------
+ALTER TABLE users            ADD COLUMN IF NOT EXISTS is_admin      BOOLEAN     NOT NULL DEFAULT FALSE;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS money         BIGINT      NOT NULL DEFAULT 0;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS level         INTEGER     NOT NULL DEFAULT 1;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS counts        JSONB       NOT NULL DEFAULT '{}'::jsonb;

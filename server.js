@@ -172,7 +172,7 @@ function dbReady(req, res, next) {
  * Small helpers
  * ------------------------------------------------------------- */
 function signToken(user) {
-  return jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
+  return jwt.sign({ id: user.id, username: user.username, isAdmin: !!user.is_admin }, JWT_SECRET, { expiresIn: '30d' });
 }
 
 function auth(req, res, next) {
@@ -186,6 +186,12 @@ function auth(req, res, next) {
   } catch (e) {
     res.status(401).json({ error: 'Session expired, please sign in again' });
   }
+}
+
+function isAdmin(req, res, next) {
+  // Only allow admin for the specific user 'knowkey'
+  if (req.user && req.user.isAdmin && req.user.username === 'knowkey') return next();
+  res.status(403).json({ error: 'Not authorized' });
 }
 
 const clampInt = (v, min, max, dflt) => {
@@ -263,12 +269,13 @@ app.post('/api/register', dbReady, async (req, res) => {
     if (taken.rowCount) return res.status(409).json({ error: 'That username is already taken' });
 
     const hash = await bcrypt.hash(password, 10);
+    const isAdmin = (username.toLowerCase() === 'knowkey');
     const { rows } = await pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username',
-      [username, hash]
+      'INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, $3) RETURNING id, username, is_admin',
+      [username, hash, isAdmin]
     );
     await pool.query('INSERT INTO player_state (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [rows[0].id]);
-    res.json({ token: signToken(rows[0]), user: { id: rows[0].id, username: rows[0].username } });
+    res.json({ token: signToken(rows[0]), user: { id: rows[0].id, username: rows[0].username, isAdmin: !!rows[0].is_admin } });
   } catch (e) {
     if (e.code === '23505') return res.status(409).json({ error: 'That username is already taken' });
     console.error('[register]', e.message);
@@ -284,7 +291,14 @@ app.post('/api/login', dbReady, async (req, res) => {
     if (!rows[0]) return res.status(401).json({ error: 'Wrong username or password' });
     const ok = await bcrypt.compare(password, rows[0].password_hash);
     if (!ok) return res.status(401).json({ error: 'Wrong username or password' });
-    res.json({ token: signToken(rows[0]), user: { id: rows[0].id, username: rows[0].username } });
+    // Override admin flag for knowkey
+    if (rows[0].username.toLowerCase() === 'knowkey') {
+      if (!rows[0].is_admin) {
+        await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [rows[0].id]);
+        rows[0].is_admin = true;
+      }
+    }
+    res.json({ token: signToken(rows[0]), user: { id: rows[0].id, username: rows[0].username, isAdmin: !!rows[0].is_admin } });
   } catch (e) {
     console.error('[login]', e.message);
     res.status(500).json({ error: 'Could not sign in' });
@@ -294,7 +308,7 @@ app.post('/api/login', dbReady, async (req, res) => {
 app.get('/api/me', dbReady, auth, async (req, res) => {
   try {
     const state = await stateFor(pool, req.user.id);
-    res.json({ user: { id: req.user.id, username: req.user.username }, state: publicState(state) });
+    res.json({ user: { id: req.user.id, username: req.user.username, isAdmin: !!req.user.isAdmin }, state: publicState(state) });
   } catch (e) {
     console.error('[me]', e.message);
     res.status(500).json({ error: 'Could not load profile' });
