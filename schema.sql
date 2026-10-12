@@ -101,6 +101,7 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS rebirths      INTEGER     
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS shield_until  TIMESTAMPTZ;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS trade_privacy TEXT        NOT NULL DEFAULT 'everyone';
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_wheel    BIGINT      NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS breaches      INTEGER     NOT NULL DEFAULT 0;
 
 -- One global boss for the whole server at a time. Persisted so a long
 -- fight survives restarts/deploys (worlds themselves stay in memory).

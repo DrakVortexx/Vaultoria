@@ -169,6 +169,31 @@ function vaultUsed(counts) {
 function shieldDuration(rebirths) { return SHIELD_BASE_SECONDS + Number(rebirths || 0) * SHIELD_PER_REBIRTH; }
 
 /* ---------------------------------------------------------------
+ * Market & Breach.
+ * The Market sells shortcuts for cash. A Breach raids another
+ * player's vault in your world: steal from one random stack plus
+ * 1%-5% of their money based on the wealth gap. Shielded targets
+ * cannot be breached at all and a failed attempt is NOT consumed.
+ * ------------------------------------------------------------- */
+const BREACH_PRICE_PER_LEVEL = 2500;
+const BREACH_COOLDOWN_MS = 60000;
+const lastBreach = new Map(); // userId -> timestamp of last successful breach
+function breachPrice(level) { return Math.max(1000, BREACH_PRICE_PER_LEVEL * Math.max(1, Number(level) || 1)); }
+// Which world a user currently belongs to (in-memory) and their socket if online.
+function worldOfUser(userId) {
+  for (const w of worlds.values()) if (w.members.has(userId)) return w;
+  return null;
+}
+function socketOfUser(userId) {
+  for (const w of worlds.values()) {
+    const room = presence.get(w.id);
+    const e = room && room.get(userId);
+    if (e && e.ws && e.ws.readyState === 1) return e.ws;
+  }
+  return null;
+}
+
+/* ---------------------------------------------------------------
  * Login rewards + daily quests (calendar day boundaries, UTC)
  * ------------------------------------------------------------- */
 const LOGIN_REWARDS = [100, 250, 500, 1000, 2000, 4000, 10000];
@@ -388,7 +413,8 @@ function publicState(row) {
     capacity: vaultCap(row.rebirths),
     used: vaultUsed(counts),
     shieldUntil: row.shield_until ? new Date(row.shield_until).getTime() : 0,
-    tradePrivacy: row.trade_privacy || 'everyone'
+    tradePrivacy: row.trade_privacy || 'everyone',
+    breaches: Number(row.breaches || 0)
   };
 }
 
@@ -809,10 +835,149 @@ app.post('/api/shield', dbReady, auth, async (req, res) => {
     const until = new Date(Date.now() + secs * 1000);
     await pool.query('UPDATE player_state SET shield_until = $2, updated_at = NOW() WHERE user_id = $1', [req.user.id, until]);
     const fresh = await stateFor(pool, req.user.id);
+    const w = worldOfUser(req.user.id);
+    if (w) broadcastMembers(w.id).catch(() => {});
     res.json({ ok: true, seconds: secs, state: publicState(fresh) });
   } catch (e) {
     console.error('[shield]', e.message);
     res.status(500).json({ error: 'Could not activate shield' });
+  }
+});
+
+app.get('/api/market', dbReady, auth, async (req, res) => {
+  try {
+    const st = await stateFor(pool, req.user.id);
+    const now = Date.now();
+    const nextOk = (lastBreach.get(req.user.id) || 0) + BREACH_COOLDOWN_MS;
+    const cooldown = nextOk > now ? nextOk - now : 0;
+    res.json({
+      items: [{
+        id: 'breach',
+        name: 'Breach',
+        desc: 'Raid another player\u2019s vault in your world. Shielded targets are immune (breach is not spent). Steals part of one item stack + 1-5% of their money.',
+        price: breachPrice(st.level),
+        owned: Number(st.breaches || 0),
+        cooldown
+      }]
+    });
+  } catch (e) {
+    console.error('[market]', e.message);
+    res.status(500).json({ error: 'Could not load the Market' });
+  }
+});
+
+app.post('/api/market/buy', dbReady, auth, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const item = String(body.item || '');
+    if (item !== 'breach') return res.status(400).json({ error: 'Unknown shop item' });
+    const st = await stateForUpdate(pool, req.user.id);
+    const price = breachPrice(st.level);
+    if (Number(st.money || 0) < price) return res.status(400).json({ error: 'Not enough money' });
+    await pool.query('UPDATE player_state SET money = money - $2, breaches = breaches + 1, updated_at = NOW() WHERE user_id = $1', [req.user.id, price]);
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, price, state: publicState(fresh) });
+  } catch (e) {
+    console.error('[market-buy]', e.message);
+    res.status(500).json({ error: 'Could not complete purchase' });
+  }
+});
+
+app.post('/api/breach', dbReady, auth, async (req, res) => {
+  const targetId = Math.floor(Number((req.body || {}).userId));
+  if (!Number.isFinite(targetId) || targetId <= 0 || targetId === Number(req.user.id)) {
+    return res.status(400).json({ error: 'Pick a valid target' });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const atk = await stateForUpdate(client, req.user.id);
+    if (Number(atk.breaches || 0) <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'You have no Breach to use \u2014 buy one at the Market' });
+    }
+    const now = Date.now();
+    const nextOk = (lastBreach.get(req.user.id) || 0) + BREACH_COOLDOWN_MS;
+    if (now < nextOk) {
+      await client.query('ROLLBACK');
+      return res.status(429).json({ error: 'Breach on cooldown \u2014 wait ' + Math.ceil((nextOk - now) / 1000) + 's' });
+    }
+    const atkW = worldOfUser(req.user.id);
+    const tgtW = worldOfUser(targetId);
+    if (!atkW || !tgtW || atkW.id !== tgtW.id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Target is not online in your world' });
+    }
+    const vic = await stateForUpdate(client, targetId);
+    if (vic.shield_until && new Date(vic.shield_until).getTime() > now) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Target is shielded \u2014 your Breach is not consumed' });
+    }
+
+    const vicCounts = Object.assign({}, vic.counts || {});
+    const stackKeys = Object.keys(vicCounts).filter(k => Number(vicCounts[k]) > 0);
+    const vicMoney = Number(vic.money || 0);
+    if (!stackKeys.length && vicMoney <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Nothing to steal \u2014 your Breach is not consumed' });
+    }
+
+    let stolenItem = null;
+    if (stackKeys.length) {
+      const key = stackKeys[Math.floor(Math.random() * stackKeys.length)];
+      const stack = Number(vicCounts[key]);
+      const qty = 1 + Math.floor(Math.random() * Math.floor(stack / 2));
+      vicCounts[key] = stack - qty;
+      if (vicCounts[key] <= 0) delete vicCounts[key];
+      stolenItem = { key, qty };
+    }
+    let stolenMoney = 0;
+    if (vicMoney > 0) {
+      const gap = Math.log10(vicMoney / Math.max(1, Number(atk.money || 1))) / 3;
+      const pct = Math.min(0.05, Math.max(0.01, 0.01 + 0.04 * gap));
+      stolenMoney = Math.floor(vicMoney * pct);
+    }
+
+    const atkCounts = Object.assign({}, atk.counts || {});
+    if (stolenItem) {
+      atkCounts[stolenItem.key] = Number(atkCounts[stolenItem.key] || 0) + stolenItem.qty;
+    }
+    await client.query(
+      'UPDATE player_state SET counts = $2, money = money + $3, breaches = breaches - 1, updated_at = NOW() WHERE user_id = $1',
+      [req.user.id, JSON.stringify(atkCounts), stolenMoney]
+    );
+    await client.query(
+      'UPDATE player_state SET counts = $2, money = money - $3, updated_at = NOW() WHERE user_id = $1',
+      [targetId, JSON.stringify(vicCounts), stolenMoney]
+    );
+    lastBreach.set(req.user.id, now);
+    await client.query('COMMIT');
+
+    const vicWs = socketOfUser(targetId);
+    if (vicWs && vicWs.readyState === 1) {
+      vicWs.send(JSON.stringify({
+        type: 'breached',
+        byName: req.user.username,
+        item: stolenItem ? { name: baseName(stolenItem.key), mutation: mutationOf(stolenItem.key), qty: stolenItem.qty } : null,
+        money: stolenMoney
+      }));
+    }
+
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({
+      ok: true,
+      stolen: {
+        item: stolenItem ? { name: baseName(stolenItem.key), mutation: mutationOf(stolenItem.key), qty: stolenItem.qty } : null,
+        money: stolenMoney
+      },
+      state: publicState(fresh)
+    });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[breach]', e.message);
+    res.status(500).json({ error: 'Could not complete the breach' });
+  } finally {
+    client.release();
   }
 });
 
@@ -1397,7 +1562,7 @@ async function broadcastMembers(serverId) {
     const byId = new Map();
     if (ids.length) {
       const { rows } = await pool.query(
-        `SELECT u.id, u.username, ps.money, ps.level
+        `SELECT u.id, u.username, ps.money, ps.level, ps.shield_until
            FROM users u
            LEFT JOIN player_state ps ON ps.user_id = u.id
           WHERE u.id = ANY($1::int[])`,
@@ -1417,6 +1582,7 @@ async function broadcastMembers(serverId) {
           money: Number(r.money || 0),
           level: Number(r.level || 1),
           online: !!c,
+          shielded: !!(r.shield_until && new Date(r.shield_until).getTime() > Date.now()),
           x: c ? c.x : null,
           y: c ? c.y : null,
           zone: c ? c.zone : 'world'
