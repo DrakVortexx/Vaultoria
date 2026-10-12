@@ -1993,6 +1993,42 @@ app.post('/api/admin/reset-progress', dbReady, auth, isAdmin, async (req, res) =
   }
 });
 
+app.post('/api/admin/give-item', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  const item = String((req.body && req.body.item) || '').trim();
+  const mutation = req.body && req.body.mutation ? String(req.body.mutation).trim().toLowerCase() : null;
+  const quantity = clampInt(req.body && req.body.quantity, 1, 1000000, 1);
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  if (!item) return res.status(400).json({ error: 'Item required' });
+  let mutObj = null;
+  if (mutation) {
+    if (MUT_BY_ID[mutation]) mutObj = { id: mutation };
+    else return res.status(400).json({ error: 'Invalid mutation' });
+  }
+  const base = baseName(item) || item;
+  if (!valid.has(base)) return res.status(400).json({ error: 'Unknown item' });
+  const key = makeKey(item, mutObj);
+  const client = await pool.connect();
+  try {
+    const u = await client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [username]);
+    if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
+    const id = u.rows[0].id;
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, id);
+    const counts = Object.assign({}, st.counts || {});
+    counts[key] = Number(counts[key] || 0) + quantity;
+    await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1', [id, JSON.stringify(counts)]);
+    await client.query('COMMIT');
+    client.release();
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    console.error('[admin give-item]', e.message);
+    res.status(500).json({ error: 'Could not give item' });
+  }
+});
+
 app.post('/api/admin/kick', dbReady, auth, isAdmin, async (req, res) => {
   const username = String((req.body && req.body.username) || '').trim();
   if (!username) return res.status(400).json({ error: 'Username required' });
