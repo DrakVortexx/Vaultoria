@@ -165,13 +165,11 @@ const VAULT_BASE_CAP = 1000;
 const VAULT_CAP_PER_REBIRTH = 1000;
 const SHIELD_BASE_SECONDS = 300;
 const SHIELD_PER_REBIRTH = 60;
-// New-player fairness: brand-new accounts get a starter shield + a small
-// cash cushion, low-level keepers cannot be raided, and no one can raid a
-// keeper far below their level.
-const STARTER_SHIELD_SECONDS = 1200;
+// New-player fairness: brand-new (and freshly reset) accounts get a small
+// cash cushion and no shield. Keepers at or below NEWBIE_LEVEL cannot be
+// breached by anyone (rich/high-level keepers included).
 const STARTER_MONEY = 500;
-const NEWBIE_LEVEL = 10;
-const BREACH_LEVEL_GAP = 15;
+const NEWBIE_LEVEL = 8;
 function vaultCap(rebirths) { return VAULT_BASE_CAP + Number(rebirths || 0) * VAULT_CAP_PER_REBIRTH; }
 function vaultUsed(counts) {
   let n = 0;
@@ -207,7 +205,7 @@ function socketOfUser(userId) {
 
 /* ---------------------------------------------------------------
  * The Electric Event & the Center Wheel.
- * Every ~1 hour an arc takes over the middle of each shared world:
+ * Every ~1 hour the electric wheel powers up in the middle of each world:
  * game entities near the wheel with radius WHEEL_RADIUS can SPIN to
  * win a random item for a flat cash fee. The whole event lasts
  * EW_DURATION_MS and can hand out at most EW_CAP items.
@@ -678,10 +676,10 @@ app.post('/api/register', dbReady, async (req, res) => {
       'INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, $3) RETURNING id, username, is_admin',
       [username, hash, isAdmin]
     );
-    // New keepers start with a small cushion and a protective shield.
+    // New keepers start with a small cushion and no shield.
     await pool.query(
-      "INSERT INTO player_state (user_id, money, shield_until) VALUES ($1, $2, NOW() + ($3 * INTERVAL '1 second')) ON CONFLICT DO NOTHING",
-      [rows[0].id, STARTER_MONEY, STARTER_SHIELD_SECONDS]
+      'INSERT INTO player_state (user_id, money) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [rows[0].id, STARTER_MONEY]
     );
     res.json({ token: signToken(rows[0]), user: { id: rows[0].id, username: rows[0].username, isAdmin: !!rows[0].is_admin } });
   } catch (e) {
@@ -1077,15 +1075,13 @@ app.post('/api/breach', dbReady, auth, async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Target is shielded \u2014 your Breach is not consumed' });
     }
-    // New-player fairness: don't let veterans farm weaker keepers.
-    const atkLvl = Number(atk.level || 1), vicLvl = Number(vic.level || 1);
-    if (vicLvl < NEWBIE_LEVEL) {
+    // New-player fairness: keepers at or below NEWBIE_LEVEL are protected
+    // from everyone. There is no "too weak" rule \u2014 anyone may raid an
+    // eligible target regardless of wealth or level.
+    const vicLvl = Number(vic.level || 1);
+    if (vicLvl <= NEWBIE_LEVEL) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'That keeper is still learning \u2014 your Breach is not consumed' });
-    }
-    if (atkLvl - vicLvl >= BREACH_LEVEL_GAP) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'That keeper is far weaker \u2014 pick a fairer fight' });
+      return res.status(400).json({ error: 'That keeper is a rookie (Level ' + NEWBIE_LEVEL + ' or below) \u2014 your Breach is not consumed' });
     }
 
     const vicCounts = Object.assign({}, vic.counts || {});
@@ -1980,8 +1976,8 @@ app.post('/api/admin/reset-progress', dbReady, auth, isAdmin, async (req, res) =
     if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
     const id = u.rows[0].id;
     await client.query('BEGIN');
-    await client.query('UPDATE player_state SET money = 0, level = 1, counts = $2, stats = $3, achievements = $4, tutorial_done = FALSE, updated_at = NOW() WHERE user_id = $1',
-      [id, JSON.stringify({}), JSON.stringify(defaultStats()), JSON.stringify([])]);
+    await client.query('UPDATE player_state SET money = $2, level = 1, counts = $3, stats = $4, achievements = $5, shield_until = NULL, tutorial_done = FALSE, updated_at = NOW() WHERE user_id = $1',
+      [id, STARTER_MONEY, JSON.stringify({}), JSON.stringify(defaultStats()), JSON.stringify([])]);
     await client.query('COMMIT');
     client.release();
     res.json({ ok: true });

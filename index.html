@@ -740,6 +740,7 @@ const VAULT_POS = [
 ];
 const WORLD_W = 2800, WORLD_H = 1700, WALL = 24, SPAWN = { x: 1400, y: 850 };
 const EL = { x: SPAWN.x, y: SPAWN.y, r: 60 };
+const CAM_ZOOM = 0.8;
 const EW_SPIN_COST = 50000;
 
 /* =============================================================
@@ -831,8 +832,7 @@ const SHIELD_BASE_SECONDS = 300;
 const SHIELD_PER_REBIRTH = 60;
 function shieldActive() { return !!(state && state.shieldUntil && state.shieldUntil > Date.now()); }
 function shieldSeconds() { return SHIELD_BASE_SECONDS + (state ? state.rebirths : 0) * SHIELD_PER_REBIRTH; }
-const NEWBIE_LEVEL = 10;
-const BREACH_LEVEL_GAP = 15;
+const NEWBIE_LEVEL = 8;
 function countRarity(ri) {
   let n = 0;
   for (const k in (state.counts || {})) {
@@ -1342,10 +1342,10 @@ function renderEventTag() {
   if (ev && (ev.active || (ev.startsAt && ev.startsAt - now < 120000))) {
     tag.classList.remove('hidden');
     if (ev.active) {
-      tag.textContent = 'ARC ' + Math.max(0, Math.ceil((ev.endsAt - now) / 1000)) + 's';
+      tag.textContent = 'ELECTRIC ' + Math.max(0, Math.ceil((ev.endsAt - now) / 1000)) + 's';
       tag.classList.add('live'); tag.classList.remove('soon');
     } else {
-      tag.textContent = 'ARC IN ' + Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) + 's';
+      tag.textContent = 'ELECTRIC IN ' + Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) + 's';
       tag.classList.add('soon'); tag.classList.remove('live');
     }
   } else { tag.classList.add('hidden'); }
@@ -1353,13 +1353,13 @@ function renderEventTag() {
 function onElectricMsg(msg) {
   if (msg.type === 'electricNotice') {
     const sec = Math.max(0, Math.ceil((msg.startsAt - Date.now()) / 1000));
-    toast('ELECTRIC EVENT', 'The arc awakens at the center of the world in ' + sec + 's', null, '#8affd8');
+    toast('ELECTRIC EVENT', 'The Electric Wheel awakens at the center of the world in ' + sec + 's', null, '#8affd8');
     sfxToast();
   } else if (msg.on) {
     toast('ELECTRIC EVENT', 'The wheel is live \u2014 hurry to the center of the world!', null, '#8affd8');
     sfxToast();
   } else {
-    toast('ELECTRIC EVENT', 'The arc fades away...', null, '#8b93bd');
+    toast('ELECTRIC EVENT', 'The Electric Wheel powers down...', null, '#8b93bd');
   }
   refreshEvent();
 }
@@ -1874,8 +1874,10 @@ function drawVaultPad(slot) {
     ctx.fillText(owner.username + (isMine ? ' (you)' : ''), cx, cy - 84);
     ctx.shadowBlur = 0;
     const online = owner.online && owner.id !== me.id;
+    const rookie = !isMine && owner.level != null && owner.level <= NEWBIE_LEVEL;
     ctx.font = "700 12px 'Segoe UI', sans-serif";
     if (isMine) { ctx.fillStyle = '#7bdc78'; ctx.fillText('YOUR VAULT', cx, cy + 92); }
+    else if (rookie) { ctx.fillStyle = '#8bd48b'; ctx.fillText('ROOKIE \u00b7 PROTECTED', cx, cy + 92); }
     else if (online) { ctx.fillStyle = '#7bdc78'; ctx.fillText('LOCKED \u00b7 ONLINE', cx, cy + 92); }
     else { ctx.fillStyle = '#8b93bd'; ctx.fillText('LOCKED \u00b7 OFFLINE', cx, cy + 92); }
 
@@ -2041,45 +2043,81 @@ function drawWorld(now) {
 function drawWheel(now) {
   const cx = EL.x, cy = EL.y;
   const active = eventActive();
+  const R = EL.r;
+  const pulse = 0.5 + 0.5 * Math.sin(now / 300);
   ctx.save();
   ctx.translate(cx, cy);
-  if (active) {
-    const radius = EL.r + Math.sin(now / 200) * 6;
-    ctx.strokeStyle = 'rgba(138,255,216,0.9)';
-    ctx.lineWidth = 4;
-    ctx.shadowColor = 'rgba(138,255,216,0.9)';
-    ctx.shadowBlur = 24;
-    ctx.beginPath(); ctx.arc(0, 0, radius + 10, 0, Math.PI * 2); ctx.stroke();
-    ctx.save();
-    ctx.rotate(now / 900);
-    for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = (i % 2) ? '#5a7bff' : '#ff4fd8';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.arc(0, 0, EL.r, (i * Math.PI) / 4, ((i + 1) * Math.PI) / 4);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
-    ctx.fillStyle = '#0b0f1e';
-    ctx.strokeStyle = 'rgba(138,255,216,0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, EL.r * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#8affd8';
-    ctx.font = "800 12px 'Segoe UI', sans-serif";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('SPIN', 0, 0);
-  } else {
-    ctx.fillStyle = 'rgba(124,92,255,0.07)';
-    ctx.beginPath(); ctx.arc(0, 0, EL.r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(124,92,255,0.28)';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, EL.r, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = 'rgba(124,92,255,0.55)';
-    ctx.font = "800 11px 'Segoe UI', sans-serif";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('AWAITING ARC', 0, 0);
+
+  // Ground glow so the wheel is easy to spot from anywhere on the map.
+  const glowR = R + (active ? 34 : 22) + pulse * 10;
+  const gg = ctx.createRadialGradient(0, 0, 6, 0, 0, glowR);
+  gg.addColorStop(0, active ? 'rgba(138,255,216,0.45)' : 'rgba(124,92,255,0.30)');
+  gg.addColorStop(0.6, active ? 'rgba(79,209,255,0.12)' : 'rgba(124,92,255,0.09)');
+  gg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gg;
+  ctx.beginPath(); ctx.arc(0, 0, glowR, 0, Math.PI * 2); ctx.fill();
+
+  // Idle beacon beam so players can find the wheel between events.
+  if (!active) {
+    const beam = ctx.createLinearGradient(0, -260, 0, 0);
+    beam.addColorStop(0, 'rgba(124,92,255,0)');
+    beam.addColorStop(1, 'rgba(124,92,255,' + (0.10 + pulse * 0.08).toFixed(3) + ')');
+    ctx.fillStyle = beam;
+    ctx.beginPath();
+    ctx.moveTo(-26, -260); ctx.lineTo(26, -260);
+    ctx.lineTo(R * 0.7, 0); ctx.lineTo(-R * 0.7, 0);
+    ctx.closePath(); ctx.fill();
+  }
+
+  if (active) drawWheelBolts(now);
+
+  // Spinning wheel face: 8 pie slices, always visible.
+  ctx.save();
+  ctx.rotate(now / (active ? 850 : 4200));
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, R, (i * Math.PI) / 4, ((i + 1) * Math.PI) / 4);
+    ctx.closePath();
+    if (active) ctx.fillStyle = (i % 2) ? '#5a7bff' : '#ff4fd8';
+    else ctx.fillStyle = (i % 2) ? 'rgba(124,92,255,0.22)' : 'rgba(90,123,255,0.15)';
+    ctx.fill();
   }
   ctx.restore();
+
+  // Rim.
+  const rimColor = active ? 'rgba(138,255,216,0.9)' : 'rgba(150,120,255,0.7)';
+  ctx.strokeStyle = rimColor;
+  ctx.lineWidth = active ? 3.5 : 3;
+  ctx.shadowColor = rimColor; ctx.shadowBlur = active ? 22 : 12;
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Hub.
+  ctx.fillStyle = '#0b0f1e';
+  ctx.strokeStyle = active ? 'rgba(138,255,216,0.6)' : 'rgba(150,120,255,0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = active ? '#8affd8' : '#c8b8ff';
+  ctx.font = "800 12px 'Segoe UI', sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(active ? 'SPIN' : '\u26a1', 0, 0);
+
+  // Label under the wheel.
+  ctx.font = "800 12px 'Segoe UI', sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (active) {
+    ctx.fillStyle = '#8affd8';
+    ctx.shadowColor = 'rgba(138,255,216,0.9)'; ctx.shadowBlur = 14;
+    ctx.fillText('ELECTRIC \u00b7 LIVE', 0, R + 24);
+  } else {
+    ctx.fillStyle = 'rgba(200,184,255,0.85)';
+    ctx.shadowColor = 'rgba(124,92,255,0.7)'; ctx.shadowBlur = 10;
+    ctx.fillText('AWAITING ELECTRIC', 0, R + 24);
+  }
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
   if (active && inGame && nearWheel()) {
     const prompt = 'E \u2014 SPIN THE WHEEL';
     ctx.save();
@@ -2093,6 +2131,35 @@ function drawWheel(now) {
     ctx.fillText(prompt, cx, cy - EL.r - 42);
     ctx.restore();
   }
+}
+function drawWheelBolts(now) {
+  const R = EL.r;
+  ctx.save();
+  for (let b = 0; b < 7; b++) {
+    const flick = 0.5 + 0.5 * Math.sin(now / 55 + b * 2.3);
+    if (flick < 0.4) continue;
+    const baseAng = (b / 7) * Math.PI * 2 + now / 1700;
+    const r0 = R + 4;
+    const r1 = R + 26 + flick * 34;
+    const steps = 6;
+    const color = ['#8affd8', '#7fd0ff', '#c77bff'][b % 3];
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.35 + flick * 0.6;
+    ctx.lineWidth = 1.6 + flick * 1.8;
+    ctx.shadowColor = color; ctx.shadowBlur = 16;
+    ctx.beginPath();
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      const rr = R + 4 + ((R + 26 + flick * 34) - (R + 4)) * t;
+      const seed = Math.sin((b + 1) * 12.9898 + s * 78.233 + Math.floor(now / 45) * 37.719) * 43758.5453;
+      const jitter = (seed - Math.floor(seed) - 0.5) * 0.5;
+      const a = baseAng + jitter * (0.4 + t);
+      const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+      if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 function guideTarget() {
   if (tutorialDone || mySlot < 0) return null;
@@ -2207,15 +2274,17 @@ function frame(now) {
     updateHudMeta();
     updateHint();
 
-    const maxCamX = Math.max(0, WORLD_W - viewW), maxCamY = Math.max(0, WORLD_H - viewH);
-    const tx = Math.max(0, Math.min(maxCamX, player.x + player.w / 2 - viewW / 2));
-    const ty = Math.max(0, Math.min(maxCamY, player.y + player.h / 2 - viewH / 2));
+    const viewWz = viewW / CAM_ZOOM, viewHz = viewH / CAM_ZOOM;
+    const maxCamX = Math.max(0, WORLD_W - viewWz), maxCamY = Math.max(0, WORLD_H - viewHz);
+    const tx = Math.max(0, Math.min(maxCamX, player.x + player.w / 2 - viewWz / 2));
+    const ty = Math.max(0, Math.min(maxCamY, player.y + player.h / 2 - viewHz / 2));
     if (!camSet) { camX = tx; camY = ty; camSet = true; }
     else { const k = Math.min(1, dt * 6); camX += (tx - camX) * k; camY += (ty - camY) * k; }
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, viewW, viewH);
     ctx.save();
+    ctx.scale(CAM_ZOOM, CAM_ZOOM);
     ctx.translate(-camX, -camY);
     drawWorld(now);
     ctx.restore();
@@ -2631,28 +2700,25 @@ function renderBreachTargets() {
   const list = $('breachTargets');
   if (!state) return;
   const owned = state.breaches || 0;
-  $('breachStats').textContent = 'You hold ' + owned + ' Breach' + (owned === 1 ? '' : 'es') + '. Pick an online member of this world to raid. Shielded players and new keepers (below Lv ' + NEWBIE_LEVEL + ') are protected, and you cannot raid someone far weaker.';
+  $('breachStats').textContent = 'You hold ' + owned + ' Breach' + (owned === 1 ? '' : 'es') + '. Pick an online member of this world to raid. Shielded keepers, and rookies (Level ' + NEWBIE_LEVEL + ' and below), are protected \u2014 everyone else can be raided.';
   list.innerHTML = '';
   const targets = (members || []).filter(m => m.id !== me.id && m.online);
   if (!targets.length) { list.innerHTML = '<li class="empty">No other players online in this world.</li>'; return; }
   for (const m of targets) {
-    const tooNew = m.level < NEWBIE_LEVEL;
-    const tooWeak = (state.level - m.level) >= BREACH_LEVEL_GAP;
-    const blocked = !!m.shielded || tooNew || tooWeak;
+    const rookie = m.level <= NEWBIE_LEVEL;
+    const blocked = !!m.shielded || rookie;
     let note = '';
     if (m.shielded) note = ' \u00b7 SHIELDED';
-    else if (tooNew) note = ' \u00b7 NEW \u00b7 PROTECTED';
-    else if (tooWeak) note = ' \u00b7 TOO WEAK';
+    else if (rookie) note = ' \u00b7 ROOKIE \u00b7 PROTECTED';
     const li = document.createElement('li');
     li.innerHTML =
-      '<span class="item-left"><span class="item-name" style="color:' + (m.shielded ? '#7bdcf0' : '#fff') + '">' + esc(m.username) + (m.shielded ? ' \u26e8' : '') + '</span>' +
+      '<span class="item-left"><span class="item-name" style="color:' + (m.shielded ? '#7bdcf0' : (rookie ? '#8bd48b' : '#fff')) + '">' + esc(m.username) + (m.shielded ? ' \u26e8' : '') + '</span>' +
       '<span style="font-size:12px;color:#8b93bd">Lv ' + m.level + ' \u00b7 $' + fmt(m.money) + note + '</span></span>' +
       '<span class="item-right"><button class="mini-btn" data-breach="' + m.id + '">BREACH</button></span>';
     const btn = li.querySelector('[data-breach]');
     btn.disabled = owned <= 0 || blocked;
     if (m.shielded) { btn.className = 'mini-btn ghost'; btn.textContent = 'SHIELDED'; }
-    else if (tooNew) { btn.className = 'mini-btn ghost'; btn.textContent = 'PROTECTED'; }
-    else if (tooWeak) { btn.className = 'mini-btn ghost'; btn.textContent = 'TOO WEAK'; }
+    else if (rookie) { btn.className = 'mini-btn ghost'; btn.textContent = 'PROTECTED'; }
     btn.addEventListener('click', () => useBreach(m.id, m.username));
     list.appendChild(li);
   }
