@@ -1839,7 +1839,7 @@ $('chatForm').addEventListener('submit', e => {
   e.preventDefault();
   const inp = $('chatInput');
   const text = inp.value.trim();
-  if (text) { wsSend({ type: 'say', text }); addChat('chat', me.username, text); }
+  if (text) { wsSend({ type: 'say', text }); }
   inp.value = '';
 });
 
