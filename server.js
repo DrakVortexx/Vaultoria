@@ -114,7 +114,8 @@ function splitKey(key) {
   const s = String(key);
   const i = s.indexOf(MUT_SEP);
   if (i === -1) return { item: s, mut: null };
-  return { item: s.slice(0, i), mut: s.slice(i + 1) };
+  // Composite keys are "<mutationId><MUT_SEP><itemName>".
+  return { item: s.slice(i + 1), mut: s.slice(0, i) };
 }
 function baseName(key) { return splitKey(key).item; }
 function mutationOf(key) { return MUT_BY_ID[splitKey(key).mut] || null; }
@@ -1843,6 +1844,19 @@ app.post('/api/admin/reset-progress', dbReady, auth, isAdmin, async (req, res) =
     console.error('[admin reset]', e.message);
     res.status(500).json({ error: 'Could not reset progress' });
   }
+});
+
+// Kick every connected client and force a page reload. In-memory state
+// (worlds, presence, boss) is recreated fresh on the next connections.
+app.post('/api/admin/restart', dbReady, auth, isAdmin, (req, res) => {
+  res.json({ ok: true });
+  const data = JSON.stringify({ type: 'restart', reason: 'Game restarted by the admin' });
+  for (const c of wss.clients) {
+    if (c.readyState === 1) { try { c.send(data); } catch (e) {} }
+  }
+  setTimeout(() => {
+    for (const c of wss.clients) { try { c.close(4009, 'server restart'); } catch (e) {} }
+  }, 400);
 });
 app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
   try {

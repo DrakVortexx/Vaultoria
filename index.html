@@ -260,6 +260,8 @@
   .offer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
   .offer-row .item-left { flex: 1; }
   .offer-row .item-value { min-width: 30px; text-align: center; }
+  .admin-tools { width: 100%; margin-bottom: 14px; }
+  .admin-tools .buy { padding: 10px; font-size: 13px; box-shadow: 0 6px 18px rgba(184,184,255,0.28); }
   #eventTag { font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; pointer-events: none; }
   #eventTag.live { color: #081018; background: #8affd8; animation: eventBlink 1.2s ease-in-out infinite; }
   #eventTag.soon { color: #8affd8; background: rgba(138,255,216,0.12); border: 1px solid rgba(138,255,216,0.4); }
@@ -651,6 +653,9 @@
     <div class="modal-card large">
       <div class="modal-head"><div class="modal-title">Admin Panel</div><button class="x" data-close="adminModal" type="button">&times;</button></div>
       <div class="modal-body">
+        <div class="admin-tools">
+          <button class="buy" id="adminRestartBtn" type="button">&#10227; RESTART GAME (kick everyone)</button>
+        </div>
         <ul id="adminUsers" class="list"></ul>
       </div>
     </div>
@@ -792,7 +797,8 @@ function splitKey(key) {
   const s = String(key);
   const i = s.indexOf(MUT_SEP);
   if (i === -1) return { item: s, mut: null };
-  return { item: s.slice(0, i), mut: s.slice(i + 1) };
+  // Composite keys are "<mutationId><MUT_SEP><itemName>".
+  return { item: s.slice(i + 1), mut: s.slice(0, i) };
 }
 function baseName(key) { return splitKey(key).item; }
 function mutationOf(key) { return MUT_BY_ID[splitKey(key).mut] || null; }
@@ -1555,6 +1561,7 @@ function connectWS() {
     else if (msg.type === 'tradeUpdate') pollTrade();
     else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);
     else if (msg.type === 'wheel') onWheelMsg(msg);
+    else if (msg.type === 'restart') onRestart();
   });
   sock.addEventListener('close', () => {
     if (sock !== ws) return;
@@ -2977,6 +2984,15 @@ async function adminResetProgress(username) {
   try { await api('/admin/reset-progress', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' reset', null, '#4fd1ff'); loadAdminUsers(); }
   catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
 }
+function onRestart() {
+  toast('SERVER RESTART', 'The admin restarted the game \u2014 reloading...', null, '#ffb648');
+  setTimeout(() => { try { disconnectWS(); } catch (e) {} location.reload(); }, 600);
+}
+if ($('adminRestartBtn')) $('adminRestartBtn').addEventListener('click', () => {
+  if (!confirm('Kick everyone and force their pages to reload? The browser reloads for you too.')) return;
+  toast('ADMIN', 'Restart issued \u2014 everyone reloads in a moment', null, '#ffb648');
+  api('/admin/restart', { method: 'POST' }).catch(e => toast('OOPS', e.message, null, '#ff6b8a'));
+});
 function transitionTo(text) {
   const t = $('transition');
   t.textContent = text; t.classList.add('on');
