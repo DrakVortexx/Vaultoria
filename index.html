@@ -2953,7 +2953,7 @@ const TUTORIAL = [
   { title: 'SELL YOUR ITEMS', text: 'Open the INVENTORY tab and press SELL ALL to cash in.', check: () => (state.stats.earned || 0) > 0 || salesCount > 0 },
   { title: 'UPGRADE', text: 'Spend money in the UPGRADES tab to raise your generator level.', check: () => state.level > 1 },
   { title: 'THE BAZAAR', text: 'Use the BAZAAR button on your HUD to buy and sell items with other keepers.', check: () => bazaarOpened },
-  { info: true, title: 'YOU\u2019RE READY, KEEPER', text: 'Hoard, trade and climb to Level 100. Rule the item empire.', delay: 4600 }
+  { info: true, title: 'YOU\u2019RE READY, KEEPER', text: 'Hoard, trade and keep leveling up. Rule the item empire.', delay: 4600 }
 ];
 function showTutStep() {
   if (lastTutRender === tutIdx) return;
