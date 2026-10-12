@@ -8,7 +8,8 @@
  * - WebSocket presence so up to 8 players share a server world in real time.
  * - Uses a Neon Postgres database via DATABASE_URL.
  *
- * Deploy target: Render Web Service (Node). See render.yaml / .env.example.
+ * Deploy target: Render Web Service (Node). Configure DATABASE_URL and
+ * JWT_SECRET as environment variables. See render.yaml.
  */
 
 require('dotenv').config();
