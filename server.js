@@ -79,10 +79,9 @@ function pickRarity(level) {
 const MUT_SEP = '\u241F';
 const MUTATION_CHANCE = 0.08;
 const MUTATIONS = [
-  { id: 'gold',     name: 'Gold',     mult: 2,  weight: 60 },
-  { id: 'diamond',  name: 'Diamond',  mult: 3,  weight: 25 },
-  { id: 'emerald',  name: 'Emerald',  mult: 5,  weight: 10 },
-  { id: 'electric', name: 'Electric', mult: 10, weight: 5 }
+  { id: 'gold',     name: 'Gold',     mult: 2, weight: 60 },
+  { id: 'diamond',  name: 'Diamond',  mult: 3, weight: 30 },
+  { id: 'electric', name: 'Electric', mult: 4, weight: 10 }
 ];
 const MUT_BY_ID = {};
 MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });

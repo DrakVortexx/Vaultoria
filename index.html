@@ -664,10 +664,9 @@ function itemValue(rar) { return rar.base; }
 /* item mutations ------------------------------------------------ */
 const MUT_SEP = '\u241F';
 const MUTATIONS = [
-  { id: 'gold',     name: 'Gold',     mult: 2,  color: '#ffd24a' },
-  { id: 'diamond',  name: 'Diamond',  mult: 3,  color: '#7be0ff' },
-  { id: 'emerald',  name: 'Emerald',  mult: 5,  color: '#4fe08a' },
-  { id: 'electric', name: 'Electric', mult: 10, color: '#c77bff' }
+  { id: 'gold',     name: 'Gold',     mult: 2, color: '#ffd24a' },
+  { id: 'diamond',  name: 'Diamond',  mult: 3, color: '#7be0ff' },
+  { id: 'electric', name: 'Electric', mult: 4, color: '#c77bff' }
 ];
 const MUT_BY_ID = {};
 MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
