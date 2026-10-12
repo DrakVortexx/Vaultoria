@@ -34,20 +34,41 @@ const SERVER_CAPACITY = 8;
  * upgrades and achievement rewards are computed and stored here.
  * ------------------------------------------------------------- */
 const RARITIES = [
-  { key: 'common',    name: 'Common',    base: 4,      weight: 1000 },
-  { key: 'uncommon',  name: 'Uncommon',  base: 15,     weight: 300 },
-  { key: 'rare',      name: 'Rare',      base: 80,     weight: 80 },
-  { key: 'epic',      name: 'Epic',      base: 600,    weight: 20 },
-  { key: 'legendary', name: 'Legendary', base: 7000,   weight: 5 },
-  { key: 'mythic',    name: 'Mythic',    base: 100000, weight: 1 }
+  { key: 'common',     name: 'Common',     color: '#9aa0b4', weight: 1000000 },
+  { key: 'uncommon',   name: 'Uncommon',   color: '#5cd66b', weight: 180000 },
+  { key: 'rare',       name: 'Rare',       color: '#4fa8ff', weight: 32000 },
+  { key: 'epic',       name: 'Epic',       color: '#b15cff', weight: 5800 },
+  { key: 'legendary',  name: 'Legendary',  color: '#ffb648', weight: 1000 },
+  { key: 'mythic',     name: 'Mythic',     color: '#ff4d5e', weight: 190 },
+  { key: 'divine',     name: 'Divine',     color: '#fff3c0', weight: 35 },
+  { key: 'celestial',  name: 'Celestial',  color: '#5a7bff', weight: 6 },
+  { key: 'eternal',    name: 'Eternal',    color: '#ff4fd8', weight: 1 },
+  { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 0.2 }
 ];
 const ITEMS_BY_RARITY = {
-  common: ["Rotten Tomato","Floppy Disk","Used Toenail","Wet Sock","Broken Umbrella","Expired Yogurt","Chewed Pencil","Soggy Cardboard","Cracked Mug","Dull Scissors","Moldy Bread","Bent Paperclip","Dead Battery","Torn Sponge","Singed Hairball","Sticky Penny","Smashed Earwig","Empty Lighter","Rusty Nail","Clipped Nail","Dried Gum","Tangled Earbuds","Leaky Pen","Stale Chip","Wilted Lettuce","Balding Mop","Chipped Plate","Frayed Shoelace"],
-  uncommon: ["Damp Towel","Half a Sticker","Bent Key","Chipped DVD","Loose Button","Stale Tuna Sandwich","Questionable Sock","Slightly Used Diaper","Warped Record","Freeze-Dried Banana"],
-  rare: ["Vintage Floppy Disk","Collectible Pringle","Autographed Sock","Antique Dust","Shiny Hubcap","First Edition Napkin","Haunted Sock","Limited Soggy Cardboard"],
-  epic: ["Golden Banana Peel","Cursed Toenail Clipper","Mystic Mayo Jar","Sentient Mold","Royal Cheese Rind","Enchanted Plastic Fork"],
-  legendary: ["The Holy Toaster","Certified Mold Cheese","Singularity Bell","Pope's Old Lighter","Relic VHS Tape","Demon Coffee Mug"],
-  mythic: ["The Vaultoria Crown","Egg of Nefarious","Sacred Trash King","Index of All Items"]
+  common: ["Iron Scrap","Cracked Stone","Copper Wire","Coal Chunk","Rusty Bolt","Glass Shard","Faded Circuit","Dust Crystal","Scrap Metal","Empty Power Cell"],
+  uncommon: ["Refined Iron","Charged Battery","Polished Copper","Reinforced Gear","Emerald Circuit","Stable Energy Core","Quartz Lens","Dense Alloy","Neon Shard","Compressed Coal"],
+  rare: ["Plasma Crystal","Quantum Circuit","Titanium Plate","Void Glass","Flux Capacitor","Synthetic Diamond","Magnetic Core","Arc Battery","Echo Fragment","Reinforced Data Chip"],
+  epic: ["Rift Crystal","Quantum Battery","Phantom Alloy","Chrono Gear","Dimensional Lens","Singularity Dust","Astral Circuit","Void Battery","Gravity Core","Phase Fragment"],
+  legendary: ["Solar Core","Golden Singularity","Phoenix Circuit","Celestial Alloy","Eternal Battery","Starforge Crystal","Timekeeper Gear","Royal Voidstone","Aether Engine","Crown Fragment"],
+  mythic: ["Bloodmoon Core","Oblivion Shard","Infernal Reactor","Reality Fracture","Dragonheart Battery","Chaos Engine","Worldbreaker Alloy","Crimson Singularity","Godforge Fragment","Eclipse Relic"],
+  divine: ["Heavenstone","Genesis Core","Seraphic Engine","Miracle Fragment","Dawn Singularity","Divine Circuit","Worldroot Crystal","Sacred Chrono Gear","Creation Battery","Halo of Eternity"],
+  celestial: ["Nebula Heart","Galaxy Engine","Starborn Relic","Cosmic Prism","Astral Crown","Blackstar Core","Universe Fragment","Event Horizon Lens","Multiverse Battery","Celestial Throne"],
+  eternal: ["Infinity Heart","Eternal Singularity","Timebreak Relic","Unending Engine","Immortal Prism","Endlessness Core","Absolute Chrono Gear","Evernight Crystal","Eternal Crown","Last Light of Time"],
+  omniversal: ["Omniversal Seed","Reality's Last Spark","Infinite Paradox","The First Singularity","Multiverse Heart","Absolute Infinity","The Unwritten World","Omniscient Core","The Final Constant","The Omniversal"]
+};
+// Per-item base value in currency. Sell value = base * mutation multiplier.
+const ITEM_BASE = {
+  "Iron Scrap": 5, "Cracked Stone": 3, "Copper Wire": 8, "Coal Chunk": 6, "Rusty Bolt": 4, "Glass Shard": 7, "Faded Circuit": 12, "Dust Crystal": 10, "Scrap Metal": 9, "Empty Power Cell": 15,
+  "Refined Iron": 25, "Charged Battery": 35, "Polished Copper": 30, "Reinforced Gear": 45, "Emerald Circuit": 60, "Stable Energy Core": 75, "Quartz Lens": 55, "Dense Alloy": 80, "Neon Shard": 90, "Compressed Coal": 40,
+  "Plasma Crystal": 180, "Quantum Circuit": 240, "Titanium Plate": 200, "Void Glass": 300, "Flux Capacitor": 350, "Synthetic Diamond": 275, "Magnetic Core": 400, "Arc Battery": 450, "Echo Fragment": 500, "Reinforced Data Chip": 325,
+  "Rift Crystal": 1000, "Quantum Battery": 1250, "Phantom Alloy": 1500, "Chrono Gear": 1800, "Dimensional Lens": 2000, "Singularity Dust": 2500, "Astral Circuit": 2200, "Void Battery": 3000, "Gravity Core": 3500, "Phase Fragment": 4000,
+  "Solar Core": 8000, "Golden Singularity": 10000, "Phoenix Circuit": 12000, "Celestial Alloy": 15000, "Eternal Battery": 18000, "Starforge Crystal": 22000, "Timekeeper Gear": 25000, "Royal Voidstone": 30000, "Aether Engine": 35000, "Crown Fragment": 40000,
+  "Bloodmoon Core": 75000, "Oblivion Shard": 90000, "Infernal Reactor": 110000, "Reality Fracture": 135000, "Dragonheart Battery": 160000, "Chaos Engine": 200000, "Worldbreaker Alloy": 250000, "Crimson Singularity": 300000, "Godforge Fragment": 400000, "Eclipse Relic": 500000,
+  "Heavenstone": 1000000, "Genesis Core": 1250000, "Seraphic Engine": 1500000, "Miracle Fragment": 1800000, "Dawn Singularity": 2200000, "Divine Circuit": 2700000, "Worldroot Crystal": 3200000, "Sacred Chrono Gear": 4000000, "Creation Battery": 5000000, "Halo of Eternity": 7500000,
+  "Nebula Heart": 10000000, "Galaxy Engine": 12500000, "Starborn Relic": 15000000, "Cosmic Prism": 20000000, "Astral Crown": 25000000, "Blackstar Core": 35000000, "Universe Fragment": 50000000, "Event Horizon Lens": 65000000, "Multiverse Battery": 85000000, "Celestial Throne": 100000000,
+  "Infinity Heart": 150000000, "Eternal Singularity": 200000000, "Timebreak Relic": 250000000, "Unending Engine": 300000000, "Immortal Prism": 400000000, "Endlessness Core": 500000000, "Absolute Chrono Gear": 650000000, "Evernight Crystal": 800000000, "Eternal Crown": 1000000000, "Last Light of Time": 1500000000,
+  "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000
 };
 const ITEM_RARITY = {};
 RARITIES.forEach((r, i) => (ITEMS_BY_RARITY[r.key] || []).forEach(it => { ITEM_RARITY[it] = i; }));
@@ -97,10 +118,9 @@ function mutationOf(key) { return MUT_BY_ID[splitKey(key).mut] || null; }
 function makeKey(item, mut) { return mut ? (mut.id + MUT_SEP + item) : item; }
 function itemValueFor(key) {
   const { item, mut } = splitKey(key);
-  const ri = ITEM_RARITY[item];
-  if (ri == null) return 0;
+  if (ITEM_RARITY[item] == null) return 0;
   const m = MUT_BY_ID[mut];
-  return RARITIES[ri].base * (m ? m.mult : 1);
+  return (ITEM_BASE[item] || 0) * (m ? m.mult : 1);
 }
 function rollMutation() {
   if (Math.random() >= MUTATION_CHANCE) return null;
@@ -161,6 +181,10 @@ const ACH = [
   { id: 'e1',     reward: 5000,     check: v => (v.best == null ? -1 : v.best) >= 3 },
   { id: 'l1',     reward: 50000,    check: v => (v.best == null ? -1 : v.best) >= 4 },
   { id: 'm1',     reward: 1000000,  check: v => (v.best == null ? -1 : v.best) >= 5 },
+  { id: 'd1',     reward: 5000000,   check: v => (v.best == null ? -1 : v.best) >= 6 },
+  { id: 'ce1',    reward: 25000000,  check: v => (v.best == null ? -1 : v.best) >= 7 },
+  { id: 'et1',    reward: 100000000, check: v => (v.best == null ? -1 : v.best) >= 8 },
+  { id: 'om1',    reward: 500000000, check: v => (v.best == null ? -1 : v.best) >= 9 },
   { id: 'col10',  reward: 1000,     check: v => (v.seen || []).length >= 10 },
   { id: 'col50',  reward: 50000,    check: v => (v.seen || []).length >= 50 },
   { id: 'trader', reward: 2500,     check: v => (v.trades || 0) >= 1 }
@@ -237,8 +261,28 @@ async function initDb() {
   const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   await pool.query(sql);
 
+  try { await purgeLegacyItems(); } catch (e) { console.error('[purge]', e.message); }
+
   if (!worlds.size) createWorld('The Grand Bazaar');
   console.log('[vaultoria] database ready');
+}
+
+// The item catalog was fully replaced; drop any items/listings that are no
+// longer valid so inventories and the bazaar stay consistent. Idempotent.
+async function purgeLegacyItems() {
+  const valid = new Set(Object.keys(ITEM_BASE));
+  const { rows } = await pool.query('SELECT user_id, counts FROM player_state');
+  for (const row of rows) {
+    const counts = row.counts || {};
+    let changed = false;
+    for (const key of Object.keys(counts)) {
+      if (!valid.has(baseName(key))) { delete counts[key]; changed = true; }
+    }
+    if (changed) {
+      await pool.query('UPDATE player_state SET counts = $2 WHERE user_id = $1', [row.user_id, JSON.stringify(counts)]);
+    }
+  }
+  await pool.query('DELETE FROM bazaar_listings WHERE NOT (item_name = ANY($1::text[]))', [[...valid]]);
 }
 
 function dbReady(req, res, next) {
