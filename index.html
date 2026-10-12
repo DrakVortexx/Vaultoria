@@ -260,6 +260,11 @@
   .offer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
   .offer-row .item-left { flex: 1; }
   .offer-row .item-value { min-width: 30px; text-align: center; }
+  #eventTag { font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; pointer-events: none; }
+  #eventTag.live { color: #081018; background: #8affd8; animation: eventBlink 1.2s ease-in-out infinite; }
+  #eventTag.soon { color: #8affd8; background: rgba(138,255,216,0.12); border: 1px solid rgba(138,255,216,0.4); }
+  @keyframes eventBlink { 50% { opacity: 0.55; } }
+  #wheelResult { min-height: 32px; font-size: 15px; }
   ul.list { list-style: none; margin: 0; padding: 0; width: 100%; max-height: 340px; overflow-y: auto; scrollbar-width: thin; }
   ul.list li { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; gap: 10px; border-radius: 8px; animation: rowIn 0.25s ease; }
   ul.list li:hover { background: rgba(124,92,255,0.12); }
@@ -435,6 +440,7 @@
         <span id="hudServer">World</span>
         <span class="dot"></span>
         <span id="hudOnline">1 / 8 online</span>
+        <span id="eventTag" class="hidden"></span>
       </div>
       <div class="hud-right">
         <button class="hud-btn primary" id="vaultBtn" type="button">Vault</button>
@@ -625,6 +631,20 @@
     </div>
   </div>
 
+  <!-- Electric Wheel modal -->
+  <div id="wheelModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">The Electric Wheel</div>
+        <div class="resource-bar"><span class="icon">$</span><span class="label">Money</span><span class="value" id="wMoney">$0</span></div>
+        <button class="x" data-close="wheelModal" type="button">&times;</button>
+      </div>
+      <div class="empty-note" id="wheelInfo" style="padding:8px 4px 14px">The wheel is resting. It awakens for a short while at the center of the world, roughly every hour.</div>
+      <div id="wheelResult" style="width:100%"></div>
+      <button class="buy" id="wheelSpin" type="button">SPIN $50,000</button>
+    </div>
+  </div>
+
   <!-- Leaderboard modal -->
   <div id="adminModal" class="modal hidden">
     <div class="modal-backdrop" data-close="adminModal"></div>
@@ -720,6 +740,8 @@ const VAULT_POS = [
   { x: 380,  y: 1400 }, { x: 1050, y: 1400 }, { x: 1720, y: 1400 }, { x: 2390, y: 1400 }
 ];
 const WORLD_W = 2800, WORLD_H = 1700, WALL = 24, SPAWN = { x: 1400, y: 850 };
+const EL = { x: SPAWN.x, y: SPAWN.y, r: 60 };
+const EW_SPIN_COST = 50000;
 
 /* =============================================================
  * HELPERS / STATE
@@ -835,6 +857,7 @@ let bazaarOpened = false;
 let pendingTradeReqs = [];
 let activeTrade = null;
 let tradeDraft = { items: {}, money: 0 };
+let ev = null;
 let vaultOpen = false;
 let generating = false;
 let genBusy = false;
@@ -972,6 +995,7 @@ async function loadMe() {
   renderDash();
   renderVault();
   showScreen('dash');
+  refreshEvent();
   if (data.login && data.login.isNew) {
     setTimeout(() => toast('DAILY REWARD \u00b7 DAY ' + data.login.day, data.login.streak + ' day streak', '$' + fmt(data.login.reward), '#ffb648'), 600);
   }
@@ -1264,6 +1288,90 @@ $('tradeCancel').addEventListener('click', async () => {
 });
 
 /* =============================================================
+ * ELECTRIC EVENT & THE CENTER WHEEL
+ * ============================================================= */
+function nearWheel() {
+  const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+  return Math.hypot(cx - EL.x, cy - EL.y) < EL.r + 30;
+}
+function eventActive() { return !!(ev && ev.active); }
+async function refreshEvent() {
+  try {
+    const r = await api('/event');
+    ev = r.event;
+    renderEventTag();
+    if (!$('wheelModal').classList.contains('hidden')) renderWheelModal();
+  } catch (e) {}
+}
+function renderEventTag() {
+  const tag = $('eventTag');
+  if (!tag) return;
+  const now = Date.now();
+  if (ev && (ev.active || (ev.startsAt && ev.startsAt - now < 120000))) {
+    tag.classList.remove('hidden');
+    if (ev.active) {
+      tag.textContent = 'ARC ' + Math.max(0, Math.ceil((ev.endsAt - now) / 1000)) + 's';
+      tag.classList.add('live'); tag.classList.remove('soon');
+    } else {
+      tag.textContent = 'ARC IN ' + Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) + 's';
+      tag.classList.add('soon'); tag.classList.remove('live');
+    }
+  } else { tag.classList.add('hidden'); }
+}
+function onElectricMsg(msg) {
+  if (msg.type === 'electricNotice') {
+    const sec = Math.max(0, Math.ceil((msg.startsAt - Date.now()) / 1000));
+    toast('ELECTRIC EVENT', 'The arc awakens at the center of the world in ' + sec + 's', null, '#8affd8');
+    sfxToast();
+  } else if (msg.on) {
+    toast('ELECTRIC EVENT', 'The wheel is live \u2014 hurry to the center of the world!', null, '#8affd8');
+    sfxToast();
+  } else {
+    toast('ELECTRIC EVENT', 'The arc fades away...', null, '#8b93bd');
+  }
+  refreshEvent();
+}
+function onWheelMsg(msg) {
+  const name = itemDisplayName(makeKey(msg.item.name, msg.item.mutation ? (MUT_BY_ID[msg.item.mutation] || null) : null));
+  addChat('sys', '', msg.name + ' spun the wheel \u2014 ' + name + (msg.jackpot ? ' (ELECTRIC!)' : ''));
+}
+async function openWheel() {
+  if (!inGame) return;
+  closeAllModals();
+  $('wheelModal').classList.remove('hidden');
+  $('wheelResult').innerHTML = '';
+  renderWheelModal();
+  await refreshEvent();
+}
+function renderWheelModal() {
+  if (!state) return;
+  $('wMoney').textContent = '$' + fmt(state.money);
+  const info = $('wheelInfo');
+  const spin = $('wheelSpin');
+  if (!ev || !ev.active) {
+    info.textContent = 'The wheel is resting. It awakens for 90 seconds roughly every hour at the center of the world \u2014 keep an eye on the HUD timer.';
+    spin.disabled = true; spin.textContent = 'NOT LIVE';
+    return;
+  }
+  const end = Math.max(0, ev.endsAt - Date.now());
+  info.innerHTML = 'Live for <b>' + Math.ceil(end / 1000) + 's</b> \u00b7 <b>' + ev.remaining + '</b> items left on the wheel \u00b7 your spins: <b>' + ev.spinsLeft + '</b>/' + ev.maxSpins;
+  const broke = state.money < ev.cost;
+  spin.disabled = ev.spinsLeft <= 0 || ev.remaining <= 0 || broke;
+  spin.textContent = broke ? 'NEED $' + fmt(ev.cost) : ('SPIN $' + fmt(ev.cost) + (ev.spinsLeft <= 0 ? ' \u2014 MAX SPINS' : ''));
+}
+$('wheelSpin').addEventListener('click', async () => {
+  try {
+    const r = await api('/event/spin', { method: 'POST' });
+    state = r.state; renderVault();
+    ev = r.event; renderWheelModal(); renderEventTag();
+    const name = itemDisplayName(makeKey(r.item, r.mutation ? (MUT_BY_ID[r.mutation] || null) : null));
+    $('wheelResult').innerHTML = '<div class="empty-note" style="padding:10px 0;text-align:center"><div style="font-weight:800;color:#8affd8;font-size:16px">' + name + (r.jackpot ? ' \u2014 ELECTRIC!' : '') + '</div><div style="font-size:12px;color:#8b93bd">-\$' + fmt(r.cost) + '</div></div>';
+    sfxBuy();
+    if (r.newAch && r.newAch.length) showNewAch(r.newAch);
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+});
+
+/* =============================================================
  * DASHBOARD
  * ============================================================= */
 function renderDash() {
@@ -1317,6 +1425,7 @@ async function play() {
       target = created.server;
     }
     await enterServer(target.id, target.name);
+    refreshEvent();
   } catch (err) {
     toast('OOPS', err.message, null, '#ff6b8a');
   }
@@ -1414,6 +1523,7 @@ async function enterServer(sid, name) {
     renderVault();
     loadBoss();
     addChat('sys', 'You joined ' + currentServer.name + ' (slot ' + (mySlot + 1) + '/8).');
+    refreshEvent();
   } catch (err) {
     toast('OOPS', err.message, null, '#ff6b8a');
   }
@@ -1443,6 +1553,8 @@ function connectWS() {
     else if (msg.type === 'tradeCancelled') onTradeCancelled(msg);
     else if (msg.type === 'tradeDeclined') onTradeDeclined(msg);
     else if (msg.type === 'tradeUpdate') pollTrade();
+    else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);
+    else if (msg.type === 'wheel') onWheelMsg(msg);
   });
   sock.addEventListener('close', () => {
     if (sock !== ws) return;
@@ -1543,7 +1655,7 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
   }
   if (document.activeElement && document.activeElement.tagName === 'INPUT' && k !== 'escape') return;
-  if (k === 'e' && !e.repeat && inGame && !anyModalOpen()) { ac(); toggleVault(); return; }
+  if (k === 'e' && !e.repeat && inGame && !anyModalOpen()) { ac(); if (eventActive() && nearWheel()) openWheel(); else toggleVault(); return; }
   if (k === 'escape') { closeAllModals(); return; }
   keys[k] = true; ac();
 });
@@ -1803,6 +1915,7 @@ function drawNameTag(x, y, text, color) {
 function drawWorld(now) {
   drawFloor();
   drawMotes(now);
+  drawWheel(now);
   for (let i = 0; i < 8; i++) drawVaultPad(i);
   for (const s of solidList) drawWall(s);
   if (inGame) {
@@ -1836,6 +1949,62 @@ function drawWorld(now) {
     drawNameTag(player.x + 20, player.y - 6, me.username, '#4fd1ff');
   }
   drawGuideArrow(now);
+}
+function drawWheel(now) {
+  const cx = EL.x, cy = EL.y;
+  const active = eventActive();
+  ctx.save();
+  ctx.translate(cx, cy);
+  if (active) {
+    const radius = EL.r + Math.sin(now / 200) * 6;
+    ctx.strokeStyle = 'rgba(138,255,216,0.9)';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = 'rgba(138,255,216,0.9)';
+    ctx.shadowBlur = 24;
+    ctx.beginPath(); ctx.arc(0, 0, radius + 10, 0, Math.PI * 2); ctx.stroke();
+    ctx.save();
+    ctx.rotate(now / 900);
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = (i % 2) ? '#5a7bff' : '#ff4fd8';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, EL.r, (i * Math.PI) / 4, ((i + 1) * Math.PI) / 4);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = '#0b0f1e';
+    ctx.strokeStyle = 'rgba(138,255,216,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, EL.r * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#8affd8';
+    ctx.font = "800 12px 'Segoe UI', sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('SPIN', 0, 0);
+  } else {
+    ctx.fillStyle = 'rgba(124,92,255,0.07)';
+    ctx.beginPath(); ctx.arc(0, 0, EL.r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(124,92,255,0.28)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, EL.r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(124,92,255,0.55)';
+    ctx.font = "800 11px 'Segoe UI', sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('AWAITING ARC', 0, 0);
+  }
+  ctx.restore();
+  if (active && inGame && nearWheel()) {
+    const prompt = 'E \u2014 SPIN THE WHEEL';
+    ctx.save();
+    ctx.font = "800 13px 'Segoe UI', sans-serif";
+    const tw = ctx.measureText(prompt).width;
+    ctx.fillStyle = 'rgba(8,16,24,0.85)';
+    ctx.strokeStyle = 'rgba(138,255,216,0.55)';
+    ctx.beginPath(); ctx.rect(cx - tw / 2 - 8, cy - EL.r - 56, tw + 16, 28); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#8affd8';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(prompt, cx, cy - EL.r - 42);
+    ctx.restore();
+  }
 }
 function guideTarget() {
   if (tutorialDone || mySlot < 0) return null;
@@ -1985,7 +2154,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'bossModal', 'tradeModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'bossModal', 'tradeModal', 'wheelModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -2192,6 +2361,7 @@ $('shieldBtn').addEventListener('click', async () => {
 setInterval(() => {
   if (!inGame || !state) return;
   if (vaultOpen || shieldActive()) renderShieldBtn();
+  renderEventTag();
 }, 1000);
 
 function renderRebirth() {

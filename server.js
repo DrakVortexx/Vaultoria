@@ -106,6 +106,9 @@ const MUTATIONS = [
 ];
 const MUT_BY_ID = {};
 MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
+// The electric mutation is event-only: it never rolls on generated items and
+// can only appear from the Center Wheel jackpot.
+const ROLLABLE_MUTATIONS = MUTATIONS.filter(m => m.id !== 'electric');
 
 function splitKey(key) {
   const s = String(key);
@@ -124,9 +127,10 @@ function itemValueFor(key) {
 }
 function rollMutation() {
   if (Math.random() >= MUTATION_CHANCE) return null;
-  let roll = Math.random() * MUTATIONS.reduce((a, b) => a + b.weight, 0);
-  for (const m of MUTATIONS) { roll -= m.weight; if (roll <= 0) return m; }
-  return MUTATIONS[0];
+  const pool = ROLLABLE_MUTATIONS;
+  let roll = Math.random() * pool.reduce((a, b) => a + b.weight, 0);
+  for (const m of pool) { roll -= m.weight; if (roll <= 0) return m; }
+  return pool[0];
 }
 
 /* ---------------------------------------------------------------
@@ -192,6 +196,38 @@ function socketOfUser(userId) {
   }
   return null;
 }
+
+/* ---------------------------------------------------------------
+ * The Electric Event & the Center Wheel.
+ * Every ~1 hour an arc takes over the middle of each shared world:
+ * game entities near the wheel with radius WHEEL_RADIUS can SPIN to
+ * win a random item for a flat cash fee. The whole event lasts
+ * EW_DURATION_MS and can hand out at most EW_CAP items.
+ * ------------------------------------------------------------- */
+const EL = { x: 1400, y: 850, r: 60 };
+const EW_FREQ_MS = 60 * 60 * 1000;
+const EW_DURATION_MS = 90 * 1000;
+const EW_WARN_MS = 60 * 1000; // heads-up before an event starts
+const EW_SPIN_COST = 50000;
+const EW_CAP = 1000;              // items the wheel can give per event
+const EW_MAX_SPINS_PER_PLAYER = 10;
+const EW_JACKPOT_MUTATION = 'electric'; // the event-only ×4 mutation
+let electricEvent = { active: false, nextAt: 0, endsAt: 0, remaining: 0, spins: 0 };
+const eventSpins = new Map(); // userId -> spins taken during the current event
+
+function distToWheel(x, y) {
+  const dx = Number(x || 0) - EL.x, dy = Number(y || 0) - EL.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+function playerPos(userId) {
+  const w = worldOfUser(userId);
+  if (!w) return null;
+  const room = presence.get(w.id);
+  const e = room && room.get(userId);
+  if (!e) return null;
+  return { x: e.x, y: e.y };
+}
+function wheelJackpot() { return MUT_BY_ID[EW_JACKPOT_MUTATION] || null; }
 
 /* ---------------------------------------------------------------
  * Login rewards + daily quests (calendar day boundaries, UTC)
@@ -1264,6 +1300,133 @@ setInterval(() => {
     if (s.state !== 'open') tradeSessions.delete(id);
   }
 }, 15000);
+
+/* ---------------------------------------------------------------
+ * Electric Event endpoints + scheduler.
+ * ------------------------------------------------------------- */
+function eventPublic(req) {
+  const spins = req && req.user ? (eventSpins.get(req.user.id) || 0) : 0;
+  return {
+    active: electricEvent.active,
+    startsAt: electricEvent.active ? 0 : electricEvent.nextAt,
+    endsAt: electricEvent.active ? electricEvent.endsAt : 0,
+    remaining: electricEvent.remaining,
+    spins: electricEvent.spins,
+    cost: EW_SPIN_COST,
+    maxSpins: EW_MAX_SPINS_PER_PLAYER,
+    spinsLeft: electricEvent.active ? Math.max(0, EW_MAX_SPINS_PER_PLAYER - spins) : 0,
+    wheel: EL
+  };
+}
+
+app.get('/api/event', dbReady, auth, (req, res) => {
+  res.json({ ok: true, event: eventPublic(req) });
+});
+
+app.post('/api/event/spin', dbReady, auth, async (req, res) => {
+  if (!electricEvent.active) {
+    return res.status(409).json({ error: 'The Electric Event is not live right now' });
+  }
+  if (electricEvent.remaining <= 0) {
+    electricEvent.active = false;
+    broadcastAll({ type: 'electric', on: false });
+    return res.status(409).json({ error: 'The wheel has been cleaned out' });
+  }
+  if ((eventSpins.get(req.user.id) || 0) >= EW_MAX_SPINS_PER_PLAYER) {
+    return res.status(429).json({ error: 'You already spun the wheel this event' });
+  }
+  const pos = playerPos(req.user.id);
+  if (!pos) return res.status(409).json({ error: 'Join a world to reach the wheel' });
+  if (distToWheel(pos.x, pos.y) > EL.r) {
+    return res.status(409).json({ error: 'Too far from the wheel \u2014 walk to the center of the world' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, req.user.id);
+    const money = Number(st.money || 0);
+    if (money < EW_SPIN_COST) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'You need $' + EW_SPIN_COST.toLocaleString() + ' to spin' });
+    }
+
+    const rollLevel = Math.min(Number(st.level || 1) + 30, MAX_LEVEL);
+    const ri = pickRarity(rollLevel);
+    const poolArr = ITEMS_BY_RARITY[RARITIES[ri].key];
+    const item = poolArr[Math.floor(Math.random() * poolArr.length)];
+    const jackpot = Math.random() < 1 / 6;
+    const mut = jackpot ? wheelJackpot() : rollMutation();
+    const key = makeKey(item, mut);
+
+    const counts = Object.assign({}, st.counts || {});
+    counts[key] = Number(counts[key] || 0) + 1;
+    const stats = statsOf(st);
+    stats.wheel = (stats.wheel || 0) + 1;
+    const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
+    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, money - EW_SPIN_COST, null);
+    await client.query('COMMIT');
+
+    eventSpins.set(req.user.id, (eventSpins.get(req.user.id) || 0) + 1);
+    electricEvent.spins += 1;
+    electricEvent.remaining = Math.max(0, electricEvent.remaining - 1);
+    if (electricEvent.remaining <= 0) {
+      electricEvent.active = false;
+      broadcastAll({ type: 'electric', on: false });
+    }
+    const w = worldOfUser(req.user.id);
+    if (w) {
+      broadcast(w.id, {
+        type: 'wheel',
+        id: req.user.id,
+        name: req.user.username,
+        item: { name: item, mutation: mut ? mut.id : null },
+        jackpot
+      });
+    }
+
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({
+      ok: true,
+      item, rarity: RARITIES[ri].key, mutation: mut ? mut.id : null, jackpot,
+      cost: EW_SPIN_COST,
+      state: publicState(fresh),
+      newAch,
+      event: eventPublic(req)
+    });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[spin]', e.message);
+    res.status(500).json({ error: 'The wheel is stuck' });
+  } finally {
+    client.release();
+  }
+});
+
+// Wheel scheduler: awakens the wheel on a ~hourly cadence.
+setInterval(() => {
+  const now = Date.now();
+  if (!electricEvent.active) {
+    if (electricEvent.nextAt === 0) electricEvent.nextAt = now + EW_FREQ_MS;
+    if (!electricEvent._warned && electricEvent.nextAt - now <= EW_WARN_MS) {
+      electricEvent._warned = true;
+      broadcastAll({ type: 'electricNotice', startsAt: electricEvent.nextAt });
+    }
+    if (now >= electricEvent.nextAt) {
+      electricEvent.active = true;
+      electricEvent.endsAt = now + EW_DURATION_MS;
+      electricEvent.remaining = EW_CAP;
+      electricEvent.spins = 0;
+      electricEvent.nextAt = now + EW_FREQ_MS;
+      electricEvent._warned = false;
+      eventSpins.clear();
+      broadcastAll({ type: 'electric', on: true, endsAt: electricEvent.endsAt, remaining: electricEvent.remaining });
+    }
+  } else if (now >= electricEvent.endsAt) {
+    electricEvent.active = false;
+    broadcastAll({ type: 'electric', on: false });
+  }
+}, 1000);
 
 /* ---------------------------------------------------------------
  * Worlds (in-memory, never written to the database)
