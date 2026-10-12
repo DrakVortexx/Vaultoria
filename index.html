@@ -122,6 +122,9 @@
   .pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
   .pill.on { color: #7bdc78; background: rgba(123,220,120,0.14); border: 1px solid rgba(123,220,120,0.4); }
   .pill.off { color: #8b93bd; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .status-dot.on { background: #7bdc78; box-shadow: 0 0 8px #7bdc78; }
+  .status-dot.off { background: #5a6188; }
   .inline-form { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
   .inline-form input { flex: 1; min-width: 160px; font-family: inherit; font-size: 14px; padding: 11px 14px; border-radius: 10px; color: #fff; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); outline: none; }
   .inline-form input:focus { border-color: #6d4dff; }
@@ -260,8 +263,15 @@
   .offer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
   .offer-row .item-left { flex: 1; }
   .offer-row .item-value { min-width: 30px; text-align: center; }
-  .admin-tools { width: 100%; margin-bottom: 14px; }
+  .admin-tools { width: 100%; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
   .admin-tools .buy { padding: 10px; font-size: 13px; box-shadow: 0 6px 18px rgba(184,184,255,0.28); }
+  .admin-row { display: flex; gap: 8px; }
+  .admin-row input { flex: 1; font-family: inherit; font-size: 13px; padding: 10px 12px; border-radius: 8px; color: #fff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); outline: none; }
+  .admin-row input:focus { border-color: #6d4dff; }
+  .admin-row .buy { flex: 0 0 auto; width: auto; padding: 10px 16px; }
+  .mini-btn.warn { background: linear-gradient(135deg, #ff5c8a, #ff8c42); }
+  .mod-ban { color: #ff5c8a; font-weight: 800; font-size: 9px; letter-spacing: 1px; }
+  .mod-mute { color: #ffb648; font-weight: 800; font-size: 9px; letter-spacing: 1px; }
   #eventTag { font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; pointer-events: none; }
   #eventTag.live { color: #081018; background: #8affd8; animation: eventBlink 1.2s ease-in-out infinite; }
   #eventTag.soon { color: #8affd8; background: rgba(138,255,216,0.12); border: 1px solid rgba(138,255,216,0.4); }
@@ -340,19 +350,15 @@
   #confettiLayer { position: fixed; inset: 0; pointer-events: none; z-index: 300; overflow: hidden; }
   .confetti { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: confettiFly 1.2s ease-out forwards; }
   @keyframes confettiFly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
-
-  /* world boss */
-  #bossStrip { position: fixed; top: 104px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: auto; cursor: pointer;
-    display: flex; align-items: center; gap: 12px; padding: 7px 16px; border-radius: 20px;
-    background: rgba(5,6,15,0.72); border: 1px solid rgba(255,92,138,0.45); box-shadow: 0 0 24px rgba(255,92,138,0.2); }
-  #bossStrip:hover { border-color: rgba(255,140,168,0.9); }
-  #bossStripName { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: #ff8ca8; text-transform: uppercase; }
-  #bossStripHp { font-size: 12px; font-weight: 700; color: #c3c8e6; min-width: 130px; text-align: right; }
-  .boss-hp { width: 240px; height: 10px; border-radius: 20px; background: rgba(255,255,255,0.08); overflow: hidden; }
-  .boss-hp > div { height: 100%; width: 100%; border-radius: 20px; background: linear-gradient(90deg, #ff5c8a, #ffb648); transition: width 0.4s ease; }
-  .boss-stat { display: flex; justify-content: space-between; gap: 12px; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-  .boss-stat .k { color: #9aa2cc; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
-  .boss-stat .v { font-weight: 700; }
+  .shock { position: fixed; width: 0; height: 0; border-radius: 50%; border: 3px solid currentColor; transform: translate(-50%, -50%); animation: shockOut 0.7s ease-out forwards; pointer-events: none; z-index: 299; }
+  @keyframes shockOut { from { width: 20px; height: 20px; opacity: 0.85; } to { width: 380px; height: 380px; opacity: 0; } }
+  .flash { position: fixed; inset: 0; pointer-events: none; z-index: 298; animation: flashFade 0.5s ease-out forwards; }
+  @keyframes flashFade { from { opacity: 1; } to { opacity: 0; } }
+  #game.shake { animation: shakeX 0.34s ease; }
+  @keyframes shakeX { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-7px,3px); } 40% { transform: translate(6px,-5px); } 60% { transform: translate(-4px,-3px); } 80% { transform: translate(3px,4px); } }
+  .toast.announce { border-color: rgba(255,182,72,0.85); box-shadow: 0 10px 46px rgba(255,182,72,0.4); max-width: min(560px, 92vw); }
+  .chip.money.pulse { animation: moneyPulse 0.55s ease; }
+  @keyframes moneyPulse { 0% { transform: scale(1); } 35% { transform: scale(1.2); color: #8bff9c; box-shadow: 0 0 24px rgba(123,220,120,0.85); } 100% { transform: scale(1); } }
 
   /* bazaar search */
   .bazaar-search { display: flex; gap: 8px; width: 100%; margin-bottom: 10px; flex-wrap: wrap; }
@@ -446,7 +452,6 @@
       </div>
       <div class="hud-right">
         <button class="hud-btn primary" id="vaultBtn" type="button">Vault</button>
-        <button class="hud-btn" id="bossBtn" type="button">Boss</button>
         <button class="hud-btn" id="adminBtn" type="button" style="display:none">Admin</button>
         <button class="hud-btn" id="marketBtn" type="button">Market</button>
         <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
@@ -454,11 +459,6 @@
         <button class="hud-btn" id="tradeBtn" type="button">Trade</button>
         <button class="hud-btn" id="leaveBtn" type="button">Leave</button>
       </div>
-    </div>
-    <div id="bossStrip" class="hidden">
-      <span id="bossStripName">World Boss</span>
-      <div class="boss-hp"><div id="bossHpFill"></div></div>
-      <span id="bossStripHp"></span>
     </div>
     <div id="zone">WORLD</div>
     <div id="hint">WASD / Arrows to walk &middot; E to open your vault</div>
@@ -654,6 +654,10 @@
       <div class="modal-head"><div class="modal-title">Admin Panel</div><button class="x" data-close="adminModal" type="button">&times;</button></div>
       <div class="modal-body">
         <div class="admin-tools">
+          <div class="admin-row">
+            <input id="adminAnnounceInp" maxlength="240" placeholder="Global announcement...">
+            <button class="buy" id="adminAnnounceBtn" type="button">&#128227; ANNOUNCE</button>
+          </div>
           <button class="buy" id="adminRestartBtn" type="button">&#10227; RESTART GAME (kick everyone)</button>
         </div>
         <ul id="adminUsers" class="list"></ul>
@@ -668,16 +672,6 @@
         <button class="x" data-close="leaderModal" type="button">&times;</button>
       </div>
       <ul class="list" id="leaderList"><li class="empty">Loading leaderboard...</li></ul>
-    </div>
-  </div>
-
-  <div id="bossModal" class="modal hidden">
-    <div class="modal-card">
-      <div class="modal-head">
-        <div class="modal-title" id="bossModalTitle">World Boss</div>
-        <button class="x" data-close="bossModal" type="button">&times;</button>
-      </div>
-      <div id="bossModalBody"></div>
     </div>
   </div>
 
@@ -837,6 +831,8 @@ const SHIELD_BASE_SECONDS = 300;
 const SHIELD_PER_REBIRTH = 60;
 function shieldActive() { return !!(state && state.shieldUntil && state.shieldUntil > Date.now()); }
 function shieldSeconds() { return SHIELD_BASE_SECONDS + (state ? state.rebirths : 0) * SHIELD_PER_REBIRTH; }
+const NEWBIE_LEVEL = 10;
+const BREACH_LEVEL_GAP = 15;
 function countRarity(ri) {
   let n = 0;
   for (const k in (state.counts || {})) {
@@ -875,6 +871,7 @@ let tutTimer = null;
 let spotTimer = null;
 let dailyData = null;
 let bossState = null;
+let lastMoneyShown = null;
 
 /* =============================================================
  * FX
@@ -917,6 +914,28 @@ function burst(x, y, rar) {
     layer.appendChild(c); setTimeout(() => c.remove(), 2100);
   }
 }
+function shock(color) {
+  const el = document.createElement('div');
+  el.className = 'shock';
+  el.style.color = color || '#4fd1ff';
+  el.style.left = (window.innerWidth / 2) + 'px';
+  el.style.top = (window.innerHeight * 0.42) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 720);
+}
+function screenFlash(color) {
+  const el = document.createElement('div');
+  el.className = 'flash';
+  el.style.background = 'radial-gradient(circle at 50% 42%, ' + hexA(color, 0.34) + ', transparent 62%)';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 520);
+}
+function shakeScreen() {
+  const g = $('game');
+  if (!g) return;
+  g.classList.remove('shake'); void g.offsetWidth; g.classList.add('shake');
+  setTimeout(() => g.classList.remove('shake'), 340);
+}
 function toast(title, desc, reward, color) {
   const box = $('toasts');
   const el = document.createElement('div'); el.className = 'toast';
@@ -926,6 +945,14 @@ function toast(title, desc, reward, color) {
   box.appendChild(el);
   while (box.children.length > 4) box.removeChild(box.firstChild);
   setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = 0; setTimeout(() => el.remove(), 420); }, 3200);
+}
+function announce(text) {
+  const box = $('toasts');
+  const el = document.createElement('div'); el.className = 'toast announce';
+  el.innerHTML = '<div class="t-title" style="color:#ffb648">\u26a0 ANNOUNCEMENT</div><div class="t-desc">' + esc(text) + '</div>';
+  box.appendChild(el);
+  while (box.children.length > 4) box.removeChild(box.firstChild);
+  setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = 0; setTimeout(() => el.remove(), 420); }, 8000);
 }
 
 /* =============================================================
@@ -951,7 +978,6 @@ function showScreen(name) {
   $('gameHud').classList.toggle('hidden', name !== 'game');
   inGame = (name === 'game');
   if (name !== 'game') closeAllModals();
-  if (typeof renderBossStrip === 'function') renderBossStrip();
 }
 
 /* =============================================================
@@ -1487,7 +1513,8 @@ async function renderFriendsPanel() {
     html += '<h3 style="margin-top:18px">Your Friends</h3>';
     if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
     for (const f of data.friends) {
-      html += '<div class="row"><div class="name">' + esc(f.username) + '</div>' +
+      html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div>' +
+        '<div class="meta"><span class="status-dot ' + (f.online ? 'on' : 'off') + '"></span>' + (f.online ? 'Online now' : 'Offline') + '</div></div>' +
         '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + f.id + '" type="button">Remove</button></span></div>';
     }
     p.innerHTML = html;
@@ -1527,7 +1554,6 @@ async function enterServer(sid, name) {
     connectWS();
     refreshTutorial();
     renderVault();
-    loadBoss();
     addChat('sys', 'You joined ' + currentServer.name + ' (slot ' + (mySlot + 1) + '/8).');
     refreshEvent();
   } catch (err) {
@@ -1562,10 +1588,30 @@ function connectWS() {
     else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);
     else if (msg.type === 'wheel') onWheelMsg(msg);
     else if (msg.type === 'restart') onRestart();
+    else if (msg.type === 'announce') announce(msg.text);
+    else if (msg.type === 'sayDenied') { toast('CHAT', msg.reason, null, '#ff6b8a'); }
   });
-  sock.addEventListener('close', () => {
+  sock.addEventListener('close', async ev => {
     if (sock !== ws) return;
-    if (inGame && token && currentServer) { clearTimeout(wsTimer); wsTimer = setTimeout(connectWS, 1800); }
+    // 4003 = banned, 4004 = admin kicked. Do not auto-reconnect.
+    if (ev.code === 4003) {
+      toast('BANNED', 'You have been banned by an admin.', null, '#ff6b8a');
+      token = null; localStorage.removeItem('vaultoria_token');
+      setTimeout(() => location.reload(), 1200);
+      return;
+    }
+    if (ev.code === 4004) {
+      toast('REMOVED', 'An admin kicked you from the world.', null, '#ff6b8a');
+      currentServer = null; mySlot = -1;
+      try { await loadMe(); } catch (e) {}
+      showScreen('dash');
+      return;
+    }
+    if (inGame && token && currentServer) {
+      // Disconnect fully kicked us out of the world: re-add membership, then reconnect.
+      try { await api('/servers/' + currentServer.id + '/join', { method: 'POST' }); } catch (e) {}
+      if (inGame && currentServer && ws === sock) { clearTimeout(wsTimer); wsTimer = setTimeout(connectWS, 1200); }
+    }
   });
   sock.addEventListener('error', () => {});
 }
@@ -1936,8 +1982,26 @@ function drawNameTag(x, y, text, color) {
   ctx.fillStyle = color || '#e8eaf2';
   ctx.fillText(text, x, y);
 }
+function drawAurora(now) {
+  const blobs = [
+    { x: 760 + Math.sin(now / 7000) * 320, y: 900 + Math.cos(now / 9000) * 260, r: 620, c: '124,92,255' },
+    { x: 2400 + Math.cos(now / 11000) * 320, y: 1800 + Math.sin(now / 13000) * 300, r: 620, c: '79,209,255' },
+    { x: 1500 + Math.sin(now / 15000) * 400, y: 2500 + Math.cos(now / 12000) * 260, r: 520, c: '255,92,138' }
+  ];
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const g of blobs) {
+    const grad = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
+    grad.addColorStop(0, 'rgba(' + g.c + ',0.05)');
+    grad.addColorStop(1, 'rgba(' + g.c + ',0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
 function drawWorld(now) {
   drawFloor();
+  drawAurora(now);
   drawMotes(now);
   drawWheel(now);
   for (let i = 0; i < 8; i++) drawVaultPad(i);
@@ -1955,7 +2019,7 @@ function drawWorld(now) {
     const color = 'hsl(' + o.hue + ', 65%, 58%)';
     if (o.zone === 'vault') continue;
     drawCharacter(o.x, o.y, color, o.facing, o.moving, o.walk);
-    drawNameTag(o.x + 20, o.y - 6, o.username + (o.online ? '' : ' (afk)'), o.online ? color : '#8b93bd');
+    drawNameTag(o.x + 20, o.y - 6, o.username, color);
   }
   if (inGame) {
     drawCharacter(player.x, player.y, '#7c5cff', player.facing, player.moving, player.walk);
@@ -2178,7 +2242,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'bossModal', 'tradeModal', 'wheelModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'wheelModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -2217,6 +2281,11 @@ function renderVault() {
   $('bMoney').textContent = '$' + fmt(state.money);
   $('mMoney').textContent = '$' + fmt(state.money);
   $('hudMoney').textContent = fmt(state.money);
+  if (lastMoneyShown != null && state.money > lastMoneyShown) {
+    const hm = $('hudMoney');
+    hm.classList.remove('pulse'); void hm.offsetWidth; hm.classList.add('pulse');
+  }
+  lastMoneyShown = state.money;
   $('hudLevel').textContent = state.level;
   $('genLevel').textContent = state.level;
   $('luckDisplay').textContent = legendaryLuck() + '%';
@@ -2298,6 +2367,8 @@ async function finishGen() {
     sfxGen(idx);
     float(window.innerWidth / 2, window.innerHeight * 0.42, (mut ? mut.name.toUpperCase() + ' ' : '') + rar.name + '!', color);
     if (idx >= 3 || mut) burst(window.innerWidth / 2, window.innerHeight * 0.4, rar);
+    if (idx >= 3) shock(color);
+    if (idx >= 4 || (mut && mut.mult >= 5)) { screenFlash(color); shakeScreen(); }
     if (idx >= 4 || (mut && mut.mult >= 5)) toast((mut ? mut.name.toUpperCase() : rar.name.toUpperCase()) + ' ITEM!', r.item, null, color);
 
     if (r.newAch && r.newAch.length) showNewAch(r.newAch);
@@ -2560,19 +2631,28 @@ function renderBreachTargets() {
   const list = $('breachTargets');
   if (!state) return;
   const owned = state.breaches || 0;
-  $('breachStats').textContent = 'You hold ' + owned + ' Breach' + (owned === 1 ? '' : 'es') + '. Pick an online member of this world to raid. Shielded players are immune (your Breach is not spent).';
+  $('breachStats').textContent = 'You hold ' + owned + ' Breach' + (owned === 1 ? '' : 'es') + '. Pick an online member of this world to raid. Shielded players and new keepers (below Lv ' + NEWBIE_LEVEL + ') are protected, and you cannot raid someone far weaker.';
   list.innerHTML = '';
   const targets = (members || []).filter(m => m.id !== me.id && m.online);
   if (!targets.length) { list.innerHTML = '<li class="empty">No other players online in this world.</li>'; return; }
   for (const m of targets) {
+    const tooNew = m.level < NEWBIE_LEVEL;
+    const tooWeak = (state.level - m.level) >= BREACH_LEVEL_GAP;
+    const blocked = !!m.shielded || tooNew || tooWeak;
+    let note = '';
+    if (m.shielded) note = ' \u00b7 SHIELDED';
+    else if (tooNew) note = ' \u00b7 NEW \u00b7 PROTECTED';
+    else if (tooWeak) note = ' \u00b7 TOO WEAK';
     const li = document.createElement('li');
     li.innerHTML =
       '<span class="item-left"><span class="item-name" style="color:' + (m.shielded ? '#7bdcf0' : '#fff') + '">' + esc(m.username) + (m.shielded ? ' \u26e8' : '') + '</span>' +
-      '<span style="font-size:12px;color:#8b93bd">Lv ' + m.level + ' \u00b7 $' + fmt(m.money) + (m.shielded ? ' \u00b7 SHIELDED' : '') + '</span></span>' +
+      '<span style="font-size:12px;color:#8b93bd">Lv ' + m.level + ' \u00b7 $' + fmt(m.money) + note + '</span></span>' +
       '<span class="item-right"><button class="mini-btn" data-breach="' + m.id + '">BREACH</button></span>';
     const btn = li.querySelector('[data-breach]');
-    btn.disabled = owned <= 0 || !!m.shielded;
+    btn.disabled = owned <= 0 || blocked;
     if (m.shielded) { btn.className = 'mini-btn ghost'; btn.textContent = 'SHIELDED'; }
+    else if (tooNew) { btn.className = 'mini-btn ghost'; btn.textContent = 'PROTECTED'; }
+    else if (tooWeak) { btn.className = 'mini-btn ghost'; btn.textContent = 'TOO WEAK'; }
     btn.addEventListener('click', () => useBreach(m.id, m.username));
     list.appendChild(li);
   }
@@ -2782,68 +2862,12 @@ async function claimQuest(id) {
 /* =============================================================
  * WORLD BOSS
  * ============================================================= */
-function renderBossStrip() {
-  const strip = $('bossStrip');
-  if (!strip) return;
-  if (!bossState || !inGame) { strip.classList.add('hidden'); return; }
-  strip.classList.remove('hidden');
-  $('bossStripName').textContent = bossState.name;
-  const pct = bossState.maxHp ? Math.max(0, Math.min(100, (bossState.hp / bossState.maxHp) * 100)) : 0;
-  $('bossHpFill').style.width = pct + '%';
-  $('bossStripHp').textContent = fmt(bossState.hp) + ' / ' + fmt(bossState.maxHp) + ' HP';
-}
 function onBoss(boss) {
   bossState = boss;
-  renderBossStrip();
-  if (!$('bossModal').classList.contains('hidden')) loadBoss();
 }
 function onBossDefeated(info) {
   toast('BOSS DEFEATED!', info.name + ' has fallen', '$' + fmt(info.pool) + ' pool', '#ff5c8a');
   burst(window.innerWidth / 2, window.innerHeight * 0.35, RARITIES[5]);
-  loadBoss();
-}
-$('bossBtn').addEventListener('click', () => { ac(); openBoss(); });
-$('bossStrip').addEventListener('click', () => { if (inGame) { ac(); openBoss(); } });
-function openBoss() {
-  if (!inGame) return;
-  closeAllModals();
-  $('bossModal').classList.remove('hidden');
-  loadBoss();
-}
-async function loadBoss() {
-  const body = $('bossModalBody');
-  body.innerHTML = '<div class="spinner">Loading boss...</div>';
-  try {
-    const d = await api('/boss');
-    bossState = d.boss; renderBossStrip();
-    $('bossModalTitle').textContent = d.boss.name;
-    const pct = d.boss.maxHp ? Math.max(0, Math.min(100, (d.boss.hp / d.boss.maxHp) * 100)) : 0;
-    let html = '<div class="boss-hp" style="width:100%;margin-bottom:8px"><div style="width:' + pct + '%"></div></div>';
-    html += '<div class="boss-stat"><span class="k">Health</span><span class="v">' + fmt(d.boss.hp) + ' / ' + fmt(d.boss.maxHp) + '</span></div>';
-    html += '<div class="boss-stat"><span class="k">Reward pool</span><span class="v" style="color:#7bdc78">$' + fmt(d.boss.poolValue) + '</span></div>';
-    html += '<div class="boss-stat"><span class="k">Payout bonus</span><span class="v">x' + d.boss.bonus + '</span></div>';
-    if (d.you) {
-      html += '<div class="boss-stat"><span class="k">Your damage</span><span class="v">' + fmt(d.you.damage) + '</span></div>';
-      html += '<div class="boss-stat"><span class="k">Your estimated payout</span><span class="v" style="color:#7bdc78">$' + fmt(d.you.payout) + '</span></div>';
-    }
-    html += '<h3 style="margin:16px 0 8px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#9aa2cc">Top Contributors</h3>';
-    const ul = document.createElement('ul'); ul.className = 'list';
-    if (!d.contributions.length) {
-      ul.innerHTML = '<li class="empty">No one has fought the boss yet. Generate items to deal damage!</li>';
-    } else {
-      for (const c of d.contributions) {
-        const li = document.createElement('li');
-        li.innerHTML = '<span class="item-left"><span class="item-name">' + esc(c.username) + '</span>' +
-          '<span style="font-size:12px;color:#8b93bd">' + fmt(c.damage) + ' dmg \u00b7 ' + (c.share * 100).toFixed(1) + '%</span></span>' +
-          '<span class="item-right"><span class="item-value">$' + fmt(c.payout) + '</span></span>';
-        ul.appendChild(li);
-      }
-    }
-    body.innerHTML = html;
-    body.appendChild(ul);
-  } catch (err) {
-    body.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
-  }
 }
 
 /* =============================================================
@@ -2970,9 +2994,22 @@ async function loadAdminUsers() {
     if (!users.length) { list.innerHTML = '<li class="empty">No users found</li>'; return; }
     list.innerHTML = '';
     for (const u of users) {
+      const banned = u.bannedUntil && u.bannedUntil > Date.now();
+      const muted = u.mutedUntil && u.mutedUntil > Date.now();
+      const status = (banned ? '<small class="mod-ban">BANNED</small> ' : '') + (muted ? '<small class="mod-mute">MUTED</small>' : '');
       const li = document.createElement('li');
-      li.innerHTML = '<span class="item-left"><span class="item-name">' + esc(u.username) + (u.isAdmin ? ' <small>[ADMIN]</small>' : '') + '</span><span class="meta">Lv ' + u.level + ' · $' + fmt(u.money) + '</span></span>' +
-        '<span class="item-right"><button class="mini-btn" data-admin-gm="' + esc(u.username) + '">+$1000</button> <button class="mini-btn" data-admin-lv="' + esc(u.username) + '">Lv+1</button> <button class="mini-btn ghost" data-admin-clr="' + esc(u.username) + '">Clear Items</button> <button class="mini-btn ghost" data-admin-rst="' + esc(u.username) + '">Reset</button></span>';
+      li.innerHTML = '<span class="item-left"><span class="item-name">' + esc(u.username) + (u.isAdmin ? ' <small>[ADMIN]</small>' : '') + ' ' + status + '</span><span class="meta">Lv ' + u.level + ' \u00b7 $' + fmt(u.money) + '</span></span>' +
+        '<span class="item-right">' +
+        '<button class="mini-btn" data-admin-kick="' + esc(u.username) + '">Kick</button> ' +
+        '<button class="mini-btn' + (muted ? ' warn' : '') + '" data-admin-mute="' + esc(u.username) + '">' + (muted ? 'Unmute' : 'Mute') + '</button> ' +
+        '<button class="mini-btn' + (banned ? ' warn' : '') + '" data-admin-ban="' + esc(u.username) + '">' + (banned ? 'Unban' : 'Ban') + '</button> ' +
+        '<button class="mini-btn" data-admin-gm="' + esc(u.username) + '">+$1000</button> ' +
+        '<button class="mini-btn" data-admin-lv="' + esc(u.username) + '">Lv+1</button> ' +
+        '<button class="mini-btn ghost" data-admin-clr="' + esc(u.username) + '">Clear Items</button> ' +
+        '<button class="mini-btn ghost" data-admin-rst="' + esc(u.username) + '">Reset</button></span>';
+      li.querySelector('[data-admin-kick]').addEventListener('click', () => adminKick(u.username));
+      li.querySelector('[data-admin-mute]').addEventListener('click', () => adminMute(u.username));
+      li.querySelector('[data-admin-ban]').addEventListener('click', () => adminBan(u.username));
       li.querySelector('[data-admin-gm]').addEventListener('click', () => adminSetMoney(u.username, 1000));
       li.querySelector('[data-admin-lv]').addEventListener('click', () => adminSetLevel(u.username, u.level + 1));
       li.querySelector('[data-admin-clr]').addEventListener('click', () => adminClearItems(u.username));
@@ -3001,6 +3038,30 @@ async function adminResetProgress(username) {
   try { await api('/admin/reset-progress', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' reset', null, '#4fd1ff'); loadAdminUsers(); }
   catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
 }
+async function adminKick(username) {
+  if (!confirm('Kick ' + username + ' out of their world?')) return;
+  try { await api('/admin/kick', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' kicked', null, '#ffb648'); loadAdminUsers(); }
+  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminMute(username) {
+  try {
+    const r = await api('/admin/mute', { method: 'POST', body: JSON.stringify({ username, minutes: 10 }) });
+    toast('ADMIN', username + (r.muted ? ' muted for 10 min' : ' unmuted'), null, '#ffb648'); loadAdminUsers();
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminBan(username) {
+  try {
+    const r = await api('/admin/ban', { method: 'POST', body: JSON.stringify({ username, minutes: 1440 }) });
+    toast('ADMIN', username + (r.banned ? ' banned for 24h' : ' unbanned'), null, r.banned ? '#ff5c8a' : '#7bdc78'); loadAdminUsers();
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminAnnounce() {
+  const inp = $('adminAnnounceInp');
+  const text = inp.value.trim();
+  if (!text) return;
+  try { await api('/admin/announce', { method: 'POST', body: JSON.stringify({ text }) }); inp.value = ''; toast('ADMIN', 'Announcement sent', null, '#4fd1ff'); }
+  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
 function onRestart() {
   toast('SERVER RESTART', 'The admin restarted the game \u2014 reloading...', null, '#ffb648');
   setTimeout(() => { try { disconnectWS(); } catch (e) {} location.reload(); }, 600);
@@ -3010,6 +3071,8 @@ if ($('adminRestartBtn')) $('adminRestartBtn').addEventListener('click', () => {
   toast('ADMIN', 'Restart issued \u2014 everyone reloads in a moment', null, '#ffb648');
   api('/admin/restart', { method: 'POST' }).catch(e => toast('OOPS', e.message, null, '#ff6b8a'));
 });
+if ($('adminAnnounceBtn')) $('adminAnnounceBtn').addEventListener('click', adminAnnounce);
+if ($('adminAnnounceInp')) $('adminAnnounceInp').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); adminAnnounce(); } });
 function transitionTo(text) {
   const t = $('transition');
   t.textContent = text; t.classList.add('on');

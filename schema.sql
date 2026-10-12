@@ -39,8 +39,21 @@ CREATE TABLE IF NOT EXISTS player_state (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- NOTE: worlds/servers and their membership are kept in server memory
--- (see server.js) and are intentionally NOT stored in the database.
+-- Worlds/servers are mirrored to the DB so rooms survive restarts. The
+-- live users/worlds maps in server.js are the source of truth at runtime;
+-- these tables only restore them on boot.
+CREATE TABLE IF NOT EXISTS worlds (
+  id         INTEGER PRIMARY KEY,
+  name       TEXT        NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS world_members (
+  world_id INTEGER NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
+  user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  slot     INTEGER NOT NULL,
+  PRIMARY KEY (world_id, user_id)
+);
 
 CREATE TABLE IF NOT EXISTS bazaar_listings (
   id         SERIAL PRIMARY KEY,
@@ -102,6 +115,10 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS shield_until  TIMESTAMPTZ;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS trade_privacy TEXT        NOT NULL DEFAULT 'everyone';
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_wheel    BIGINT      NOT NULL DEFAULT 0;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS breaches      INTEGER     NOT NULL DEFAULT 0;
+
+-- Moderation: temporary ban / chat mute windows (NULL = not restricted).
+ALTER TABLE users            ADD COLUMN IF NOT EXISTS banned_until  TIMESTAMPTZ;
+ALTER TABLE users            ADD COLUMN IF NOT EXISTS muted_until   TIMESTAMPTZ;
 
 -- One global boss for the whole server at a time. Persisted so a long
 -- fight survives restarts/deploys (worlds themselves stay in memory).

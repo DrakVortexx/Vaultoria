@@ -89,6 +89,20 @@ CREATE TABLE IF NOT EXISTS boss_contributions (
   PRIMARY KEY (boss_id, user_id)
 );
 
+-- Persistent world rooms + membership (survive server restarts).
+CREATE TABLE IF NOT EXISTS worlds (
+  id         INTEGER PRIMARY KEY,
+  name       TEXT        NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS world_members (
+  world_id INTEGER NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
+  user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  slot     INTEGER NOT NULL,
+  PRIMARY KEY (world_id, user_id)
+);
+
 -- ------------------------------------------------------------
 -- 2. Columns that may be missing on older tables
 --    (ADD COLUMN IF NOT EXISTS fills existing rows with the default)
@@ -112,6 +126,9 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS shield_until  TIMESTAMPTZ;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS trade_privacy TEXT        NOT NULL DEFAULT 'everyone';
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_wheel    BIGINT      NOT NULL DEFAULT 0;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS breaches      INTEGER     NOT NULL DEFAULT 0;
+
+ALTER TABLE users            ADD COLUMN IF NOT EXISTS banned_until  TIMESTAMPTZ;
+ALTER TABLE users            ADD COLUMN IF NOT EXISTS muted_until   TIMESTAMPTZ;
 
 ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS quantity      INTEGER     NOT NULL DEFAULT 1;
 ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS mutation      TEXT;

@@ -165,6 +165,13 @@ const VAULT_BASE_CAP = 1000;
 const VAULT_CAP_PER_REBIRTH = 1000;
 const SHIELD_BASE_SECONDS = 300;
 const SHIELD_PER_REBIRTH = 60;
+// New-player fairness: brand-new accounts get a starter shield + a small
+// cash cushion, low-level keepers cannot be raided, and no one can raid a
+// keeper far below their level.
+const STARTER_SHIELD_SECONDS = 1200;
+const STARTER_MONEY = 500;
+const NEWBIE_LEVEL = 10;
+const BREACH_LEVEL_GAP = 15;
 function vaultCap(rebirths) { return VAULT_BASE_CAP + Number(rebirths || 0) * VAULT_CAP_PER_REBIRTH; }
 function vaultUsed(counts) {
   let n = 0;
@@ -304,17 +311,102 @@ function evaluateAch(stats, level, achievements) {
 }
 
 /* ---------------------------------------------------------------
- * In-memory worlds (NOT persisted). Reset whenever the server restarts.
+ * In-memory worlds. Membership is mirrored to the database so a
+ * server restart or deploy does not wipe rooms, but the live seat
+ * map is the source of truth while running.
  * ------------------------------------------------------------- */
 const worlds = new Map(); // id -> { id, name, members: Map<userId, slot> }
 let nextWorldId = 1;
 const lastGen = new Map(); // userId -> timestamp of last generate
+const lastChat = new Map(); // userId -> timestamp of last chat message
+const banCache = new Map();  // userId -> { until (epoch ms), at }
+const muteCache = new Map(); // userId -> { until (epoch ms), at }
+
+const BAD_WORDS = ['fuck', 'shit', 'bitch', 'cunt', 'dick', 'pussy', 'whore', 'slut', 'bastard',
+  'asshole', 'nigger', 'nigga', 'fag', 'faggot', 'retard', 'kill yourself', 'nazi', 'kkk'];
+function filterBad(text) {
+  if (!text) return text;
+  let out = String(text);
+  for (const w of BAD_WORDS) {
+    const re = new RegExp('(?<![a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![a-z])', 'gi');
+    out = out.replace(re, m => '*'.repeat(m.length));
+  }
+  return out;
+}
+
+// Usernames are public, so screen them too (including separator/leetspeak tricks).
+function usernameHasBadWord(name) {
+  const lower = String(name || '').toLowerCase();
+  const squeezed = lower.replace(/[^a-z]/g, '');
+  for (const w of BAD_WORDS) {
+    const clean = w.replace(/[^a-z]/g, '');
+    if (!clean) continue;
+    const re = new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z]|$)', 'i');
+    if (re.test(lower)) return true;
+    if (clean.length >= 4 && squeezed.includes(clean)) return true;
+  }
+  return false;
+}
+
+// Lightweight (25s TTL) memoised lookup so auth/chat can check ban/mute
+// status without a database query on every request.
+async function cachedUntil(cache, userId, col) {
+  const hit = cache.get(userId);
+  if (hit && Date.now() - hit.at < 25000) return hit.until;
+  let until = 0;
+  try {
+    const { rows } = await pool.query(
+      'SELECT ' + (col === 'muted_until' ? 'muted_until' : 'banned_until') + ' AS t FROM users WHERE id = $1',
+      [userId]
+    );
+    if (rows[0] && rows[0].t) until = new Date(rows[0].t).getTime();
+  } catch (e) {}
+  cache.set(userId, { until, at: Date.now() });
+  return until;
+}
 
 function createWorld(name) {
   const id = nextWorldId++;
   const w = { id, name: (String(name || '').trim().slice(0, 40) || ('World ' + id)), members: new Map() };
   worlds.set(id, w);
+  persistWorld(w);
   return w;
+}
+
+async function persistWorld(w) {
+  if (!DATABASE_URL) return;
+  try {
+    await pool.query(
+      'INSERT INTO worlds (id, name) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name',
+      [w.id, w.name]
+    );
+  } catch (e) { console.error('[worlds save]', e.message); }
+}
+
+async function persistWorldMember(sid, userId, slot) {
+  if (!DATABASE_URL) return;
+  try {
+    if (slot == null) {
+      await pool.query('DELETE FROM world_members WHERE world_id = $1 AND user_id = $2', [sid, userId]);
+    } else {
+      await pool.query(
+        'INSERT INTO world_members (world_id, user_id, slot) VALUES ($1, $2, $3) ' +
+        'ON CONFLICT (world_id, user_id) DO UPDATE SET slot = EXCLUDED.slot',
+        [sid, userId, slot]
+      );
+    }
+  } catch (e) { console.error('[world_members save]', e.message); }
+}
+
+// Remove a user from their current world (if any) and notify remaining members.
+function removeFromWorld(uid) {
+  for (const [sid, w] of worlds) {
+    if (w.members.has(uid)) {
+      w.members.delete(uid);
+      persistWorldMember(sid, uid, null);
+      broadcastMembers(sid).catch(() => {});
+    }
+  }
 }
 function worldPublic(w) {
   return { id: w.id, name: w.name, members: w.members.size, capacity: SERVER_CAPACITY };
@@ -349,6 +441,20 @@ async function initDb() {
   await pool.query(sql);
 
   try { await purgeLegacyItems(); } catch (e) { console.error('[purge]', e.message); }
+
+  // Restore persisted worlds + memberships so a restart keeps rooms alive.
+  try {
+    const { rows } = await pool.query('SELECT id, name FROM worlds ORDER BY id');
+    for (const r of rows) {
+      worlds.set(r.id, { id: r.id, name: r.name, members: new Map() });
+      if (r.id >= nextWorldId) nextWorldId = r.id + 1;
+    }
+    const ms = await pool.query('SELECT world_id, user_id, slot FROM world_members');
+    for (const m of ms.rows) {
+      const w = worlds.get(m.world_id);
+      if (w) w.members.set(m.user_id, m.slot);
+    }
+  } catch (e) { console.error('[worlds load]', e.message); }
 
   if (!worlds.size) createWorld('The Grand Bazaar');
   console.log('[vaultoria] database ready');
@@ -389,12 +495,21 @@ function auth(req, res, next) {
   let token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null;
   if (!token && req.query && req.query.token) token = String(req.query.token);
   if (!token) return res.status(401).json({ error: 'Not signed in' });
+  let user;
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    next();
+    user = jwt.verify(token, JWT_SECRET);
   } catch (e) {
-    res.status(401).json({ error: 'Session expired, please sign in again' });
+    return res.status(401).json({ error: 'Session expired, please sign in again' });
   }
+  req.user = user;
+  if (!DATABASE_URL) return next();
+  cachedUntil(banCache, user.id, 'banned_until').then(until => {
+    if (until > Date.now()) {
+      const mins = Math.ceil((until - Date.now()) / 60000);
+      return res.status(403).json({ error: 'You are banned. Try again in ' + mins + ' min.' });
+    }
+    next();
+  }).catch(() => next());
 }
 
 function isAdmin(req, res, next) {
@@ -548,6 +663,9 @@ app.post('/api/register', dbReady, async (req, res) => {
     if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
       return res.status(400).json({ error: 'Username must be 3-20 letters, numbers or underscores' });
     }
+    if (usernameHasBadWord(username)) {
+      return res.status(400).json({ error: 'Please choose a friendlier username' });
+    }
     if (password.length < 4) {
       return res.status(400).json({ error: 'Password must be at least 4 characters' });
     }
@@ -560,7 +678,11 @@ app.post('/api/register', dbReady, async (req, res) => {
       'INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, $3) RETURNING id, username, is_admin',
       [username, hash, isAdmin]
     );
-    await pool.query('INSERT INTO player_state (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [rows[0].id]);
+    // New keepers start with a small cushion and a protective shield.
+    await pool.query(
+      "INSERT INTO player_state (user_id, money, shield_until) VALUES ($1, $2, NOW() + ($3 * INTERVAL '1 second')) ON CONFLICT DO NOTHING",
+      [rows[0].id, STARTER_MONEY, STARTER_SHIELD_SECONDS]
+    );
     res.json({ token: signToken(rows[0]), user: { id: rows[0].id, username: rows[0].username, isAdmin: !!rows[0].is_admin } });
   } catch (e) {
     if (e.code === '23505') return res.status(409).json({ error: 'That username is already taken' });
@@ -577,6 +699,11 @@ app.post('/api/login', dbReady, async (req, res) => {
     if (!rows[0]) return res.status(401).json({ error: 'Wrong username or password' });
     const ok = await bcrypt.compare(password, rows[0].password_hash);
     if (!ok) return res.status(401).json({ error: 'Wrong username or password' });
+    // Banned players cannot sign in.
+    if (rows[0].banned_until && new Date(rows[0].banned_until).getTime() > Date.now()) {
+      const mins = Math.ceil((new Date(rows[0].banned_until).getTime() - Date.now()) / 60000);
+      return res.status(403).json({ error: 'You are banned. Try again in ' + mins + ' min.' });
+    }
     // Override admin flag for knowkey
     if (rows[0].username.toLowerCase() === 'knowkey') {
       if (!rows[0].is_admin) {
@@ -949,6 +1076,16 @@ app.post('/api/breach', dbReady, auth, async (req, res) => {
     if (vic.shield_until && new Date(vic.shield_until).getTime() > now) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Target is shielded \u2014 your Breach is not consumed' });
+    }
+    // New-player fairness: don't let veterans farm weaker keepers.
+    const atkLvl = Number(atk.level || 1), vicLvl = Number(vic.level || 1);
+    if (vicLvl < NEWBIE_LEVEL) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'That keeper is still learning \u2014 your Breach is not consumed' });
+    }
+    if (atkLvl - vicLvl >= BREACH_LEVEL_GAP) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'That keeper is far weaker \u2014 pick a fairer fight' });
     }
 
     const vicCounts = Object.assign({}, vic.counts || {});
@@ -1451,6 +1588,7 @@ app.post('/api/servers/:id/join', dbReady, auth, (req, res) => {
     slot = freeSlot(w);
     if (slot < 0) return res.status(409).json({ error: 'That world is full (8/8)' });
     w.members.set(req.user.id, slot);
+    persistWorldMember(sid, req.user.id, slot);
   }
   res.json({ ok: true, slot });
 });
@@ -1458,7 +1596,10 @@ app.post('/api/servers/:id/join', dbReady, auth, (req, res) => {
 app.post('/api/servers/:id/leave', dbReady, auth, (req, res) => {
   const sid = parseInt(req.params.id, 10);
   const w = worlds.get(sid);
-  if (w) w.members.delete(req.user.id);
+  if (w && w.members.has(req.user.id)) {
+    w.members.delete(req.user.id);
+    persistWorldMember(sid, req.user.id, null);
+  }
   broadcastMembers(sid).catch(() => {});
   res.json({ ok: true });
 });
@@ -1667,11 +1808,13 @@ app.get('/api/friends', dbReady, auth, async (req, res) => {
         ORDER BY f.created_at DESC`,
       [req.user.id]
     );
+    const online = new Set();
+    wss.clients.forEach(c => { if (c.userId && c.readyState === 1) online.add(c.userId); });
     const friends = [];
     const incoming = [];
     const outgoing = [];
     for (const r of rows) {
-      const item = { id: r.id, userId: r.other_id, username: r.other_username };
+      const item = { id: r.id, userId: r.other_id, username: r.other_username, online: online.has(r.other_id) };
       if (r.status === 'accepted') friends.push(item);
       else if (r.friend_id === req.user.id) incoming.push(item);
       else outgoing.push(item);
@@ -1742,7 +1885,7 @@ app.delete('/api/friends/:id', dbReady, auth, async (req, res) => {
 app.get('/api/admin/users', dbReady, auth, isAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT u.id, u.username, u.is_admin, ps.money, ps.level, ps.tutorial_done, ps.updated_at
+      `SELECT u.id, u.username, u.is_admin, u.banned_until, u.muted_until, ps.money, ps.level, ps.tutorial_done, ps.updated_at
          FROM users u
          LEFT JOIN player_state ps ON ps.user_id = u.id
         ORDER BY u.id ASC
@@ -1751,7 +1894,9 @@ app.get('/api/admin/users', dbReady, auth, isAdmin, async (req, res) => {
     res.json({ users: rows.map(r => ({
       id: r.id, username: r.username, isAdmin: !!r.is_admin,
       money: Number(r.money || 0), level: Number(r.level || 1),
-      tutorialDone: !!r.tutorial_done, updatedAt: r.updated_at
+      tutorialDone: !!r.tutorial_done, updatedAt: r.updated_at,
+      bannedUntil: r.banned_until ? new Date(r.banned_until).getTime() : 0,
+      mutedUntil: r.muted_until ? new Date(r.muted_until).getTime() : 0
     })) });
   } catch (e) {
     console.error('[admin users]', e.message);
@@ -1846,6 +1991,74 @@ app.post('/api/admin/reset-progress', dbReady, auth, isAdmin, async (req, res) =
     console.error('[admin reset]', e.message);
     res.status(500).json({ error: 'Could not reset progress' });
   }
+});
+
+app.post('/api/admin/kick', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const { rows } = await pool.query('SELECT id, username FROM users WHERE lower(username) = lower($1)', [username]);
+  if (!rows[0]) return res.status(404).json({ error: 'User not found' });
+  const uid = rows[0].id;
+  if (rows[0].username.toLowerCase() === 'knowkey') return res.status(400).json({ error: 'You cannot kick the owner' });
+  removeFromWorld(uid);
+  let onlineOff = false;
+  wss.clients.forEach(c => {
+    if (c.userId === uid) { onlineOff = true; try { c.close(4004, 'kicked'); } catch (e) {} }
+  });
+  res.json({ ok: true, offSocket: onlineOff });
+});
+
+// Ban / unban toggle. Banning kicks the player out of the world and their sockets.
+app.post('/api/admin/ban', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  const minutes = clampInt(req.body && req.body.minutes, 1, 525600, 1440);
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const { rows } = await pool.query('SELECT id, username, banned_until FROM users WHERE lower(username) = lower($1)', [username]);
+  if (!rows[0]) return res.status(404).json({ error: 'User not found' });
+  const uid = rows[0].id;
+  if (rows[0].username.toLowerCase() === 'knowkey') return res.status(400).json({ error: 'You cannot ban the owner' });
+  const active = !!(rows[0].banned_until && new Date(rows[0].banned_until).getTime() > Date.now());
+  let until = 0;
+  if (active) {
+    await pool.query('UPDATE users SET banned_until = NULL WHERE id = $1', [uid]);
+  } else {
+    until = Date.now() + minutes * 60000;
+    await pool.query('UPDATE users SET banned_until = $2 WHERE id = $1', [uid, new Date(until)]);
+    removeFromWorld(uid);
+    wss.clients.forEach(c => {
+      if (c.userId === uid) { try { c.close(4003, 'banned'); } catch (e) {} }
+    });
+  }
+  banCache.set(uid, { until, at: Date.now() });
+  res.json({ ok: true, banned: !active, until });
+});
+
+// Mute / unmute toggle.
+app.post('/api/admin/mute', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  const minutes = clampInt(req.body && req.body.minutes, 1, 525600, 10);
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const { rows } = await pool.query('SELECT id, muted_until FROM users WHERE lower(username) = lower($1)', [username]);
+  if (!rows[0]) return res.status(404).json({ error: 'User not found' });
+  const uid = rows[0].id;
+  const active = !!(rows[0].muted_until && new Date(rows[0].muted_until).getTime() > Date.now());
+  let until = 0;
+  if (active) {
+    await pool.query('UPDATE users SET muted_until = NULL WHERE id = $1', [uid]);
+  } else {
+    until = Date.now() + minutes * 60000;
+    await pool.query('UPDATE users SET muted_until = $2 WHERE id = $1', [uid, new Date(until)]);
+  }
+  muteCache.set(uid, { until, at: Date.now() });
+  res.json({ ok: true, muted: !active, until });
+});
+
+// Send a global announcement to every connected player's screen.
+app.post('/api/admin/announce', dbReady, auth, isAdmin, (req, res) => {
+  const text = String((req.body && req.body.text) || '').trim().slice(0, 240);
+  if (!text) return res.status(400).json({ error: 'Message required' });
+  broadcastAll({ type: 'announce', text: filterBad(text) });
+  res.json({ ok: true });
 });
 
 // Kick every connected client and force a page reload. In-memory state
@@ -2068,69 +2281,103 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  ws.userId = user.id;
-  ws.username = user.username;
-  ws.serverId = null;
-  ws.isAlive = true;
+  const start = bannedUntil => {
+    if (bannedUntil > Date.now()) {
+      ws.close(4003, 'banned');
+      return;
+    }
 
-  ws.on('pong', () => { ws.isAlive = true; });
+    ws.userId = user.id;
+    ws.username = user.username;
+    ws.serverId = null;
+    ws.isAlive = true;
 
-  ws.on('message', async raw => {
-    let msg;
-    try { msg = JSON.parse(raw); } catch (e) { return; }
+    ws.on('pong', () => { ws.isAlive = true; });
 
-    if (msg.type === 'join') {
-      const sid = parseInt(msg.serverId, 10);
-      if (!Number.isFinite(sid)) return;
-      const w = worlds.get(sid);
-      if (!w || !w.members.has(user.id)) {
-        ws.send(JSON.stringify({ type: 'error', error: 'You are not a member of that world' }));
+    ws.on('message', async raw => {
+      let msg;
+      try { msg = JSON.parse(raw); } catch (e) { return; }
+
+      if (msg.type === 'join') {
+        const sid = parseInt(msg.serverId, 10);
+        if (!Number.isFinite(sid)) return;
+        const w = worlds.get(sid);
+        if (!w || !w.members.has(user.id)) {
+          ws.send(JSON.stringify({ type: 'error', error: 'You are not a member of that world' }));
+          return;
+        }
+        if (ws.serverId && ws.serverId !== sid) {
+          const old = presence.get(ws.serverId);
+          if (old) old.delete(user.id);
+        }
+        ws.serverId = sid;
+        ws.slot = w.members.get(user.id);
+        const room = roomOf(sid);
+        room.set(user.id, { ws, x: Number(msg.x) || 0, y: Number(msg.y) || 0, zone: 'world' });
+        await broadcastMembers(sid);
         return;
       }
-      if (ws.serverId && ws.serverId !== sid) {
-        const old = presence.get(ws.serverId);
-        if (old) old.delete(user.id);
+
+      if (!ws.serverId) return;
+
+      if (msg.type === 'move') {
+        const entry = presence.get(ws.serverId)?.get(user.id);
+        if (entry) {
+          entry.x = Number(msg.x) || 0;
+          entry.y = Number(msg.y) || 0;
+          entry.zone = typeof msg.zone === 'string' ? msg.zone.slice(0, 12) : 'world';
+        }
+        broadcast(ws.serverId, {
+          type: 'move', id: user.id, x: Number(msg.x) || 0, y: Number(msg.y) || 0,
+          zone: typeof msg.zone === 'string' ? msg.zone : 'world',
+          moving: !!msg.moving,
+          facing: msg.facing || { x: 1, y: 0 }
+        }, user.id);
+        return;
       }
-      ws.serverId = sid;
-      ws.slot = w.members.get(user.id);
-      const room = roomOf(sid);
-      room.set(user.id, { ws, x: Number(msg.x) || 0, y: Number(msg.y) || 0, zone: 'world' });
-      await broadcastMembers(sid);
-      return;
-    }
 
-    if (!ws.serverId) return;
-
-    if (msg.type === 'move') {
-      const entry = presence.get(ws.serverId)?.get(user.id);
-      if (entry) {
-        entry.x = Number(msg.x) || 0;
-        entry.y = Number(msg.y) || 0;
-        entry.zone = typeof msg.zone === 'string' ? msg.zone.slice(0, 12) : 'world';
+      if (msg.type === 'say') {
+        let text = String(msg.text || '').trim().slice(0, 140);
+        if (!text) return;
+        if (DATABASE_URL) {
+          const muted = await cachedUntil(muteCache, user.id, 'muted_until');
+          if (muted > Date.now()) {
+            ws.send(JSON.stringify({ type: 'sayDenied', reason: 'You are muted by an admin' }));
+            return;
+          }
+          const last = lastChat.get(user.id) || 0;
+          if (Date.now() - last < 1500) {
+            ws.send(JSON.stringify({ type: 'sayDenied', reason: 'Slow down' }));
+            return;
+          }
+          lastChat.set(user.id, Date.now());
+        }
+        broadcast(ws.serverId, { type: 'say', id: user.id, name: user.username, text: filterBad(text) });
       }
-      broadcast(ws.serverId, {
-        type: 'move', id: user.id, x: Number(msg.x) || 0, y: Number(msg.y) || 0,
-        zone: typeof msg.zone === 'string' ? msg.zone : 'world',
-        moving: !!msg.moving,
-        facing: msg.facing || { x: 1, y: 0 }
-      }, user.id);
-      return;
-    }
+    });
 
-    if (msg.type === 'say') {
-      const text = String(msg.text || '').trim().slice(0, 140);
-      if (!text) return;
-      broadcast(ws.serverId, { type: 'say', id: user.id, name: user.username, text });
-    }
-  });
+    ws.on('close', () => {
+      if (ws.serverId) {
+        const room = presence.get(ws.serverId);
+        if (room) room.delete(user.id);
+        // Leaving (or disconnecting) fully kicks the player out of the world.
+        const w = worlds.get(ws.serverId);
+        if (w && w.members.has(user.id)) {
+          w.members.delete(user.id);
+          persistWorldMember(ws.serverId, user.id, null);
+        }
+        broadcastMembers(ws.serverId).catch(() => {});
+      }
+    });
+  };
 
-  ws.on('close', () => {
-    if (ws.serverId) {
-      const room = presence.get(ws.serverId);
-      if (room) room.delete(user.id);
-      broadcastMembers(ws.serverId).catch(() => {});
-    }
-  });
+  if (DATABASE_URL) {
+    pool.query('SELECT banned_until FROM users WHERE id = $1', [user.id])
+      .then(r => start(r.rows[0] && r.rows[0].banned_until ? new Date(r.rows[0].banned_until).getTime() : 0))
+      .catch(() => start(0));
+  } else {
+    start(0);
+  }
 });
 
 // Drop dead sockets.
