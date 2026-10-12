@@ -144,6 +144,31 @@ const BOSS_NAMES = [
 ];
 
 /* ---------------------------------------------------------------
+ * Rebirths, vault capacity and the free timed shield.
+ * Rebirth resets money/items/level to 1 but keeps stats, achievements,
+ * rebirth count and shield. Each rebirth grows vault capacity (+1000) and
+ * shield runtime (+1 min).
+ * ------------------------------------------------------------- */
+const REBIRTHS = [
+  { name: 'Awakening',  rarity: 2, count: 1, cost: 25000 },
+  { name: 'Ascension',  rarity: 3, count: 2, cost: 250000 },
+  { name: 'Transcend',  rarity: 4, count: 3, cost: 2500000 },
+  { name: 'Apotheosis', rarity: 5, count: 4, cost: 25000000 },
+  { name: 'Godhood',    rarity: 6, count: 5, cost: 250000000 }
+];
+const VAULT_BASE_CAP = 1000;
+const VAULT_CAP_PER_REBIRTH = 1000;
+const SHIELD_BASE_SECONDS = 300;
+const SHIELD_PER_REBIRTH = 60;
+function vaultCap(rebirths) { return VAULT_BASE_CAP + Number(rebirths || 0) * VAULT_CAP_PER_REBIRTH; }
+function vaultUsed(counts) {
+  let n = 0;
+  for (const k in (counts || {})) n += Number(counts[k]) || 0;
+  return n;
+}
+function shieldDuration(rebirths) { return SHIELD_BASE_SECONDS + Number(rebirths || 0) * SHIELD_PER_REBIRTH; }
+
+/* ---------------------------------------------------------------
  * Login rewards + daily quests (calendar day boundaries, UTC)
  * ------------------------------------------------------------- */
 const LOGIN_REWARDS = [100, 250, 500, 1000, 2000, 4000, 10000];
@@ -349,15 +374,21 @@ async function stateForUpdate(client, userId) {
 }
 
 function publicState(row) {
+  const counts = row.counts || {};
   return {
     money: Number(row.money || 0),
     level: Number(row.level || 1),
-    counts: row.counts || {},
+    counts,
     stats: row.stats || defaultStats(),
     achievements: row.achievements || [],
     tutorialDone: !!row.tutorial_done,
     px: Number(row.px || 0),
-    py: Number(row.py || 0)
+    py: Number(row.py || 0),
+    rebirths: Number(row.rebirths || 0),
+    capacity: vaultCap(row.rebirths),
+    used: vaultUsed(counts),
+    shieldUntil: row.shield_until ? new Date(row.shield_until).getTime() : 0,
+    tradePrivacy: row.trade_privacy || 'everyone'
   };
 }
 
@@ -566,6 +597,10 @@ app.post('/api/generate', dbReady, auth, async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(429).json({ error: 'Generator still cooling down' });
     }
+    if (vaultUsed(st.counts) + 1 > vaultCap(st.rebirths)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Vault full \u2014 sell items to make room' });
+    }
     const level = Number(st.level || 1);
     const ri = pickRarity(level);
     const itemPool = ITEMS_BY_RARITY[RARITIES[ri].key];
@@ -708,6 +743,76 @@ app.post('/api/upgrade', dbReady, auth, async (req, res) => {
     res.status(500).json({ error: 'Could not upgrade' });
   } finally {
     client.release();
+  }
+});
+
+app.post('/api/rebirth', dbReady, auth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, req.user.id);
+    const rb = Number(st.rebirths || 0);
+    if (rb >= REBIRTHS.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Maximum rebirth reached' });
+    }
+    const tier = REBIRTHS[rb];
+    const money = Number(st.money || 0);
+    if (money < tier.cost) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'You need $' + tier.cost + ' for the ' + tier.name + ' rebirth' });
+    }
+    const counts = Object.assign({}, st.counts || {});
+    // Sacrifice the cheapest items of the required rarity (lowest base value first).
+    const keys = Object.keys(counts)
+      .filter(k => ITEM_RARITY[baseName(k)] === tier.rarity && Number(counts[k]) > 0)
+      .sort((a, b) => itemValueFor(a) - itemValueFor(b));
+    let have = 0;
+    for (const k of keys) have += Number(counts[k]);
+    if (have < tier.count) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Need ' + tier.count + ' ' + RARITIES[tier.rarity].name + ' items to rebirth' });
+    }
+    let need = tier.count;
+    for (const k of keys) {
+      if (need <= 0) break;
+      const take = Math.min(need, Number(counts[k]));
+      counts[k] = Number(counts[k]) - take;
+      if (counts[k] <= 0) delete counts[k];
+      need -= take;
+    }
+    const stats = statsOf(st);
+    const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
+    const rbAch = evaluateAch(stats, 1, achievements);
+    const newRb = rb + 1;
+    await client.query(
+      `UPDATE player_state SET rebirths = $2, money = $3, level = 1, counts = $4, stats = $5, achievements = $6, updated_at = NOW()
+        WHERE user_id = $1`,
+      [req.user.id, newRb, rbAch.reward, JSON.stringify(counts), JSON.stringify(stats), JSON.stringify(achievements)]
+    );
+    await client.query('COMMIT');
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, rebirths: newRb, state: publicState(fresh), newAch: rbAch.earned });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[rebirth]', e.message);
+    res.status(500).json({ error: 'Could not rebirth' });
+  } finally {
+    client.release();
+  }
+});
+
+app.post('/api/shield', dbReady, auth, async (req, res) => {
+  try {
+    const st = await stateFor(pool, req.user.id);
+    const secs = shieldDuration(st.rebirths);
+    const until = new Date(Date.now() + secs * 1000);
+    await pool.query('UPDATE player_state SET shield_until = $2, updated_at = NOW() WHERE user_id = $1', [req.user.id, until]);
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, seconds: secs, state: publicState(fresh) });
+  } catch (e) {
+    console.error('[shield]', e.message);
+    res.status(500).json({ error: 'Could not activate shield' });
   }
 });
 
