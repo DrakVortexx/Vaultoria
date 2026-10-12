@@ -1472,7 +1472,7 @@ app.get('/api/servers/:id/members', dbReady, auth, async (req, res) => {
     const byId = new Map();
     if (ids.length) {
       const { rows } = await pool.query(
-        `SELECT u.id, u.username, ps.money, ps.level
+        `SELECT u.id, u.username, ps.money, ps.level, ps.shield_until
            FROM users u
            LEFT JOIN player_state ps ON ps.user_id = u.id
           WHERE u.id = ANY($1::int[])`,
@@ -1487,7 +1487,9 @@ app.get('/api/servers/:id/members', dbReady, auth, async (req, res) => {
         return {
           id, username: r.username || '?', slot,
           money: Number(r.money || 0), level: Number(r.level || 1),
-          online: room.has(id)
+          online: room.has(id),
+          shielded: !!(r.shield_until && new Date(r.shield_until).getTime() > Date.now()),
+          shieldUntil: r.shield_until ? new Date(r.shield_until).getTime() : 0
         };
       })
     });
@@ -2044,6 +2046,7 @@ async function broadcastMembers(serverId) {
           level: Number(r.level || 1),
           online: !!c,
           shielded: !!(r.shield_until && new Date(r.shield_until).getTime() > Date.now()),
+          shieldUntil: r.shield_until ? new Date(r.shield_until).getTime() : 0,
           x: c ? c.x : null,
           y: c ? c.y : null,
           zone: c ? c.zone : 'world'

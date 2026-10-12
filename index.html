@@ -1832,6 +1832,23 @@ function drawVaultPad(slot) {
     if (isMine) { ctx.fillStyle = '#7bdc78'; ctx.fillText('YOUR VAULT', cx, cy + 92); }
     else if (online) { ctx.fillStyle = '#7bdc78'; ctx.fillText('LOCKED \u00b7 ONLINE', cx, cy + 92); }
     else { ctx.fillStyle = '#8b93bd'; ctx.fillText('LOCKED \u00b7 OFFLINE', cx, cy + 92); }
+
+    // Shield countdown: how long until the vault is unlocked (breachable).
+    if (!isMine && owner.shieldUntil && owner.shieldUntil > Date.now() && owner.shielded) {
+      const remain = Math.max(0, owner.shieldUntil - Date.now());
+      const mm = Math.floor(remain / 60000);
+      const ss = Math.floor((remain % 60000) / 1000);
+      const clock = mm + ':' + (ss < 10 ? '0' : '') + ss;
+      ctx.font = "800 12px 'Segoe UI', sans-serif";
+      ctx.fillStyle = '#7be0ff';
+      ctx.shadowColor = '#7be0ff'; ctx.shadowBlur = 10;
+      ctx.fillText('UNLOCKED IN ' + clock, cx, cy + 110);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(127,220,255,0.16)';
+      ctx.beginPath(); ctx.arc(cx, cy, 66, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(127,220,255,0.5)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, 66, 0, Math.PI * 2); ctx.stroke();
+    }
   } else {
     ctx.font = "700 12px 'Segoe UI', sans-serif"; ctx.fillStyle = 'rgba(139,147,189,0.5)';
     ctx.fillText('EMPTY SLOT ' + (slot + 1), cx, cy + 92);
