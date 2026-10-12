@@ -389,6 +389,7 @@
       </div>
       <div class="hud-right">
         <button class="hud-btn primary" id="vaultBtn" type="button">Vault</button>
+        <button class="hud-btn" id="adminBtn" type="button" style="display:none">Admin</button>
         <button class="hud-btn" id="marketBtn" type="button">Market</button>
         <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
         <button class="hud-btn" id="leadBtn" type="button">Leaders</button>
@@ -501,6 +502,16 @@
   </div>
 
   <!-- Leaderboard modal -->
+  <div id="adminModal" class="modal hidden">
+    <div class="modal-backdrop" data-close="adminModal"></div>
+    <div class="modal-card large">
+      <div class="modal-head"><div class="modal-title">Admin Panel</div><button class="x" data-close="adminModal" type="button">&times;</button></div>
+      <div class="modal-body">
+        <ul id="adminUsers" class="list"></ul>
+      </div>
+    </div>
+  </div>
+
   <div id="leaderModal" class="modal hidden">
     <div class="modal-card">
       <div class="modal-head">
@@ -742,6 +753,13 @@ async function loadMe() {
   renderDash();
   renderVault();
   showScreen('dash');
+  if ($('adminBtn')) {
+    if (me && me.isAdmin && me.username === 'knowkey') {
+      $('adminBtn').style.display = 'inline-block';
+    } else {
+      $('adminBtn').style.display = 'none';
+    }
+  }
 }
 
 $('logoutBtn').addEventListener('click', () => {
@@ -1863,6 +1881,55 @@ $('leaveBtn').addEventListener('click', async () => {
   currentServer = null; mySlot = -1;
   await loadMe();
 });
+
+$('adminBtn').addEventListener('click', openAdminModal);
+
+async function openAdminModal() {
+  closeAllModals();
+  $('adminModal').classList.remove('hidden');
+  await loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+  const list = $('adminUsers');
+  if (!list) return;
+  list.innerHTML = '<li class="empty">Loading...</li>';
+  try {
+    const { users } = await api('/admin/users');
+    if (!users.length) { list.innerHTML = '<li class="empty">No users found</li>'; return; }
+    list.innerHTML = '';
+    for (const u of users) {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="item-left"><span class="item-name">' + esc(u.username) + (u.isAdmin ? ' <small>[ADMIN]</small>' : '') + '</span><span class="meta">Lv ' + u.level + ' · $' + fmt(u.money) + '</span></span>' +
+        '<span class="item-right"><button class="mini-btn" data-admin-gm="' + esc(u.username) + '">+$1000</button> <button class="mini-btn" data-admin-lv="' + esc(u.username) + '">Lv+1</button> <button class="mini-btn ghost" data-admin-clr="' + esc(u.username) + '">Clear Items</button> <button class="mini-btn ghost" data-admin-rst="' + esc(u.username) + '">Reset</button></span>';
+      li.querySelector('[data-admin-gm]').addEventListener('click', () => adminSetMoney(u.username, 1000));
+      li.querySelector('[data-admin-lv]').addEventListener('click', () => adminSetLevel(u.username, u.level + 1));
+      li.querySelector('[data-admin-clr]').addEventListener('click', () => adminClearItems(u.username));
+      li.querySelector('[data-admin-rst]').addEventListener('click', () => adminResetProgress(u.username));
+      list.appendChild(li);
+    }
+  } catch (e) {
+    list.innerHTML = '<li class="empty">' + esc(e.message) + '</li>';
+  }
+}
+async function adminSetMoney(username, amt) {
+  try { await api('/admin/set-money', { method: 'POST', body: JSON.stringify({ username, amount: amt }) }); toast('ADMIN', username + ' money updated', null, '#4fd1ff'); loadAdminUsers(); }
+  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminSetLevel(username, level) {
+  try { await api('/admin/set-level', { method: 'POST', body: JSON.stringify({ username, level }) }); toast('ADMIN', username + ' level updated', null, '#4fd1ff'); loadAdminUsers(); }
+  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminClearItems(username) {
+  if (!confirm('Clear all items for ' + username + '?')) return;
+  try { await api('/admin/clear-items', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' items cleared', null, '#4fd1ff'); loadAdminUsers(); }
+  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminResetProgress(username) {
+  if (!confirm('Reset ALL progress for ' + username + '? This cannot be undone.')) return;
+  try { await api('/admin/reset-progress', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' reset', null, '#4fd1ff'); loadAdminUsers(); }
+  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
 function transitionTo(text) {
   const t = $('transition');
   t.textContent = text; t.classList.add('on');

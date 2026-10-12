@@ -766,8 +766,116 @@ app.delete('/api/friends/:id', dbReady, auth, async (req, res) => {
 });
 
 /* ---------------------------------------------------------------
- * Leaderboard
+ * Admin (restricted to username 'knowkey')
  * ------------------------------------------------------------- */
+app.get('/api/admin/users', dbReady, auth, isAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, u.is_admin, ps.money, ps.level, ps.tutorial_done, ps.updated_at
+         FROM users u
+         LEFT JOIN player_state ps ON ps.user_id = u.id
+        ORDER BY u.id ASC
+        LIMIT 200`
+    );
+    res.json({ users: rows.map(r => ({
+      id: r.id, username: r.username, isAdmin: !!r.is_admin,
+      money: Number(r.money || 0), level: Number(r.level || 1),
+      tutorialDone: !!r.tutorial_done, updatedAt: r.updated_at
+    })) });
+  } catch (e) {
+    console.error('[admin users]', e.message);
+    res.status(500).json({ error: 'Could not load users' });
+  }
+});
+
+app.post('/api/admin/set-money', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  const amount = clampInt(req.body && req.body.amount, -1000000000000, 1000000000000, 0);
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const client = await pool.connect();
+  try {
+    const u = await client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [username]);
+    if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
+    const id = u.rows[0].id;
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, id);
+    const money = Number(st.money || 0) + amount;
+    await client.query('UPDATE player_state SET money = $2, updated_at = NOW() WHERE user_id = $1', [id, money]);
+    await client.query('COMMIT');
+    client.release();
+    res.json({ ok: true, money });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    console.error('[admin set-money]', e.message);
+    res.status(500).json({ error: 'Could not set money' });
+  }
+});
+
+app.post('/api/admin/set-level', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  let level = clampInt(req.body && req.body.level, 1, MAX_LEVEL, 1);
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const client = await pool.connect();
+  try {
+    const u = await client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [username]);
+    if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
+    const id = u.rows[0].id;
+    await client.query('BEGIN');
+    await client.query('UPDATE player_state SET level = $2, updated_at = NOW() WHERE user_id = $1', [id, level]);
+    await client.query('COMMIT');
+    client.release();
+    res.json({ ok: true, level });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    console.error('[admin set-level]', e.message);
+    res.status(500).json({ error: 'Could not set level' });
+  }
+});
+
+app.post('/api/admin/clear-items', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const client = await pool.connect();
+  try {
+    const u = await client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [username]);
+    if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
+    const id = u.rows[0].id;
+    await client.query('BEGIN');
+    await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1', [id, JSON.stringify({})]);
+    await client.query('COMMIT');
+    client.release();
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    console.error('[admin clear-items]', e.message);
+    res.status(500).json({ error: 'Could not clear items' });
+  }
+});
+
+app.post('/api/admin/reset-progress', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const client = await pool.connect();
+  try {
+    const u = await client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [username]);
+    if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
+    const id = u.rows[0].id;
+    await client.query('BEGIN');
+    await client.query('UPDATE player_state SET money = 0, level = 1, counts = $2, stats = $3, achievements = $4, tutorial_done = FALSE, updated_at = NOW() WHERE user_id = $1',
+      [id, JSON.stringify({}), JSON.stringify(defaultStats()), JSON.stringify([])]);
+    await client.query('COMMIT');
+    client.release();
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    console.error('[admin reset]', e.message);
+    res.status(500).json({ error: 'Could not reset progress' });
+  }
+});
 app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
