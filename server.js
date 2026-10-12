@@ -69,6 +69,84 @@ function pickRarity(level) {
   return RARITIES.length - 1;
 }
 
+/* ---------------------------------------------------------------
+ * Item mutations
+ * A generated item can roll a mutation. Mutated items live in the
+ * inventory under a composite key "<mutationId><SEP><itemName>" and
+ * sell for `mult` times the base value.
+ * ------------------------------------------------------------- */
+const MUT_SEP = '\u241F';
+const MUTATION_CHANCE = 0.08;
+const MUTATIONS = [
+  { id: 'gold',     name: 'Gold',     mult: 2,  weight: 60 },
+  { id: 'diamond',  name: 'Diamond',  mult: 3,  weight: 25 },
+  { id: 'emerald',  name: 'Emerald',  mult: 5,  weight: 10 },
+  { id: 'electric', name: 'Electric', mult: 10, weight: 5 }
+];
+const MUT_BY_ID = {};
+MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
+
+function splitKey(key) {
+  const s = String(key);
+  const i = s.indexOf(MUT_SEP);
+  if (i === -1) return { item: s, mut: null };
+  return { item: s.slice(0, i), mut: s.slice(i + 1) };
+}
+function baseName(key) { return splitKey(key).item; }
+function mutationOf(key) { return MUT_BY_ID[splitKey(key).mut] || null; }
+function makeKey(item, mut) { return mut ? (mut.id + MUT_SEP + item) : item; }
+function itemValueFor(key) {
+  const { item, mut } = splitKey(key);
+  const ri = ITEM_RARITY[item];
+  if (ri == null) return 0;
+  const m = MUT_BY_ID[mut];
+  return RARITIES[ri].base * (m ? m.mult : 1);
+}
+function rollMutation() {
+  if (Math.random() >= MUTATION_CHANCE) return null;
+  let roll = Math.random() * MUTATIONS.reduce((a, b) => a + b.weight, 0);
+  for (const m of MUTATIONS) { roll -= m.weight; if (roll <= 0) return m; }
+  return MUTATIONS[0];
+}
+
+/* ---------------------------------------------------------------
+ * Global world boss
+ * Every generated item also damages the boss and adds its value to
+ * the shared pool. When it dies, the pool (x BOSS_BONUS) is split
+ * among contributors in proportion to damage dealt.
+ * ------------------------------------------------------------- */
+const BOSS_BONUS = 1.5;
+const BOSS_BASE_HP = 5000;
+const BOSS_HP_GROWTH = 1.6;
+const BOSS_NAMES = [
+  'The Trash Colossus', 'Lord of Leftovers', 'The Moldbringer',
+  'Duke of Detritus', 'The Sock Devourer', 'Baron of Broken Things'
+];
+
+/* ---------------------------------------------------------------
+ * Login rewards + daily quests (calendar day boundaries, UTC)
+ * ------------------------------------------------------------- */
+const LOGIN_REWARDS = [100, 250, 500, 1000, 2000, 4000, 10000];
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function yesterdayStr() { return new Date(Date.now() - 86400000).toISOString().slice(0, 10); }
+function defaultDaily() { return { date: todayStr(), prog: { gen: 0, sell: 0, earn: 0, boss: 0 }, claimed: [] }; }
+function dailyOf(row) {
+  let d = row && row.daily;
+  if (!d || typeof d !== 'object' || Array.isArray(d) || d.date !== todayStr()) d = defaultDaily();
+  if (!d.prog || typeof d.prog !== 'object') d.prog = { gen: 0, sell: 0, earn: 0, boss: 0 };
+  if (!Array.isArray(d.claimed)) d.claimed = [];
+  return d;
+}
+function dailyQuests(level) {
+  const L = Math.max(1, Number(level) || 1);
+  return [
+    { id: 'gen',  name: 'Generate Items', desc: 'Feed the generator',   target: 25 + L * 5,       reward: 500 + L * 100 },
+    { id: 'sell', name: 'Sell Items',     desc: 'Cash in your hoard',   target: 20 + L * 4,       reward: 750 + L * 150 },
+    { id: 'earn', name: 'Earn Money',     desc: 'Rack up earnings',     target: 1000 * (1 + L),   reward: 1500 + L * 250 },
+    { id: 'boss', name: 'Feed the Boss',  desc: 'Damage the world boss', target: 15 + L * 3,      reward: 1000 + L * 200 }
+  ];
+}
+
 const ACH = [
   { id: 'first',  reward: 50,       check: v => (v.ig || 0) >= 1 },
   { id: 'c100',   reward: 250,      check: v => (v.ig || 0) >= 100 },
@@ -240,16 +318,86 @@ function publicState(row) {
 }
 
 // Shared helper: persist a mutated player_state row plus any newly earned achievements.
-async function persistProgress(client, userId, st, counts, stats, achievements, money) {
+async function persistProgress(client, userId, st, counts, stats, achievements, money, daily) {
   const level = Number(st.level || 1);
   const res = evaluateAch(stats, level, achievements);
   money += res.reward;
-  await client.query(
-    `UPDATE player_state SET money = $2, counts = $3, stats = $4, achievements = $5, updated_at = NOW()
-      WHERE user_id = $1`,
-    [userId, money, JSON.stringify(counts), JSON.stringify(stats), JSON.stringify(achievements)]
-  );
+  if (daily) {
+    await client.query(
+      `UPDATE player_state SET money = $2, counts = $3, stats = $4, achievements = $5, daily = $6, updated_at = NOW()
+        WHERE user_id = $1`,
+      [userId, money, JSON.stringify(counts), JSON.stringify(stats), JSON.stringify(achievements), JSON.stringify(daily)]
+    );
+  } else {
+    await client.query(
+      `UPDATE player_state SET money = $2, counts = $3, stats = $4, achievements = $5, updated_at = NOW()
+        WHERE user_id = $1`,
+      [userId, money, JSON.stringify(counts), JSON.stringify(stats), JSON.stringify(achievements)]
+    );
+  }
   return res.earned;
+}
+
+/* ---------------------------------------------------------------
+ * Boss persistence helpers (must be called inside a transaction)
+ * ------------------------------------------------------------- */
+async function ensureBoss(client) {
+  await client.query('SELECT pg_advisory_xact_lock(918273)');
+  let { rows } = await client.query('SELECT * FROM bosses WHERE defeated_at IS NULL ORDER BY id DESC LIMIT 1');
+  if (rows[0]) return rows[0];
+  const c = await client.query('SELECT COUNT(*)::int AS n FROM bosses');
+  const n = Number(c.rows[0] && c.rows[0].n) || 0;
+  const hp = Math.floor(BOSS_BASE_HP * Math.pow(BOSS_HP_GROWTH, n));
+  const base = BOSS_NAMES[n % BOSS_NAMES.length];
+  const name = n >= BOSS_NAMES.length ? (base + ' ' + (Math.floor(n / BOSS_NAMES.length) + 1)) : base;
+  const ins = await client.query(
+    'INSERT INTO bosses (name, hp, max_hp) VALUES ($1, $2, $3) RETURNING *',
+    [name, hp, hp]
+  );
+  return ins.rows[0];
+}
+
+// Deal `dmg` to the active boss, add `value` to the pool and record the
+// contribution. If the boss dies, pay every contributor their share.
+// Returns { summary, myPayout, defeated }.
+async function contributeToBoss(client, userId, dmg, value) {
+  const boss = await ensureBoss(client);
+  const hp = Math.max(0, Number(boss.hp) - dmg);
+  const poolValue = Number(boss.pool_value) + value;
+  await client.query('UPDATE bosses SET hp = $2, pool_value = $3 WHERE id = $1', [boss.id, hp, poolValue]);
+  await client.query(
+    `INSERT INTO boss_contributions (boss_id, user_id, damage, value) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (boss_id, user_id)
+       DO UPDATE SET damage = boss_contributions.damage + EXCLUDED.damage,
+                     value  = boss_contributions.value  + EXCLUDED.value`,
+    [boss.id, userId, dmg, value]
+  );
+
+  let myPayout = 0;
+  let defeated = null;
+  if (hp <= 0) {
+    const { rows } = await client.query('SELECT user_id, damage, value FROM boss_contributions WHERE boss_id = $1', [boss.id]);
+    const totalDamage = rows.reduce((a, r) => a + Number(r.damage), 0) || 1;
+    const poolTotal = rows.reduce((a, r) => a + Number(r.value), 0);
+    const others = [];
+    for (const r of rows) {
+      const amt = Math.floor((poolTotal * BOSS_BONUS) * (Number(r.damage) / totalDamage));
+      if (amt <= 0) continue;
+      if (Number(r.user_id) === Number(userId)) myPayout += amt;
+      else others.push([r.user_id, amt]);
+    }
+    for (const [uid, amt] of others) {
+      await client.query('UPDATE player_state SET money = money + $2, updated_at = NOW() WHERE user_id = $1', [uid, amt]);
+    }
+    await client.query('UPDATE bosses SET hp = 0, defeated_at = NOW() WHERE id = $1', [boss.id]);
+    defeated = { id: boss.id, name: boss.name, pool: poolTotal, bonus: BOSS_BONUS };
+  }
+
+  return {
+    summary: { id: boss.id, name: boss.name, hp, maxHp: Number(boss.max_hp), poolValue, bonus: BOSS_BONUS },
+    myPayout,
+    defeated
+  };
 }
 
 /* ---------------------------------------------------------------
@@ -307,8 +455,31 @@ app.post('/api/login', dbReady, async (req, res) => {
 
 app.get('/api/me', dbReady, auth, async (req, res) => {
   try {
-    const state = await stateFor(pool, req.user.id);
-    res.json({ user: { id: req.user.id, username: req.user.username, isAdmin: !!req.user.isAdmin }, state: publicState(state) });
+    const st = await stateFor(pool, req.user.id);
+
+    // Login reward: granted once per calendar day, streak-aware.
+    let login = null;
+    const today = todayStr();
+    if (st.last_login !== today) {
+      const streak = (st.last_login === yesterdayStr()) ? (Number(st.login_streak) || 0) + 1 : 1;
+      const day = ((streak - 1) % LOGIN_REWARDS.length) + 1;
+      const reward = LOGIN_REWARDS[day - 1];
+      const money = Number(st.money || 0) + reward;
+      await pool.query(
+        'UPDATE player_state SET money = $2, last_login = $3, login_streak = $4, updated_at = NOW() WHERE user_id = $1',
+        [req.user.id, money, today, streak]
+      );
+      st.money = money; st.last_login = today; st.login_streak = streak;
+      login = { isNew: true, streak, day, reward };
+    }
+
+    const d = dailyOf(st);
+    res.json({
+      user: { id: req.user.id, username: req.user.username, isAdmin: !!req.user.isAdmin },
+      state: publicState(st),
+      login,
+      daily: { quests: dailyQuests(st.level), prog: d.prog, claimed: d.claimed }
+    });
   } catch (e) {
     console.error('[me]', e.message);
     res.status(500).json({ error: 'Could not load profile' });
@@ -353,24 +524,44 @@ app.post('/api/generate', dbReady, auth, async (req, res) => {
     }
     const level = Number(st.level || 1);
     const ri = pickRarity(level);
-    const pool = ITEMS_BY_RARITY[RARITIES[ri].key];
-    const item = pool[Math.floor(Math.random() * pool.length)];
+    const itemPool = ITEMS_BY_RARITY[RARITIES[ri].key];
+    const item = itemPool[Math.floor(Math.random() * itemPool.length)];
+    const mut = rollMutation();
+    const key = makeKey(item, mut);
+    const value = itemValueFor(key);
 
     const counts = Object.assign({}, st.counts || {});
-    counts[item] = Number(counts[item] || 0) + 1;
+    counts[key] = Number(counts[key] || 0) + 1;
     const stats = statsOf(st);
     stats.ig = (stats.ig || 0) + 1;
     if (stats.seen.indexOf(item) === -1) stats.seen.push(item);
     if (stats.best == null) stats.best = -1;
     if (ri > stats.best) stats.best = ri;
 
+    // Every generated item also hits the world boss and feeds its pool.
+    const bossRes = await contributeToBoss(client, req.user.id, ri + 1, value);
+
+    const daily = dailyOf(st);
+    daily.prog.gen = (daily.prog.gen || 0) + 1;
+    daily.prog.boss = (daily.prog.boss || 0) + 1;
+
+    let money = Number(st.money || 0) + bossRes.myPayout;
     const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
-    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, Number(st.money || 0));
+    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, money, daily);
     await client.query('COMMIT');
     lastGen.set(req.user.id, now);
 
     const fresh = await stateFor(pool, req.user.id);
-    res.json({ ok: true, item, rarity: RARITIES[ri].key, state: publicState(fresh), newAch });
+
+    maybeBossBroadcast(bossRes.summary);
+    if (bossRes.defeated) broadcastAll({ type: 'bossDefeated', boss: bossRes.defeated });
+
+    res.json({
+      ok: true, item, rarity: RARITIES[ri].key, mutation: mut ? mut.id : null,
+      state: publicState(fresh), newAch,
+      daily: { prog: daily.prog, claimed: daily.claimed },
+      boss: bossRes.summary, bossDefeated: bossRes.defeated
+    });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     console.error('[generate]', e.message);
@@ -388,28 +579,32 @@ app.post('/api/sell', dbReady, auth, async (req, res) => {
     const counts = Object.assign({}, st.counts || {});
     const body = req.body || {};
     let gain = 0;
+    let sold = 0;
 
     if (body.all) {
-      for (const it in counts) {
-        const ri = ITEM_RARITY[it];
+      for (const key in counts) {
+        const ri = ITEM_RARITY[baseName(key)];
         if (ri == null) continue;
-        gain += RARITIES[ri].base * Number(counts[it] || 0);
-        delete counts[it];
+        const c = Number(counts[key] || 0);
+        gain += itemValueFor(key) * c;
+        sold += c;
+        delete counts[key];
       }
     } else {
-      const it = String(body.item || '');
-      const ri = ITEM_RARITY[it];
+      const key = String(body.item || '');
+      const ri = ITEM_RARITY[baseName(key)];
       if (ri == null) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'Unknown item' });
       }
-      const c = Number(counts[it] || 0);
+      const c = Number(counts[key] || 0);
       if (c <= 0) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'You do not have that item' });
       }
-      gain += RARITIES[ri].base * c;
-      delete counts[it];
+      gain += itemValueFor(key) * c;
+      sold += c;
+      delete counts[key];
     }
     if (gain <= 0) {
       await client.query('ROLLBACK');
@@ -418,12 +613,15 @@ app.post('/api/sell', dbReady, auth, async (req, res) => {
 
     const stats = statsOf(st);
     stats.earned = (stats.earned || 0) + gain;
+    const daily = dailyOf(st);
+    daily.prog.sell = (daily.prog.sell || 0) + sold;
+    daily.prog.earn = (daily.prog.earn || 0) + gain;
     const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
-    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, Number(st.money || 0) + gain);
+    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, Number(st.money || 0) + gain, daily);
     await client.query('COMMIT');
 
     const fresh = await stateFor(pool, req.user.id);
-    res.json({ ok: true, gain, state: publicState(fresh), newAch });
+    res.json({ ok: true, gain, state: publicState(fresh), newAch, daily: { prog: daily.prog, claimed: daily.claimed } });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     console.error('[sell]', e.message);
@@ -542,18 +740,23 @@ app.get('/api/servers/:id/members', dbReady, auth, async (req, res) => {
  * ------------------------------------------------------------- */
 app.get('/api/bazaar', dbReady, auth, async (req, res) => {
   try {
+    const q = String((req.query && req.query.q) || '').trim().slice(0, 40);
+    const params = [];
+    let where = 'b.sold = FALSE AND b.quantity > 0';
+    if (q) { params.push('%' + q + '%'); where += ' AND b.item_name ILIKE $' + params.length; }
     const { rows } = await pool.query(
-      `SELECT b.id, b.item_name, b.rarity, b.price, b.quantity, b.seller_id,
+      `SELECT b.id, b.item_name, b.rarity, b.price, b.quantity, b.seller_id, b.mutation,
               u.username AS seller, b.created_at
          FROM bazaar_listings b
          JOIN users u ON u.id = b.seller_id
-        WHERE b.sold = FALSE AND b.quantity > 0
+        WHERE ${where}
         ORDER BY b.created_at DESC
-        LIMIT 200`
+        LIMIT 200`,
+      params
     );
     res.json({
       listings: rows.map(r => ({
-        id: r.id, itemName: r.item_name, rarity: r.rarity,
+        id: r.id, itemName: r.item_name, rarity: r.rarity, mutation: r.mutation || null,
         price: Number(r.price), quantity: r.quantity,
         sellerId: r.seller_id, seller: r.seller, mine: r.seller_id === req.user.id
       }))
@@ -568,28 +771,30 @@ app.post('/api/bazaar', dbReady, auth, async (req, res) => {
   const client = await pool.connect();
   try {
     const b = req.body || {};
-    const itemName = String(b.itemName || '');
+    const key = String(b.itemName || '');
+    const { item: itemName, mut } = splitKey(key);
     const ri = ITEM_RARITY[itemName];
     if (ri == null) return res.status(400).json({ error: 'Unknown item' });
     const rarity = RARITIES[ri].key; // never trust the client's rarity
+    const mutation = MUT_BY_ID[mut] ? mut : null;
     const quantity = clampInt(b.quantity, 1, 9999, 1);
     const price = clampInt(b.price, 1, Number.MAX_SAFE_INTEGER, 1);
 
     await client.query('BEGIN');
     const st = await stateForUpdate(client, req.user.id);
     const counts = Object.assign({}, st.counts || {});
-    const have = Number(counts[itemName] || 0);
+    const have = Number(counts[key] || 0);
     if (have < quantity) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'You do not have that many of this item' });
     }
-    counts[itemName] = have - quantity;
-    if (counts[itemName] <= 0) delete counts[itemName];
+    counts[key] = have - quantity;
+    if (counts[key] <= 0) delete counts[key];
     await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1',
       [req.user.id, JSON.stringify(counts)]);
     await client.query(
-      'INSERT INTO bazaar_listings (seller_id, item_name, rarity, price, quantity) VALUES ($1, $2, $3, $4, $5)',
-      [req.user.id, itemName, rarity, price, quantity]
+      'INSERT INTO bazaar_listings (seller_id, item_name, rarity, price, quantity, mutation) VALUES ($1, $2, $3, $4, $5, $6)',
+      [req.user.id, itemName, rarity, price, quantity, mutation]
     );
     await client.query('COMMIT');
     const fresh = await stateFor(pool, req.user.id);
@@ -625,7 +830,8 @@ app.post('/api/bazaar/:id/buy', dbReady, auth, async (req, res) => {
       return res.status(400).json({ error: 'You cannot afford that' });
     }
     const bCounts = Object.assign({}, buyer.counts || {});
-    bCounts[listing.item_name] = Number(bCounts[listing.item_name] || 0) + Number(listing.quantity);
+    const buyKey = makeKey(listing.item_name, MUT_BY_ID[listing.mutation] ? { id: listing.mutation } : null);
+    bCounts[buyKey] = Number(bCounts[buyKey] || 0) + Number(listing.quantity);
     const bStats = statsOf(buyer);
     bStats.trades = (bStats.trades || 0) + 1;
     const achievements = Array.isArray(buyer.achievements) ? buyer.achievements.slice() : [];
@@ -664,7 +870,8 @@ app.delete('/api/bazaar/:id', dbReady, auth, async (req, res) => {
     if (!l.rows[0].sold) {
       const st = await stateForUpdate(client, req.user.id);
       const counts = Object.assign({}, st.counts || {});
-      counts[l.rows[0].item_name] = Number(counts[l.rows[0].item_name] || 0) + Number(l.rows[0].quantity);
+      const backKey = makeKey(l.rows[0].item_name, MUT_BY_ID[l.rows[0].mutation] ? { id: l.rows[0].mutation } : null);
+      counts[backKey] = Number(counts[backKey] || 0) + Number(l.rows[0].quantity);
       await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1',
         [req.user.id, JSON.stringify(counts)]);
       await client.query('UPDATE bazaar_listings SET sold = TRUE, quantity = 0 WHERE id = $1', [id]);
@@ -899,6 +1106,91 @@ app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
 });
 
 /* ---------------------------------------------------------------
+ * Daily quests
+ * ------------------------------------------------------------- */
+app.get('/api/daily', dbReady, auth, async (req, res) => {
+  try {
+    const st = await stateFor(pool, req.user.id);
+    const d = dailyOf(st);
+    res.json({ quests: dailyQuests(st.level), prog: d.prog, claimed: d.claimed });
+  } catch (e) {
+    console.error('[daily]', e.message);
+    res.status(500).json({ error: 'Could not load quests' });
+  }
+});
+
+app.post('/api/daily/claim', dbReady, auth, async (req, res) => {
+  const id = String((req.body && req.body.id) || '');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, req.user.id);
+    const d = dailyOf(st);
+    const q = dailyQuests(st.level).find(x => x.id === id);
+    if (!q) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Unknown quest' }); }
+    if (d.claimed.indexOf(id) !== -1) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Already claimed' }); }
+    if (Number(d.prog[id] || 0) < q.target) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Quest not complete' }); }
+    d.claimed.push(id);
+    const money = Number(st.money || 0) + q.reward;
+    await client.query(
+      'UPDATE player_state SET money = $2, daily = $3, updated_at = NOW() WHERE user_id = $1',
+      [req.user.id, money, JSON.stringify(d)]
+    );
+    await client.query('COMMIT');
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, reward: q.reward, state: publicState(fresh), daily: { quests: dailyQuests(st.level), prog: d.prog, claimed: d.claimed } });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[daily claim]', e.message);
+    res.status(500).json({ error: 'Could not claim reward' });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------------------------------------------------------------
+ * World boss
+ * ------------------------------------------------------------- */
+app.get('/api/boss', dbReady, auth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const boss = await ensureBoss(client);
+    const { rows } = await client.query(
+      `SELECT c.user_id, u.username, c.damage, c.value
+         FROM boss_contributions c
+         JOIN users u ON u.id = c.user_id
+        WHERE c.boss_id = $1
+        ORDER BY c.damage DESC
+        LIMIT 50`,
+      [boss.id]
+    );
+    await client.query('COMMIT');
+    const totalDamage = rows.reduce((a, r) => a + Number(r.damage), 0) || 0;
+    const poolTotal = rows.reduce((a, r) => a + Number(r.value), 0);
+    let you = null;
+    const contributions = rows.map(r => {
+      const share = totalDamage ? Number(r.damage) / totalDamage : 0;
+      const payout = Math.floor(poolTotal * BOSS_BONUS * share);
+      if (Number(r.user_id) === Number(req.user.id)) {
+        you = { damage: Number(r.damage), value: Number(r.value), share, payout };
+      }
+      return { username: r.username, damage: Number(r.damage), value: Number(r.value), share, payout };
+    });
+    res.json({
+      boss: { id: boss.id, name: boss.name, hp: Number(boss.hp), maxHp: Number(boss.max_hp), poolValue: Number(boss.pool_value), bonus: BOSS_BONUS },
+      contributions, you, totalDamage
+    });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[boss]', e.message);
+    res.status(500).json({ error: 'Could not load boss' });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------------------------------------------------------------
  * Static hosting + health
  * ------------------------------------------------------------- */
 app.get('/healthz', (req, res) => res.json({ ok: true, db: !!DATABASE_URL }));
@@ -929,6 +1221,21 @@ function broadcast(serverId, obj, exceptId) {
     if (exceptId && uid === exceptId) continue;
     if (entry.ws && entry.ws.readyState === 1) entry.ws.send(data);
   }
+}
+
+// Send a message to every connected socket (used for the global boss).
+function broadcastAll(obj) {
+  const data = JSON.stringify(obj);
+  wss.clients.forEach(c => { if (c.readyState === 1) c.send(data); });
+}
+
+// Throttle live boss HP updates so a busy server doesn't flood clients.
+let lastBossBcast = 0;
+function maybeBossBroadcast(boss) {
+  const now = Date.now();
+  if (now - lastBossBcast < 1500) return;
+  lastBossBcast = now;
+  broadcastAll({ type: 'boss', boss });
 }
 
 async function broadcastMembers(serverId) {

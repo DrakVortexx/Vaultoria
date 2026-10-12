@@ -317,6 +317,34 @@
   #confettiLayer { position: fixed; inset: 0; pointer-events: none; z-index: 300; overflow: hidden; }
   .confetti { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: confettiFly 1.2s ease-out forwards; }
   @keyframes confettiFly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
+
+  /* world boss */
+  #bossStrip { position: fixed; top: 104px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: auto; cursor: pointer;
+    display: flex; align-items: center; gap: 12px; padding: 7px 16px; border-radius: 20px;
+    background: rgba(5,6,15,0.72); border: 1px solid rgba(255,92,138,0.45); box-shadow: 0 0 24px rgba(255,92,138,0.2); }
+  #bossStrip:hover { border-color: rgba(255,140,168,0.9); }
+  #bossStripName { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: #ff8ca8; text-transform: uppercase; }
+  #bossStripHp { font-size: 12px; font-weight: 700; color: #c3c8e6; min-width: 130px; text-align: right; }
+  .boss-hp { width: 240px; height: 10px; border-radius: 20px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .boss-hp > div { height: 100%; width: 100%; border-radius: 20px; background: linear-gradient(90deg, #ff5c8a, #ffb648); transition: width 0.4s ease; }
+  .boss-stat { display: flex; justify-content: space-between; gap: 12px; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .boss-stat .k { color: #9aa2cc; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .boss-stat .v { font-weight: 700; }
+
+  /* bazaar search */
+  .bazaar-search { display: flex; gap: 8px; width: 100%; margin-bottom: 10px; flex-wrap: wrap; }
+  .bazaar-search input, .bazaar-search select { font-family: inherit; font-size: 13px; padding: 9px 12px; border-radius: 10px; color: #fff; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); outline: none; }
+  .bazaar-search input { flex: 1; min-width: 140px; }
+  .bazaar-search input:focus, .bazaar-search select:focus { border-color: #6d4dff; }
+  .bazaar-search select option { background: #0b0d1d; color: #fff; }
+
+  /* quests */
+  .quest { background: #0b0d1d; border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; }
+  .quest.done { border-color: rgba(123,220,120,0.5); }
+  .quest-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .quest-name { font-weight: 700; font-size: 14px; }
+  .quest-desc { font-size: 12px; color: #8b93bd; margin: 3px 0 8px; }
+  .quest-reward { font-size: 12px; color: #7bdc78; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -389,12 +417,18 @@
       </div>
       <div class="hud-right">
         <button class="hud-btn primary" id="vaultBtn" type="button">Vault</button>
+        <button class="hud-btn" id="bossBtn" type="button">Boss</button>
         <button class="hud-btn" id="adminBtn" type="button" style="display:none">Admin</button>
         <button class="hud-btn" id="marketBtn" type="button">Market</button>
         <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
         <button class="hud-btn" id="leadBtn" type="button">Leaders</button>
         <button class="hud-btn" id="leaveBtn" type="button">Leave</button>
       </div>
+    </div>
+    <div id="bossStrip" class="hidden">
+      <span id="bossStripName">World Boss</span>
+      <div class="boss-hp"><div id="bossHpFill"></div></div>
+      <span id="bossStripHp"></span>
     </div>
     <div id="zone">WORLD</div>
     <div id="hint">WASD / Arrows to walk &middot; E to open your vault</div>
@@ -419,6 +453,7 @@
         <button class="tab active" data-tab="generator" type="button">Generator</button>
         <button class="tab" data-tab="upgrades" type="button">Upgrades</button>
         <button class="tab" data-tab="inventory" type="button">Inventory</button>
+        <button class="tab" data-tab="quests" type="button">Quests</button>
         <button class="tab" data-tab="achievements" type="button">Achievements</button>
       </div>
 
@@ -465,6 +500,14 @@
       <div id="panel-achievements" class="panel">
         <ul id="achList"></ul>
       </div>
+
+      <div id="panel-quests" class="panel">
+        <div class="inv-head">
+          <h2>Daily Quests</h2>
+          <span class="inv-worth" id="questInfo"></span>
+        </div>
+        <ul class="list" id="questList"><li class="empty">Loading quests...</li></ul>
+      </div>
     </div>
   </div>
 
@@ -481,6 +524,11 @@
         <button class="tab" data-btab="sell" type="button">Sell Items</button>
       </div>
       <div id="bpanel-browse" class="panel active">
+        <div class="bazaar-search">
+          <input id="bazaarSearch" type="text" maxlength="40" autocomplete="off" placeholder="Search items...">
+          <select id="bazaarRarity"></select>
+          <select id="bazaarMutation"></select>
+        </div>
         <ul class="list" id="browseList"><li class="empty">Loading bazaar...</li></ul>
       </div>
       <div id="bpanel-sell" class="panel">
@@ -519,6 +567,16 @@
         <button class="x" data-close="leaderModal" type="button">&times;</button>
       </div>
       <ul class="list" id="leaderList"><li class="empty">Loading leaderboard...</li></ul>
+    </div>
+  </div>
+
+  <div id="bossModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title" id="bossModalTitle">World Boss</div>
+        <button class="x" data-close="bossModal" type="button">&times;</button>
+      </div>
+      <div id="bossModalBody"></div>
     </div>
   </div>
 
@@ -602,6 +660,41 @@ function rarityFor(name) {
   return RARITIES[0];
 }
 function itemValue(rar) { return rar.base; }
+
+/* item mutations ------------------------------------------------ */
+const MUT_SEP = '\u241F';
+const MUTATIONS = [
+  { id: 'gold',     name: 'Gold',     mult: 2,  color: '#ffd24a' },
+  { id: 'diamond',  name: 'Diamond',  mult: 3,  color: '#7be0ff' },
+  { id: 'emerald',  name: 'Emerald',  mult: 5,  color: '#4fe08a' },
+  { id: 'electric', name: 'Electric', mult: 10, color: '#c77bff' }
+];
+const MUT_BY_ID = {};
+MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
+function splitKey(key) {
+  const s = String(key);
+  const i = s.indexOf(MUT_SEP);
+  if (i === -1) return { item: s, mut: null };
+  return { item: s.slice(0, i), mut: s.slice(i + 1) };
+}
+function baseName(key) { return splitKey(key).item; }
+function mutationOf(key) { return MUT_BY_ID[splitKey(key).mut] || null; }
+function makeKey(item, mut) { return mut ? (mut.id + MUT_SEP + item) : item; }
+function itemValueKey(key) {
+  const { item, mut } = splitKey(key);
+  return itemValue(rarityFor(item)) * (MUT_BY_ID[mut] ? MUT_BY_ID[mut].mult : 1);
+}
+function mutBadge(key) {
+  const m = mutationOf(key);
+  if (!m) return '';
+  return '<span class="rarity" style="color:' + m.color + ';background:' + m.color + '1f;border:1px solid ' + m.color + '59">' + m.name + ' x' + m.mult + '</span>';
+}
+function itemDisplayName(key) {
+  const m = mutationOf(key);
+  const base = baseName(key);
+  if (!m) return '<span style="color:' + rarityFor(base).color + '">' + esc(base) + '</span>';
+  return '<span style="color:' + m.color + '">' + esc(m.name) + '</span> <span style="color:' + rarityFor(base).color + '">' + esc(base) + '</span>';
+}
 function legendaryLuck() {
   const ws = rarityWeights();
   return ((ws[4] + ws[5]) / ws.reduce((a, b) => a + b, 0) * 100).toFixed(2);
@@ -623,12 +716,15 @@ let salesCount = 0;
 let bazaarOpened = false;
 let vaultOpen = false;
 let generating = false;
+let genBusy = false;
 let genEnd = 0;
 let tutorialDone = false;
 let tutIdx = 0;
 let lastTutRender = -1;
 let tutTimer = null;
 let spotTimer = null;
+let dailyData = null;
+let bossState = null;
 
 /* =============================================================
  * FX
@@ -705,6 +801,7 @@ function showScreen(name) {
   $('gameHud').classList.toggle('hidden', name !== 'game');
   inGame = (name === 'game');
   if (name !== 'game') closeAllModals();
+  if (typeof renderBossStrip === 'function') renderBossStrip();
 }
 
 /* =============================================================
@@ -748,11 +845,15 @@ async function loadMe() {
   const data = await api('/me');
   me = data.user;
   state = data.state;
+  dailyData = data.daily || null;
   tutorialDone = !!state.tutorialDone;
   $('dashPanel').classList.add('hidden');
   renderDash();
   renderVault();
   showScreen('dash');
+  if (data.login && data.login.isNew) {
+    setTimeout(() => toast('DAILY REWARD \u00b7 DAY ' + data.login.day, data.login.streak + ' day streak', '$' + fmt(data.login.reward), '#ffb648'), 600);
+  }
   if ($('adminBtn')) {
     if (me && me.isAdmin && me.username === 'knowkey') {
       $('adminBtn').style.display = 'inline-block';
@@ -897,6 +998,7 @@ async function enterServer(sid, name) {
     connectWS();
     refreshTutorial();
     renderVault();
+    loadBoss();
     addChat('sys', 'You joined ' + currentServer.name + ' (slot ' + (mySlot + 1) + '/8).');
   } catch (err) {
     toast('OOPS', err.message, null, '#ff6b8a');
@@ -918,6 +1020,8 @@ function connectWS() {
     if (msg.type === 'members') onMembers(msg.members);
     else if (msg.type === 'move') onRemoteMove(msg);
     else if (msg.type === 'say') addChat('chat', msg.name, msg.text);
+    else if (msg.type === 'boss') onBoss(msg.boss);
+    else if (msg.type === 'bossDefeated') onBossDefeated(msg.boss);
   });
   sock.addEventListener('close', () => {
     if (sock !== ws) return;
@@ -1449,7 +1553,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'bossModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -1478,6 +1582,7 @@ document.querySelectorAll('.tab[data-tab]').forEach(tab => tab.addEventListener(
   document.querySelectorAll('#vaultModal .panel').forEach(p => p.classList.remove('active'));
   tab.classList.add('active');
   $('panel-' + tab.dataset.tab).classList.add('active');
+  if (tab.dataset.tab === 'quests') renderQuests();
 }));
 
 function renderVault() {
@@ -1505,7 +1610,7 @@ function renderVault() {
   }
 
   let total = 0, worth = 0;
-  for (const it in state.counts) { total += state.counts[it]; worth += itemValue(rarityFor(it)) * state.counts[it]; }
+  for (const it in state.counts) { total += state.counts[it]; worth += itemValueKey(it) * state.counts[it]; }
   $('sellAll').disabled = total === 0;
   $('invWorth').textContent = 'Worth: $' + fmt(worth);
 
@@ -1514,15 +1619,15 @@ function renderVault() {
     list.innerHTML = '<li class="empty">Nothing yet...<br>Generate items and sell them here.</li>';
   } else {
     list.innerHTML = '';
-    const entries = Object.entries(state.counts).sort((a, b) => itemValue(rarityFor(b[0])) - itemValue(rarityFor(a[0])));
+    const entries = Object.entries(state.counts).sort((a, b) => itemValueKey(b[0]) - itemValueKey(a[0]));
     for (const [it, count] of entries) {
-      const rar = rarityFor(it);
+      const rar = rarityFor(baseName(it));
       const li = document.createElement('li');
       li.innerHTML =
-        '<span class="item-left"><span class="item-name" style="color:' + rar.color + '">' + esc(it) + '</span>' +
+        '<span class="item-left"><span class="item-name">' + itemDisplayName(it) + '</span>' + mutBadge(it) +
         '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
         '<span class="item-right"><span class="item-count">x' + count + '</span>' +
-        '<span class="item-value">$' + fmt(itemValue(rar) * count) + '</span>' +
+        '<span class="item-value">$' + fmt(itemValueKey(it) * count) + '</span>' +
         '<button class="sell-btn">SELL</button></span>';
       li.querySelector('.sell-btn').addEventListener('click', e => sellItem(it, e));
       list.appendChild(li);
@@ -1536,32 +1641,44 @@ function renderVault() {
 /* generator */
 $('gen').addEventListener('click', () => { ac(); beginGen(); });
 function beginGen() {
-  if (generating || !vaultOpen) return;
+  if (generating || genBusy || !vaultOpen) return;
   generating = true; genEnd = performance.now() + GEN_TIME;
   $('gen').disabled = true; $('generator').classList.add('charging'); $('last').classList.remove('show');
 }
-function finishGen() {
+async function finishGen() {
+  if (genBusy) return;
+  genBusy = true;
   generating = false;
-  $('generator').classList.remove('charging'); $('gen').disabled = false;
-  const rar = pickRarity();
-  const pool = ITEMS_BY_RARITY[rar.key];
-  const item = pool[Math.floor(Math.random() * pool.length)];
-  state.counts[item] = (state.counts[item] || 0) + 1;
-  state.stats.ig = (state.stats.ig || 0) + 1;
-  if (!state.stats.seen) state.stats.seen = [];
-  if (state.stats.seen.indexOf(item) === -1) state.stats.seen.push(item);
-  const idx = RARITIES.indexOf(rar);
-  if (state.stats.best == null) state.stats.best = -1;
-  if (idx > state.stats.best) state.stats.best = idx;
+  $('generator').classList.remove('charging');
+  $('gen').disabled = true;
+  try {
+    const r = await api('/generate', { method: 'POST' });
+    state = r.state;
+    const rar = RARITIES.find(x => x.key === r.rarity) || RARITIES[0];
+    const mut = r.mutation ? MUT_BY_ID[r.mutation] : null;
+    const color = mut ? mut.color : rar.color;
+    const idx = RARITIES.indexOf(rar);
 
-  const el = $('last');
-  el.textContent = rar.name + ': ' + item; el.style.color = rar.color; el.style.textShadow = '0 0 24px ' + rar.color;
-  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-  sfxGen(idx);
-  float(window.innerWidth / 2, window.innerHeight * 0.42, rar.name + '!', rar.color);
-  if (idx >= 3) burst(window.innerWidth / 2, window.innerHeight * 0.4, rar);
-  if (idx >= 4) toast(rar.name.toUpperCase() + ' ITEM!', item, null, rar.color);
-  renderVault(); checkAch(); queueSave(); refreshTutorial();
+    const el = $('last');
+    el.textContent = (mut ? mut.name.toUpperCase() + ' ' : '') + rar.name + ': ' + r.item;
+    el.style.color = color; el.style.textShadow = '0 0 24px ' + color;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    sfxGen(idx);
+    float(window.innerWidth / 2, window.innerHeight * 0.42, (mut ? mut.name.toUpperCase() + ' ' : '') + rar.name + '!', color);
+    if (idx >= 3 || mut) burst(window.innerWidth / 2, window.innerHeight * 0.4, rar);
+    if (idx >= 4 || (mut && mut.mult >= 5)) toast((mut ? mut.name.toUpperCase() : rar.name.toUpperCase()) + ' ITEM!', r.item, null, color);
+
+    if (r.newAch && r.newAch.length) showNewAch(r.newAch);
+    if (r.daily) dailyData = Object.assign({}, dailyData, r.daily);
+    if (r.boss) onBoss(r.boss);
+    if (r.bossDefeated) onBossDefeated(r.bossDefeated);
+    renderVault(); refreshTutorial();
+  } catch (err) {
+    toast('OOPS', err.message, null, '#ff6b8a');
+  } finally {
+    genBusy = false;
+    $('gen').disabled = false;
+  }
 }
 setInterval(() => {
   if (!generating) return;
@@ -1574,29 +1691,39 @@ setInterval(() => {
 }, 100);
 
 /* sell */
-function sellItem(item, ev) {
-  const count = state.counts[item]; if (!count) return;
-  const gain = itemValue(rarityFor(item)) * count;
-  state.money += gain; state.stats.earned = (state.stats.earned || 0) + gain;
-  delete state.counts[item]; salesCount++; sfxSell();
-  const r = (ev && (ev.currentTarget || ev.target)).getBoundingClientRect();
-  float(r.left + r.width / 2, r.top, '+' + fmt(gain), '#7bdc78');
-  renderVault(); checkAch(); queueSave();
+async function sellItem(item, ev) {
+  if (!state.counts[item]) return;
+  const box = (ev && (ev.currentTarget || ev.target)).getBoundingClientRect();
+  try {
+    const r = await api('/sell', { method: 'POST', body: JSON.stringify({ item }) });
+    state = r.state; salesCount++; sfxSell();
+    float(box.left + box.width / 2, box.top, '+' + fmt(r.gain), '#7bdc78');
+    if (r.newAch && r.newAch.length) showNewAch(r.newAch);
+    if (r.daily) dailyData = Object.assign({}, dailyData, r.daily);
+    renderVault();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
 }
-$('sellAll').addEventListener('click', () => {
-  let gain = 0, any = false;
-  for (const it in state.counts) { gain += itemValue(rarityFor(it)) * state.counts[it]; any = true; }
-  if (!any) return;
-  state.money += gain; state.stats.earned = (state.stats.earned || 0) + gain;
-  state.counts = {}; salesCount++; sfxSell();
-  const r = $('sellAll').getBoundingClientRect();
-  float(r.left + r.width / 2, r.top, '+' + fmt(gain), '#7bdc78');
-  if (gain >= 1e6) { burst(r.left, r.top, RARITIES[4]); toast('MASSIVE PAYOUT!', null, '$' + fmt(gain), '#ffb648'); }
-  renderVault(); checkAch(); queueSave();
+$('sellAll').addEventListener('click', async () => {
+  if (!Object.keys(state.counts || {}).length) return;
+  const box = $('sellAll').getBoundingClientRect();
+  try {
+    const r = await api('/sell', { method: 'POST', body: JSON.stringify({ all: true }) });
+    state = r.state; salesCount++; sfxSell();
+    float(box.left + box.width / 2, box.top, '+' + fmt(r.gain), '#7bdc78');
+    if (r.gain >= 1e6) { burst(box.left, box.top, RARITIES[4]); toast('MASSIVE PAYOUT!', null, '$' + fmt(r.gain), '#ffb648'); }
+    if (r.newAch && r.newAch.length) showNewAch(r.newAch);
+    if (r.daily) dailyData = Object.assign({}, dailyData, r.daily);
+    renderVault();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
 });
-$('genBuy').addEventListener('click', () => {
-  if (state.level >= MAX_LEVEL || state.money < genCost()) return;
-  state.money -= genCost(); state.level++; sfxBuy(); renderVault(); checkAch(); queueSave(); refreshTutorial();
+$('genBuy').addEventListener('click', async () => {
+  if (state.level >= MAX_LEVEL) return;
+  try {
+    const r = await api('/upgrade', { method: 'POST' });
+    state = r.state; sfxBuy();
+    if (r.newAch && r.newAch.length) showNewAch(r.newAch);
+    renderVault(); refreshTutorial();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
 });
 
 /* achievements */
@@ -1629,6 +1756,17 @@ function checkAch() {
       burst(window.innerWidth / 2, window.innerHeight * 0.3, RARITIES[3]);
     }
   }
+}
+// Server-authoritative achievements: the API returns the ids it just granted.
+function showNewAch(ids) {
+  let shown = 0;
+  for (const id of ids) {
+    const a = ACH.find(x => x.id === id);
+    if (!a) continue;
+    setTimeout(() => { toast('ACHIEVEMENT', a.name, '$' + fmt(a.reward), '#ffb648'); sfxToast(); }, shown * 350);
+    shown++;
+  }
+  if (shown) burst(window.innerWidth / 2, window.innerHeight * 0.3, RARITIES[3]);
 }
 function renderAch() {
   const list = $('achList'); list.innerHTML = '';
@@ -1696,19 +1834,46 @@ document.querySelectorAll('.tab[data-btab]').forEach(tab => tab.addEventListener
   $('bpanel-' + tab.dataset.btab).classList.add('active');
   if (tab.dataset.btab === 'browse') loadBazaar(); else renderSellList();
 }));
+/* bazaar search/filter state */
+let bazaarQuery = '', bazaarRarity = '', bazaarMutation = '';
+function initBazaarFilters() {
+  const rsel = $('bazaarRarity');
+  if (rsel && !rsel.options.length) {
+    rsel.innerHTML = '<option value="">All rarities</option>' +
+      RARITIES.map(r => '<option value="' + r.key + '">' + r.name + '</option>').join('');
+    $('bazaarMutation').innerHTML = '<option value="">All mutations</option><option value="none">Unmutated</option>' +
+      MUTATIONS.map(m => '<option value="' + m.id + '">' + m.name + '</option>').join('');
+  }
+}
+function bazaarFiltered(listings) {
+  return listings.filter(l => {
+    if (bazaarRarity && rarityFor(l.itemName).key !== bazaarRarity) return false;
+    if (bazaarMutation) {
+      if (bazaarMutation === 'none') { if (l.mutation) return false; }
+      else if (l.mutation !== bazaarMutation) return false;
+    }
+    return true;
+  });
+}
 async function loadBazaar() {
   const list = $('browseList');
+  initBazaarFilters();
   list.innerHTML = '<li class="empty">Loading bazaar...</li>';
   try {
-    const { listings } = await api('/bazaar');
-    if (!listings.length) { list.innerHTML = '<li class="empty">No listings right now. Be the first to sell!</li>'; return; }
+    const { listings } = await api('/bazaar' + (bazaarQuery ? '?q=' + encodeURIComponent(bazaarQuery) : ''));
+    const filtered = bazaarFiltered(listings);
+    if (!filtered.length) { list.innerHTML = '<li class="empty">No listings match. Try a different search.</li>'; return; }
     list.innerHTML = '';
-    for (const l of listings) {
+    for (const l of filtered) {
       const rar = rarityFor(l.itemName);
+      const mut = MUT_BY_ID[l.mutation];
+      const nameHtml = mut
+        ? '<span style="color:' + mut.color + '">' + esc(mut.name) + '</span> <span style="color:' + rar.color + '">' + esc(l.itemName) + '</span>'
+        : '<span style="color:' + rar.color + '">' + esc(l.itemName) + '</span>';
       const li = document.createElement('li');
       li.innerHTML =
-        '<span class="item-left"><span class="item-name" style="color:' + rar.color + '">' + esc(l.itemName) + ' x' + l.quantity + '</span>' +
-        '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
+        '<span class="item-left"><span class="item-name">' + nameHtml + ' x' + l.quantity + '</span>' +
+        '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + (mut ? ' \u00b7 ' + mut.name : '') + '</span></span>' +
         '<span class="item-right"><span class="item-value">$' + fmt(l.price) + '</span>' +
         (l.mine
           ? '<button class="mini-btn ghost" data-cancel="' + l.id + '">Cancel</button>'
@@ -1726,7 +1891,8 @@ async function buyListing(id) {
     const r = await api('/bazaar/' + id + '/buy', { method: 'POST' });
     state = r.state;
     sfxBuy(); toast('PURCHASE', 'Item added to your vault', null, '#7bdc78');
-    renderVault(); checkAch(); loadBazaar();
+    if (r.newAch && r.newAch.length) showNewAch(r.newAch);
+    renderVault(); loadBazaar();
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
 }
 async function cancelListing(id) {
@@ -1741,22 +1907,22 @@ function renderSellList() {
   const entries = Object.entries(state.counts || {});
   if (!entries.length) { list.innerHTML = '<li class="empty">You have no items to sell. Generate some first!</li>'; return; }
   list.innerHTML = '';
-  entries.sort((a, b) => itemValue(rarityFor(b[0])) - itemValue(rarityFor(a[0])));
+  entries.sort((a, b) => itemValueKey(b[0]) - itemValueKey(a[0]));
   for (const [it, count] of entries) {
-    const rar = rarityFor(it);
+    const rar = rarityFor(baseName(it));
     const li = document.createElement('li');
     li.className = 'sell-row';
     li.innerHTML =
-      '<span class="item-left"><span class="item-name" style="color:' + rar.color + '">' + esc(it) + '</span>' +
+      '<span class="item-left"><span class="item-name">' + itemDisplayName(it) + '</span>' + mutBadge(it) +
       '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
       '<span class="sell-field"><label>Qty</label><input type="number" min="1" max="' + count + '" value="1" data-qty></span>' +
-      '<span class="sell-field"><label>Price ($)</label><input type="number" min="1" value="' + Math.max(1, Math.floor(itemValue(rar))) + '" data-price></span>' +
+      '<span class="sell-field"><label>Price ($)</label><input type="number" min="1" value="' + Math.max(1, Math.floor(itemValueKey(it))) + '" data-price></span>' +
       '<button class="mini-btn orange" data-list>List</button>';
     const qtyInp = li.querySelector('[data-qty]');
     const priceInp = li.querySelector('[data-price]');
     qtyInp.addEventListener('input', () => {
       const q = Math.max(1, Math.min(count, parseInt(qtyInp.value, 10) || 1));
-      priceInp.value = Math.max(1, Math.floor(itemValue(rar) * q));
+      priceInp.value = Math.max(1, Math.floor(itemValueKey(it) * q));
     });
     li.querySelector('[data-list]').addEventListener('click', () => {
       const qty = Math.max(1, Math.min(count, parseInt(qtyInp.value, 10) || 1));
@@ -1766,13 +1932,130 @@ function renderSellList() {
     list.appendChild(li);
   }
 }
-async function listItem(itemName, rar, quantity, price) {
+async function listItem(itemKey, rar, quantity, price) {
   try {
-    const r = await api('/bazaar', { method: 'POST', body: JSON.stringify({ itemName, rarity: rar.key, quantity, price }) });
-    state = r.state; sfxBuy(); toast('LISTED', itemName + ' x' + quantity + ' for $' + fmt(price), null, '#ffb648');
+    const r = await api('/bazaar', { method: 'POST', body: JSON.stringify({ itemName: itemKey, rarity: rar.key, quantity, price }) });
+    state = r.state; sfxBuy(); toast('LISTED', baseName(itemKey) + ' x' + quantity + ' for $' + fmt(price), null, '#ffb648');
     renderVault(); loadBazaar();
     document.querySelector('.tab[data-btab="browse"]').click();
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+$('bazaarSearch').addEventListener('input', () => {
+  bazaarQuery = $('bazaarSearch').value.trim();
+  clearTimeout(window._bazaarT);
+  window._bazaarT = setTimeout(loadBazaar, 250);
+});
+$('bazaarRarity').addEventListener('change', () => { bazaarRarity = $('bazaarRarity').value; loadBazaar(); });
+$('bazaarMutation').addEventListener('change', () => { bazaarMutation = $('bazaarMutation').value; loadBazaar(); });
+
+/* =============================================================
+ * DAILY QUESTS
+ * ============================================================= */
+async function renderQuests() {
+  const list = $('questList');
+  if (!list) return;
+  list.innerHTML = '<li class="empty">Loading quests...</li>';
+  let data = null;
+  try { data = await api('/daily'); } catch (e) { data = dailyData; }
+  if (!data) { list.innerHTML = '<li class="empty">Could not load quests.</li>'; return; }
+  dailyData = data;
+  $('questInfo').textContent = (data.claimed || []).length + ' / ' + (data.quests || []).length + ' claimed';
+  list.innerHTML = '';
+  for (const q of (data.quests || [])) {
+    const prog = Number((data.prog || {})[q.id] || 0);
+    const done = prog >= q.target;
+    const claimed = (data.claimed || []).indexOf(q.id) !== -1;
+    const pct = Math.min(100, (prog / q.target) * 100);
+    const li = document.createElement('li');
+    li.className = 'quest' + (claimed ? ' done' : '');
+    li.innerHTML =
+      '<div class="quest-head"><span class="quest-name">' + esc(q.name) + '</span>' +
+      '<span class="quest-reward">$' + fmt(q.reward) + '</span></div>' +
+      '<div class="quest-desc">' + esc(q.desc) + ' \u00b7 ' + fmt(Math.min(prog, q.target)) + ' / ' + fmt(q.target) + '</div>' +
+      '<div class="progress"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
+    const btn = document.createElement('button');
+    btn.className = 'mini-btn' + (claimed || !done ? ' ghost' : '');
+    btn.textContent = claimed ? 'Claimed' : (done ? 'Claim' : 'In progress');
+    btn.disabled = claimed || !done;
+    if (!claimed && done) btn.addEventListener('click', () => claimQuest(q.id));
+    li.appendChild(btn);
+    list.appendChild(li);
+  }
+}
+async function claimQuest(id) {
+  try {
+    const r = await api('/daily/claim', { method: 'POST', body: JSON.stringify({ id }) });
+    state = r.state; dailyData = r.daily;
+    toast('QUEST COMPLETE', 'Reward claimed', '$' + fmt(r.reward), '#7bdc78');
+    sfxToast(); renderVault(); renderQuests();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+
+/* =============================================================
+ * WORLD BOSS
+ * ============================================================= */
+function renderBossStrip() {
+  const strip = $('bossStrip');
+  if (!strip) return;
+  if (!bossState || !inGame) { strip.classList.add('hidden'); return; }
+  strip.classList.remove('hidden');
+  $('bossStripName').textContent = bossState.name;
+  const pct = bossState.maxHp ? Math.max(0, Math.min(100, (bossState.hp / bossState.maxHp) * 100)) : 0;
+  $('bossHpFill').style.width = pct + '%';
+  $('bossStripHp').textContent = fmt(bossState.hp) + ' / ' + fmt(bossState.maxHp) + ' HP';
+}
+function onBoss(boss) {
+  bossState = boss;
+  renderBossStrip();
+  if (!$('bossModal').classList.contains('hidden')) loadBoss();
+}
+function onBossDefeated(info) {
+  toast('BOSS DEFEATED!', info.name + ' has fallen', '$' + fmt(info.pool) + ' pool', '#ff5c8a');
+  burst(window.innerWidth / 2, window.innerHeight * 0.35, RARITIES[5]);
+  loadBoss();
+}
+$('bossBtn').addEventListener('click', () => { ac(); openBoss(); });
+$('bossStrip').addEventListener('click', () => { if (inGame) { ac(); openBoss(); } });
+function openBoss() {
+  if (!inGame) return;
+  closeAllModals();
+  $('bossModal').classList.remove('hidden');
+  loadBoss();
+}
+async function loadBoss() {
+  const body = $('bossModalBody');
+  body.innerHTML = '<div class="spinner">Loading boss...</div>';
+  try {
+    const d = await api('/boss');
+    bossState = d.boss; renderBossStrip();
+    $('bossModalTitle').textContent = d.boss.name;
+    const pct = d.boss.maxHp ? Math.max(0, Math.min(100, (d.boss.hp / d.boss.maxHp) * 100)) : 0;
+    let html = '<div class="boss-hp" style="width:100%;margin-bottom:8px"><div style="width:' + pct + '%"></div></div>';
+    html += '<div class="boss-stat"><span class="k">Health</span><span class="v">' + fmt(d.boss.hp) + ' / ' + fmt(d.boss.maxHp) + '</span></div>';
+    html += '<div class="boss-stat"><span class="k">Reward pool</span><span class="v" style="color:#7bdc78">$' + fmt(d.boss.poolValue) + '</span></div>';
+    html += '<div class="boss-stat"><span class="k">Payout bonus</span><span class="v">x' + d.boss.bonus + '</span></div>';
+    if (d.you) {
+      html += '<div class="boss-stat"><span class="k">Your damage</span><span class="v">' + fmt(d.you.damage) + '</span></div>';
+      html += '<div class="boss-stat"><span class="k">Your estimated payout</span><span class="v" style="color:#7bdc78">$' + fmt(d.you.payout) + '</span></div>';
+    }
+    html += '<h3 style="margin:16px 0 8px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#9aa2cc">Top Contributors</h3>';
+    const ul = document.createElement('ul'); ul.className = 'list';
+    if (!d.contributions.length) {
+      ul.innerHTML = '<li class="empty">No one has fought the boss yet. Generate items to deal damage!</li>';
+    } else {
+      for (const c of d.contributions) {
+        const li = document.createElement('li');
+        li.innerHTML = '<span class="item-left"><span class="item-name">' + esc(c.username) + '</span>' +
+          '<span style="font-size:12px;color:#8b93bd">' + fmt(c.damage) + ' dmg \u00b7 ' + (c.share * 100).toFixed(1) + '%</span></span>' +
+          '<span class="item-right"><span class="item-value">$' + fmt(c.payout) + '</span></span>';
+        ul.appendChild(li);
+      }
+    }
+    body.innerHTML = html;
+    body.appendChild(ul);
+  } catch (err) {
+    body.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
+  }
 }
 
 /* =============================================================

@@ -87,3 +87,34 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS py            REAL        
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS quantity      INTEGER     NOT NULL DEFAULT 1;
 ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS sold          BOOLEAN     NOT NULL DEFAULT FALSE;
+
+-- ------------------------------------------------------------
+-- Features: item mutations, login rewards, daily quests, world boss
+-- ------------------------------------------------------------
+ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS mutation      TEXT;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_login    TEXT;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS login_streak  INTEGER     NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS daily         JSONB       NOT NULL DEFAULT '{}'::jsonb;
+
+-- One global boss for the whole server at a time. Persisted so a long
+-- fight survives restarts/deploys (worlds themselves stay in memory).
+CREATE TABLE IF NOT EXISTS bosses (
+  id          SERIAL PRIMARY KEY,
+  name        TEXT        NOT NULL,
+  hp          BIGINT      NOT NULL,
+  max_hp      BIGINT      NOT NULL,
+  pool_value  BIGINT      NOT NULL DEFAULT 0,
+  started_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  defeated_at TIMESTAMPTZ
+);
+
+-- Per-player contribution to a boss fight, used to split the payout.
+CREATE TABLE IF NOT EXISTS boss_contributions (
+  boss_id  INTEGER NOT NULL REFERENCES bosses(id) ON DELETE CASCADE,
+  user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  damage   BIGINT  NOT NULL DEFAULT 0,
+  value    BIGINT  NOT NULL DEFAULT 0,
+  PRIMARY KEY (boss_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_boss_active ON bosses (defeated_at);
