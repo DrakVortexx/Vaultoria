@@ -73,6 +73,10 @@ const ITEM_BASE = {
 const ITEM_RARITY = {};
 RARITIES.forEach((r, i) => (ITEMS_BY_RARITY[r.key] || []).forEach(it => { ITEM_RARITY[it] = i; }));
 const LUCK_PER_LEVEL = 0.02;
+// Tuning: rare-and-above tiers roll a bit more often, and all items sell
+// for a modest premium over their base value.
+const RARE_PLUS_BOOST = 1.3;
+const SELL_MULT = 1.25;
 const MAX_LEVEL = 100;
 const GEN_TIME = 3000;
 const GEN_GRACE = 250;
@@ -85,7 +89,7 @@ function genCost(level) {
 }
 function pickRarity(level) {
   const luck = luckMult(level);
-  const ws = RARITIES.map((r, i) => (i >= 2 ? r.weight * luck : r.weight));
+  const ws = RARITIES.map((r, i) => (i >= 2 ? r.weight * luck * RARE_PLUS_BOOST : r.weight));
   let roll = Math.random() * ws.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ws.length; i++) { roll -= ws[i]; if (roll <= 0) return i; }
   return RARITIES.length - 1;
@@ -124,7 +128,7 @@ function itemValueFor(key) {
   const { item, mut } = splitKey(key);
   if (ITEM_RARITY[item] == null) return 0;
   const m = MUT_BY_ID[mut];
-  return (ITEM_BASE[item] || 0) * (m ? m.mult : 1);
+  return Math.round((ITEM_BASE[item] || 0) * (m ? m.mult : 1) * SELL_MULT);
 }
 function rollMutation() {
   if (Math.random() >= MUTATION_CHANCE) return null;

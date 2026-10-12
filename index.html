@@ -757,6 +757,10 @@ function fmt(n) {
   return n.toFixed(2) + SUF[i];
 }
 const LUCK_PER_LEVEL = 0.02;
+// Keep in sync with server.js: rare+ rolls a bit more often and all items
+// sell for a modest premium over base value.
+const RARE_PLUS_BOOST = 1.3;
+const SELL_MULT = 1.25;
 const luckMult = () => 1 + (state.level - 1) * LUCK_PER_LEVEL;
 const genCost = () => {
   const n = state.level + 1;
@@ -765,7 +769,7 @@ const genCost = () => {
 };
 function rarityWeights() {
   const luck = luckMult();
-  return RARITIES.map((r, i) => (i >= 2 ? r.weight * luck : r.weight));
+  return RARITIES.map((r, i) => (i >= 2 ? r.weight * luck * RARE_PLUS_BOOST : r.weight));
 }
 function pickRarity() {
   const ws = rarityWeights();
@@ -800,7 +804,8 @@ function mutationOf(key) { return MUT_BY_ID[splitKey(key).mut] || null; }
 function makeKey(item, mut) { return mut ? (mut.id + MUT_SEP + item) : item; }
 function itemValueKey(key) {
   const { item, mut } = splitKey(key);
-  return itemBase(item) * (MUT_BY_ID[mut] ? MUT_BY_ID[mut].mult : 1);
+  const m = MUT_BY_ID[mut];
+  return Math.round((ITEM_BASE[item] || 0) * (m ? m.mult : 1) * SELL_MULT);
 }
 function mutBadge(key) {
   const m = mutationOf(key);
