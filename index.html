@@ -251,6 +251,15 @@
   .shield-btn.on { animation: shieldPulse 2s ease-in-out infinite; }
   @keyframes shieldPulse { 0%,100% { box-shadow: 0 0 0 rgba(127,220,255,0); } 50% { box-shadow: 0 0 18px rgba(127,220,255,0.55); } }
   .next-tag { margin-left: 8px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #0b0f1e; background: #8affd8; padding: 2px 8px; border-radius: 10px; vertical-align: middle; }
+  .trade-grid { display: flex; gap: 14px; width: 100%; }
+  .trade-col { flex: 1; min-width: 0; }
+  .trade-col ul.list { max-height: 250px; }
+  .trade-actions { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; margin-top: 12px; align-items: center; }
+  .trade-actions .buy { flex: 0 0 auto; width: auto; padding: 10px 18px; }
+  .trade-status { width: 100%; text-align: center; font-size: 13px; color: #8b93bd; margin-top: 8px; }
+  .offer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .offer-row .item-left { flex: 1; }
+  .offer-row .item-value { min-width: 30px; text-align: center; }
   ul.list { list-style: none; margin: 0; padding: 0; width: 100%; max-height: 340px; overflow-y: auto; scrollbar-width: thin; }
   ul.list li { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; gap: 10px; border-radius: 8px; animation: rowIn 0.25s ease; }
   ul.list li:hover { background: rgba(124,92,255,0.12); }
@@ -406,6 +415,11 @@
         <div class="dc-title">Friends</div>
         <div class="dc-desc">Add other keepers and see who is online.</div>
       </button>
+      <button class="dash-card" id="settingsBtn" type="button">
+        <div class="dc-icon">&#9881;</div>
+        <div class="dc-title">Settings</div>
+        <div class="dc-desc">Who can send you trade requests and other preferences.</div>
+      </button>
     </div>
     <div id="dashPanel" class="dash-panel hidden"></div>
   </div>
@@ -429,6 +443,7 @@
         <button class="hud-btn" id="marketBtn" type="button">Market</button>
         <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
         <button class="hud-btn" id="leadBtn" type="button">Leaders</button>
+        <button class="hud-btn" id="tradeBtn" type="button">Trade</button>
         <button class="hud-btn" id="leaveBtn" type="button">Leave</button>
       </div>
     </div>
@@ -574,6 +589,38 @@
       <div id="mpanel-breach" class="panel">
         <div class="empty-note" style="padding:8px 4px 14px" id="breachStats">Buy a Breach in the Shop, then pick an online member of your world to raid. Shielded players are immune (your Breach is not spent).</div>
         <ul class="list" id="breachTargets"><li class="empty">No players online in this world.</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trade modal -->
+  <div id="tradeModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <div class="modal-title">Trade</div>
+        <div class="resource-bar"><span class="icon">$</span><span class="label">Money</span><span class="value" id="tMoney">$0</span></div>
+        <button class="x" data-close="tradeModal" type="button">&times;</button>
+      </div>
+      <div id="tradeStart">
+        <div class="empty-note" style="padding:8px 4px 14px">Trade items and cash with any keeper online. Your trade privacy is set in Settings.</div>
+        <div class="bazaar-search">
+          <input id="tradeUser" type="text" maxlength="20" autocomplete="off" placeholder="Username to trade with...">
+          <button id="tradeSend" class="mini-btn" type="button">REQUEST TRADE</button>
+        </div>
+        <div id="tradeRequests"></div>
+        <ul class="list" id="onlineList"><li class="empty">Loading online keepers...</li></ul>
+      </div>
+      <div id="tradeBuilder" class="hidden">
+        <div class="trade-grid">
+          <div class="trade-col"><h2 class="inv-head" style="border:none">YOUR OFFER</h2><div id="tradeMine"></div></div>
+          <div class="trade-col"><h2 class="inv-head" style="border:none">THEIR OFFER <span id="tradeOtherName"></span></h2><div id="tradeTheirs"></div></div>
+        </div>
+        <div class="trade-actions">
+          <button id="tradeLock" class="buy" type="button">LOCK OFFER</button>
+          <button id="tradeConfirm" class="buy" type="button">CONFIRM TRADE</button>
+          <button id="tradeCancel" class="mini-btn ghost" type="button">CANCEL</button>
+        </div>
+        <div class="trade-status" id="tradeStatus"></div>
       </div>
     </div>
   </div>
@@ -785,6 +832,9 @@ let saveTimer = null;
 let hideTimeout = null;
 let salesCount = 0;
 let bazaarOpened = false;
+let pendingTradeReqs = [];
+let activeTrade = null;
+let tradeDraft = { items: {}, money: 0 };
 let vaultOpen = false;
 let generating = false;
 let genBusy = false;
@@ -963,6 +1013,257 @@ async function onBreached(msg) {
 }
 
 /* =============================================================
+ * TRADING (cross-world)
+ * ============================================================= */
+let tradeDraftDirty = false;
+$('tradeBtn').addEventListener('click', () => { ac(); openTrade(); });
+function openTrade() {
+  if (!inGame) return;
+  closeAllModals();
+  $('tradeModal').classList.remove('hidden');
+  $('tMoney').textContent = '$' + fmt(state.money);
+  if (activeTrade) {
+    $('tradeStart').classList.add('hidden');
+    $('tradeBuilder').classList.remove('hidden');
+    renderTrade();
+    return;
+  }
+  $('tradeStart').classList.remove('hidden');
+  $('tradeBuilder').classList.add('hidden');
+  renderPendingReqs();
+  loadOnline();
+}
+async function loadOnline() {
+  const list = $('onlineList');
+  list.innerHTML = '<li class="empty">Loading online keepers...</li>';
+  try {
+    const { online } = await api('/online');
+    list.innerHTML = '';
+    const others = (online || []).filter(o => o.id !== me.id);
+    if (!others.length) { list.innerHTML = '<li class="empty">No one else is online right now.</li>'; return; }
+    for (const o of others) {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="item-left"><span class="item-name">' + esc(o.username) + '</span><span style="font-size:12px;color:#8b93bd">online</span></span>' +
+        '<span class="item-right"><button class="mini-btn" data-req="' + o.id + '">TRADE</button></span>';
+      li.querySelector('[data-req]').addEventListener('click', () => requestTrade(o.id, o.username));
+      list.appendChild(li);
+    }
+  } catch (err) { list.innerHTML = '<li class="empty">' + esc(err.message) + '</li>'; }
+}
+$('tradeSend').addEventListener('click', () => {
+  const name = ($('tradeUser').value || '').trim();
+  if (!name) return;
+  requestTrade(null, name);
+});
+async function requestTrade(id, username) {
+  try {
+    await api('/trade/request', { method: 'POST', body: JSON.stringify(id ? { toUserId: id } : { toUsername: username }) });
+    toast('REQUEST SENT', 'Waiting for ' + username + ' to accept', null, '#4fd1ff');
+    $('tradeUser').value = '';
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+function renderPendingReqs() {
+  const host = $('tradeRequests');
+  if (!host) return;
+  host.innerHTML = '';
+  for (const r of pendingTradeReqs) {
+    const row = document.createElement('div');
+    row.className = 'offer-row';
+    row.innerHTML = '<span class="item-left"><span class="item-name" style="color:#8affd8">' + esc(r.fromName) + ' wants to trade</span></span>' +
+      '<span class="item-right"><button class="mini-btn" data-acc="' + r.id + '">ACCEPT</button>' +
+      '<button class="mini-btn ghost" data-dec="' + r.id + '">DECLINE</button></span>';
+    row.querySelector('[data-acc]').addEventListener('click', () => acceptTrade(r.id));
+    row.querySelector('[data-dec]').addEventListener('click', () => declineTrade(r.id));
+    host.appendChild(row);
+  }
+}
+async function acceptTrade(requestId) {
+  try {
+    const r = await api('/trade/request/' + requestId + '/accept', { method: 'POST' });
+    pendingTradeReqs = pendingTradeReqs.filter(x => x.id !== requestId);
+    renderPendingReqs();
+    enterTrade(r.sessionId);
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+async function declineTrade(requestId) {
+  try { await api('/trade/request/' + requestId + '/decline', { method: 'POST' }); } catch (e) {}
+  pendingTradeReqs = pendingTradeReqs.filter(x => x.id !== requestId);
+  renderPendingReqs();
+}
+function onTradeRequest(msg) {
+  if (pendingTradeReqs.find(x => x.id === msg.requestId)) return;
+  pendingTradeReqs.push({ id: msg.requestId, fromName: msg.fromName });
+  toast('TRADE REQUEST', msg.fromName + ' wants to trade with you', null, '#8affd8');
+  sfxToast();
+  if (!$('tradeModal').classList.contains('hidden') && !activeTrade) renderPendingReqs();
+}
+function onTradeOpened(msg) { enterTrade(msg.sessionId); }
+function onTradeDone(msg) {
+  toast('TRADE COMPLETE', 'Items and cash exchanged', null, '#7bdc78');
+  sfxBuy();
+  if (msg.state) { state = msg.state; renderVault(); }
+  activeTrade = null;
+  if (!$('tradeModal').classList.contains('hidden')) showTradeStartPanels();
+}
+function onTradeCancelled(msg) {
+  toast('TRADE ENDED', msg.reason || 'The other keeper ended the trade', null, '#8b93bd');
+  activeTrade = null;
+  if (!$('tradeModal').classList.contains('hidden')) showTradeStartPanels();
+}
+function onTradeDeclined(msg) { toast('DECLINED', msg.fromName + ' declined your trade request', null, '#8b93bd'); }
+function showTradeStartPanels() {
+  $('tradeStart').classList.remove('hidden');
+  $('tradeBuilder').classList.add('hidden');
+  renderPendingReqs();
+  loadOnline();
+}
+function enterTrade(sessionId) {
+  closeAllModals();
+  activeTrade = { id: sessionId };
+  tradeDraft = { items: {}, money: 0 };
+  tradeDraftDirty = false;
+  $('tradeStart').classList.add('hidden');
+  $('tradeBuilder').classList.remove('hidden');
+  $('tradeModal').classList.remove('hidden');
+  $('tMoney').textContent = '$' + fmt(state.money);
+  renderTrade();
+}
+async function pollTrade() {
+  if (!$('tradeModal').classList.contains('hidden') && activeTrade) {
+    try {
+      const s = await api('/trade/' + activeTrade.id);
+      if (!s || !s.you || s.state === 'cancelled' || s.state === 'failed') { onTradeCancelled(s || { reason: 'Trade ended' }); return; }
+      if (s.state === 'done') { onTradeDone(s); return; }
+      if (!s.you.locked && !tradeDraftDirty) tradeDraft = { items: s.you.items || {}, money: s.you.money || 0 };
+      activeTrade = s;
+      renderTrade();
+    } catch (e) {
+      activeTrade = null;
+    }
+  }
+}
+setInterval(pollTrade, 1000);
+function renderTrade() {
+  if (!activeTrade || !activeTrade.you) return;
+  const you = activeTrade.you;
+  const other = activeTrade.other || {};
+  const locked = !!you.locked;
+  $('tradeOtherName').textContent = ' \u00b7 ' + (other.username || '?');
+  const mine = $('tradeMine');
+  mine.innerHTML = '';
+  const stacks = Object.entries(state.counts || {});
+  if (!stacks.length) mine.innerHTML = '<li class="empty">Your vault is empty</li>';
+  for (const [k, cnt] of stacks) {
+    const q = tradeDraft.items[k] || 0;
+    const row = document.createElement('div');
+    row.className = 'offer-row';
+    row.innerHTML = '<span class="item-left"><span class="item-name">' + itemDisplayName(k) + '</span>' +
+      '<span style="font-size:12px;color:#8b93bd">own x' + cnt + '</span></span>' +
+      '<span class="item-right"><button class="mini-btn ghost" data-dec="' + esc(k) + '">\u2212</button>' +
+      '<span class="item-value">' + q + '</span>' +
+      '<button class="mini-btn ghost" data-inc="' + esc(k) + '">+</button></span>';
+    row.querySelector('[data-inc]').addEventListener('click', () => bumpOffer(k, 1, cnt));
+    row.querySelector('[data-dec]').addEventListener('click', () => bumpOffer(k, -1, cnt));
+    mine.appendChild(row);
+  }
+  const moneyRow = document.createElement('div');
+  moneyRow.className = 'offer-row';
+  moneyRow.innerHTML = '<span class="item-left"><span class="item-name">Cash</span><span style="font-size:12px;color:#8b93bd">you hold $' + fmt(state.money) + '</span></span>' +
+    '<span class="item-right"><input type="number" min="0" max="' + state.money + '" value="' + (tradeDraft.money || 0) + '" data-money></span>';
+  const mi = moneyRow.querySelector('[data-money]');
+  mi.addEventListener('input', () => {
+    let v = Math.max(0, Math.floor(Number(mi.value) || 0));
+    if (v > state.money) { v = state.money; mi.value = v; }
+    tradeDraft.money = v;
+    editOffer();
+  });
+  mine.appendChild(moneyRow);
+  if (locked) mine.querySelectorAll('button,input').forEach(el => el.disabled = true);
+
+  const theirs = $('tradeTheirs');
+  theirs.innerHTML = '';
+  const trows = Object.entries(other.items || {});
+  if (!trows.length && !(other.money || 0)) theirs.innerHTML = '<li class="empty">Waiting for their offer...</li>';
+  for (const [k, q] of trows) {
+    const row = document.createElement('div');
+    row.className = 'offer-row';
+    row.innerHTML = '<span class="item-left"><span class="item-name">' + itemDisplayName(k) + '</span></span>' +
+      '<span class="item-right"><span class="item-count">x' + q + '</span></span>';
+    theirs.appendChild(row);
+  }
+  if (other.money > 0) {
+    const row = document.createElement('div');
+    row.className = 'offer-row';
+    row.innerHTML = '<span class="item-left"><span class="item-name">Cash</span></span><span class="item-right"><span class="item-value">$' + fmt(other.money) + '</span></span>';
+    theirs.appendChild(row);
+  }
+
+  const lock = $('tradeLock');
+  lock.textContent = locked ? 'UNLOCK OFFER' : 'LOCK OFFER';
+  lock.className = 'buy' + (locked ? ' maxed' : '');
+  const canConfirm = !!you.locked && !!other.locked;
+  $('tradeConfirm').disabled = !canConfirm;
+  $('tradeConfirm').className = 'buy' + (canConfirm ? '' : ' disabled');
+  const st = $('tradeStatus');
+  if (locked && !you.ready) st.textContent = 'Offer locked \u2014 confirm when ' + (other.username || 'they') + ' is also ready.';
+  else if (you.ready && !other.ready) st.textContent = 'You confirmed \u2014 waiting for ' + (other.username || 'them') + '...';
+  else if (you.ready && other.ready) st.textContent = 'Both confirmed \u2014 swapping...';
+  else st.textContent = 'Lock your offer to start finalizing.';
+}
+function bumpOffer(key, d, max) {
+  const cur = tradeDraft.items[key] || 0;
+  let next = cur + d;
+  if (next < 0) next = 0;
+  if (next > max) next = max;
+  tradeDraft.items[key] = next;
+  if (!next) delete tradeDraft.items[key];
+  editOffer();
+}
+function editOffer() {
+  tradeDraftDirty = true;
+  pushOffer();
+}
+async function pushOffer() {
+  if (!activeTrade || !tradeDraft) return;
+  try {
+    await api('/trade/' + activeTrade.id + '/offer', { method: 'POST', body: JSON.stringify({
+      items: tradeDraft.items,
+      money: Math.min(tradeDraft.money || 0, state.money)
+    }) });
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+  finally { tradeDraftDirty = false; }
+}
+$('tradeLock').addEventListener('click', async () => {
+  if (!activeTrade) return;
+  const locked = !!(activeTrade.you || {}).locked;
+  try {
+    await api('/trade/' + activeTrade.id + (locked ? '/unlock' : '/lock'), { method: 'POST' });
+    if (locked) tradeDraft = { items: (activeTrade.you || {}).items || {}, money: (activeTrade.you || {}).money || 0 };
+    await pollTrade();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+});
+$('tradeConfirm').addEventListener('click', async () => {
+  if (!activeTrade) return;
+  try {
+    const r = await api('/trade/' + activeTrade.id + '/confirm', { method: 'POST' });
+    if (r.done) {
+      toast('TRADE COMPLETE', 'Items and cash exchanged', null, '#7bdc78');
+      state = r.state; renderVault();
+      activeTrade = null;
+      showTradeStartPanels();
+    } else {
+      await pollTrade();
+    }
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+});
+$('tradeCancel').addEventListener('click', async () => {
+  if (!activeTrade) return;
+  try { await api('/trade/' + activeTrade.id + '/cancel', { method: 'POST' }); } catch (e) {}
+  activeTrade = null;
+  showTradeStartPanels();
+});
+
+/* =============================================================
  * DASHBOARD
  * ============================================================= */
 function renderDash() {
@@ -977,10 +1278,32 @@ function openDashPanel(which) {
   p.innerHTML = '<div class="spinner">Loading...</div>';
   if (which === 'servers') renderServersPanel();
   else if (which === 'friends') renderFriendsPanel();
+  else if (which === 'settings') renderSettingsPanel();
 }
 $('playBtn').addEventListener('click', play);
 $('serversBtn').addEventListener('click', () => openDashPanel('servers'));
 $('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
+$('settingsBtn').addEventListener('click', () => openDashPanel('settings'));
+
+function renderSettingsPanel() {
+  const p = $('dashPanel');
+  p.classList.remove('hidden');
+  p.innerHTML =
+    '<h3 style="margin:0 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">TRADE PRIVACY</h3>' +
+    '<label class="sell-field" style="gap:6px"><span style="font-size:11px;color:#8b93bd">Who can request a trade with you?</span>' +
+    '<select id="tradePrivacySel">' +
+    '<option value="everyone"' + ((state.tradePrivacy || 'everyone') === 'everyone' ? ' selected' : '') + '>Everyone</option>' +
+    '<option value="friends"' + (state.tradePrivacy === 'friends' ? ' selected' : '') + '>Friends only</option>' +
+    '<option value="off"' + (state.tradePrivacy === 'off' ? ' selected' : '') + '>Off</option>' +
+    '</select></label>';
+  $('tradePrivacySel').addEventListener('change', async e => {
+    try {
+      const r = await api('/settings', { method: 'POST', body: JSON.stringify({ tradePrivacy: e.target.value }) });
+      state = r.state;
+      toast('SAVED', 'Trade privacy set to ' + e.target.value.toUpperCase(), null, '#7bdc78');
+    } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+  });
+}
 
 async function play() {
   try {
@@ -1114,6 +1437,12 @@ function connectWS() {
     else if (msg.type === 'boss') onBoss(msg.boss);
     else if (msg.type === 'bossDefeated') onBossDefeated(msg.boss);
     else if (msg.type === 'breached') onBreached(msg);
+    else if (msg.type === 'tradeRequest') onTradeRequest(msg);
+    else if (msg.type === 'tradeOpened') onTradeOpened(msg);
+    else if (msg.type === 'tradeDone') onTradeDone(msg);
+    else if (msg.type === 'tradeCancelled') onTradeCancelled(msg);
+    else if (msg.type === 'tradeDeclined') onTradeDeclined(msg);
+    else if (msg.type === 'tradeUpdate') pollTrade();
   });
   sock.addEventListener('close', () => {
     if (sock !== ws) return;
@@ -1656,7 +1985,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'bossModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'bossModal', 'tradeModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));

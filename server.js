@@ -982,6 +982,290 @@ app.post('/api/breach', dbReady, auth, async (req, res) => {
 });
 
 /* ---------------------------------------------------------------
+ * Trading (cross-world via the global websocket registry).
+ * ------------------------------------------------------------- */
+const TRADE_REQUEST_TTL = 60000;
+const TRADE_TIMEOUT_MS = 120000;
+const TRADE_MAX_ITEMS = 12;
+const tradeRequests = new Map(); // id -> request
+const tradeSessions = new Map();  // id -> session
+let nextTradeReqId = 1;
+let nextTradeSessionId = 1;
+
+// Global online registry: scan every live socket (any world or lobby).
+function socketOfUserGlobal(userId) {
+  for (const c of wss.clients) {
+    if (c.userId === userId && c.readyState === 1) return c;
+  }
+  return null;
+}
+function pushTo(userId, obj) {
+  const c = socketOfUserGlobal(userId);
+  if (c) { try { c.send(JSON.stringify(obj)); } catch (e) {} }
+}
+function tradeRole(s, userId) {
+  if (s.a.userId === userId) return 'a';
+  if (s.b.userId === userId) return 'b';
+  return null;
+}
+
+app.get('/api/online', dbReady, auth, (req, res) => {
+  const seen = new Map();
+  for (const c of wss.clients) {
+    if (c.readyState !== 1 || !c.userId) continue;
+    if (!seen.has(c.userId)) seen.set(c.userId, c.username || '?');
+  }
+  res.json({ online: [...seen.entries()].map(([id, username]) => ({ id, username })) });
+});
+
+app.post('/api/settings', dbReady, auth, async (req, res) => {
+  const v = String((req.body || {}).tradePrivacy || '');
+  if (!['everyone', 'friends', 'off'].includes(v)) return res.status(400).json({ error: 'Invalid setting' });
+  try {
+    await pool.query('UPDATE player_state SET trade_privacy = $2, updated_at = NOW() WHERE user_id = $1', [req.user.id, v]);
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, state: publicState(fresh) });
+  } catch (e) {
+    console.error('[settings]', e.message);
+    res.status(500).json({ error: 'Could not save settings' });
+  }
+});
+
+app.post('/api/trade/request', dbReady, auth, async (req, res) => {
+  try {
+    const b = req.body || {};
+    let toId = Math.floor(Number(b.toUserId));
+    if (!Number.isFinite(toId) || toId <= 0) {
+      const name = String(b.toUsername || '').trim().slice(0, 20);
+      if (!name) return res.status(400).json({ error: 'Pick a trade partner' });
+      const { rows } = await pool.query('SELECT id FROM users WHERE lower(username) = lower($1)', [name]);
+      if (!rows[0]) return res.status(400).json({ error: 'No player with that username' });
+      toId = Number(rows[0].id);
+    }
+    if (toId === Number(req.user.id)) return res.status(400).json({ error: 'You cannot trade with yourself' });
+    const tgt = await stateFor(pool, toId);
+    const priv = tgt.trade_privacy || 'everyone';
+    if (priv === 'off') return res.status(400).json({ error: 'That player has trades turned off' });
+    if (priv === 'friends') {
+      const f = await pool.query(
+        `SELECT 1 FROM friendships WHERE status = 'accepted' AND
+          ((user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)) LIMIT 1`,
+        [req.user.id, toId]
+      );
+      if (!f.rows[0]) return res.status(400).json({ error: 'That player only trades with friends' });
+    }
+    if (!socketOfUserGlobal(toId)) return res.status(400).json({ error: 'That player is not online' });
+    for (const r of tradeRequests.values()) {
+      if (r.fromId === req.user.id && r.toId === toId) return res.status(400).json({ error: 'Request already sent \u2014 wait for a reply' });
+    }
+    const id = nextTradeReqId++;
+    tradeRequests.set(id, { id, fromId: req.user.id, fromName: req.user.username, toId, createdAt: Date.now() });
+    pushTo(toId, { type: 'tradeRequest', requestId: id, fromId: req.user.id, fromName: req.user.username });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[trade-request]', e.message);
+    res.status(500).json({ error: 'Could not send trade request' });
+  }
+});
+
+app.post('/api/trade/request/:id/accept', dbReady, auth, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const r = tradeRequests.get(id);
+  if (!r || Number(r.toId) !== Number(req.user.id) || Date.now() - r.createdAt > TRADE_REQUEST_TTL) {
+    tradeRequests.delete(id);
+    return res.status(404).json({ error: 'Request expired or not for you' });
+  }
+  try {
+    const [aRow, bRow] = await Promise.all([stateFor(pool, r.fromId), stateFor(pool, r.toId)]);
+    const sid = nextTradeSessionId++;
+    const mk = (uid, username) => ({ userId: uid, username, items: {}, money: 0, locked: false, ready: false });
+    tradeSessions.set(sid, {
+      id: sid,
+      a: mk(Number(r.fromId), r.fromName),
+      b: mk(Number(req.user.id), req.user.username),
+      createdAt: Date.now(),
+      state: 'open'
+    });
+    tradeRequests.delete(id);
+    pushTo(r.fromId, { type: 'tradeOpened', sessionId: sid, otherName: req.user.username });
+    res.json({ sessionId: sid });
+  } catch (e) {
+    console.error('[trade-accept]', e.message);
+    res.status(500).json({ error: 'Could not start trade' });
+  }
+});
+
+app.post('/api/trade/request/:id/decline', dbReady, auth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const r = tradeRequests.get(id);
+  if (r && Number(r.toId) === Number(req.user.id)) {
+    tradeRequests.delete(id);
+    pushTo(r.fromId, { type: 'tradeDeclined', fromName: req.user.username });
+  }
+  res.json({ ok: true });
+});
+
+app.get('/api/trade/:id', dbReady, auth, (req, res) => {
+  const s = tradeSessions.get(parseInt(req.params.id, 10));
+  if (!s) return res.status(404).json({ error: 'Trade session not found' });
+  const role = tradeRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not part of this trade' });
+  const o = role === 'a' ? 'b' : 'a';
+  res.json({
+    id: s.id,
+    state: s.state,
+    you: { username: s[role].username, items: s[role].items, money: s[role].money, locked: s[role].locked, ready: s[role].ready },
+    other: { username: s[o].username, items: s[o].items, money: s[o].money, locked: s[o].locked, ready: s[o].ready }
+  });
+});
+
+app.post('/api/trade/:id/offer', dbReady, auth, async (req, res) => {
+  const s = tradeSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'open') return res.status(404).json({ error: 'Not an active trade' });
+  const role = tradeRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not part of this trade' });
+  if (s[role].locked) return res.status(400).json({ error: 'Your offer is locked \u2014 unlock it to change' });
+  try {
+    const body = req.body || {};
+    const money = Math.max(0, Math.floor(Number(body.money) || 0));
+    const items = {};
+    if (body.items && typeof body.items === 'object') {
+      let added = 0;
+      for (const k in body.items) {
+        const q = Math.floor(Number(body.items[k]) || 0);
+        if (q <= 0) continue;
+        if (ITEM_RARITY[baseName(k)] == null) continue;
+        items[k] = q;
+        if (++added > TRADE_MAX_ITEMS) break;
+      }
+    }
+    const st = await stateForUpdate(pool, req.user.id);
+    const counts = st.counts || {};
+    for (const k in items) {
+      if (Number(counts[k] || 0) < items[k]) return res.status(400).json({ error: 'You do not have enough of one offered item' });
+    }
+    if (money > Number(st.money || 0)) return res.status(400).json({ error: 'Not enough money for that offer' });
+    s[role].items = items;
+    s[role].money = money;
+    s[role].ready = false;
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[trade-offer]', e.message);
+    res.status(500).json({ error: 'Could not update offer' });
+  }
+});
+
+app.post('/api/trade/:id/lock', dbReady, auth, (req, res) => {
+  const s = tradeSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'open') return res.status(404).json({ error: 'Not an active trade' });
+  const role = tradeRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not part of this trade' });
+  s[role].locked = true;
+  res.json({ ok: true });
+});
+app.post('/api/trade/:id/unlock', dbReady, auth, (req, res) => {
+  const s = tradeSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'open') return res.status(404).json({ error: 'Not an active trade' });
+  const role = tradeRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not part of this trade' });
+  s[role].locked = false;
+  s[role].ready = false;
+  res.json({ ok: true });
+});
+app.post('/api/trade/:id/cancel', dbReady, auth, (req, res) => {
+  const s = tradeSessions.get(parseInt(req.params.id, 10));
+  if (s) {
+    const role = tradeRole(s, req.user.id);
+    if (role && s.state === 'open') {
+      s.state = 'cancelled';
+      pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'tradeCancelled', sessionId: s.id });
+    }
+  }
+  res.json({ ok: true });
+});
+
+app.post('/api/trade/:id/confirm', dbReady, auth, async (req, res) => {
+  const s = tradeSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'open') return res.status(404).json({ error: 'Not an active trade' });
+  const role = tradeRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not part of this trade' });
+  if (!s[role].locked) return res.status(400).json({ error: 'Lock your offer first' });
+  s[role].ready = true;
+  const canSwap = s.a.ready && s.b.ready && s.a.locked && s.b.locked;
+  if (!canSwap) {
+    res.json({ ok: true, waiting: true });
+    pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'tradeUpdate', sessionId: s.id });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const A = await stateForUpdate(client, s.a.userId);
+    const B = await stateForUpdate(client, s.b.userId);
+    const validate = (st, off) => {
+      for (const k in off.items) if (Number((st.counts || {})[k] || 0) < off.items[k]) return 'offer-invalid';
+      if (Number(st.money || 0) < off.money) return 'offer-invalid';
+      return null;
+    };
+    if (validate(A, s.a) || validate(B, s.b)) throw new Error('offer-invalid');
+    const inA = Object.values(s.b.items).reduce((x, y) => x + y, 0);
+    const inB = Object.values(s.a.items).reduce((x, y) => x + y, 0);
+    if (vaultUsed(A.counts) + inA > vaultCap(A.rebirths)) throw new Error('a-full');
+    if (vaultUsed(B.counts) + inB > vaultCap(B.rebirths)) throw new Error('b-full');
+
+    const A2 = Object.assign({}, A.counts || {});
+    const B2 = Object.assign({}, B.counts || {});
+    for (const k in s.a.items) { A2[k] = Number(A2[k] || 0) - s.a.items[k]; if (A2[k] <= 0) delete A2[k]; }
+    for (const k in s.b.items) { B2[k] = Number(B2[k] || 0) - s.b.items[k]; if (B2[k] <= 0) delete B2[k]; }
+    for (const k in s.b.items) { A2[k] = Number(A2[k] || 0) + s.b.items[k]; }
+    for (const k in s.a.items) { B2[k] = Number(B2[k] || 0) + s.a.items[k]; }
+    const newAMoney = Number(A.money || 0) - s.a.money + s.b.money;
+    const newBMoney = Number(B.money || 0) - s.b.money + s.a.money;
+    const statsA = statsOf(A); statsA.trades = (statsA.trades || 0) + 1;
+    const statsB = statsOf(B); statsB.trades = (statsB.trades || 0) + 1;
+    await client.query('UPDATE player_state SET counts = $2, money = $3, stats = $4, updated_at = NOW() WHERE user_id = $1',
+      [s.a.userId, JSON.stringify(A2), newAMoney, JSON.stringify(statsA)]);
+    await client.query('UPDATE player_state SET counts = $2, money = $3, stats = $4, updated_at = NOW() WHERE user_id = $1',
+      [s.b.userId, JSON.stringify(B2), newBMoney, JSON.stringify(statsB)]);
+    await client.query('COMMIT');
+    tradeSessions.delete(s.id);
+    const frA = await stateFor(pool, s.a.userId);
+    const frB = await stateFor(pool, s.b.userId);
+    pushTo(s.a.userId, { type: 'tradeDone', state: publicState(frA) });
+    pushTo(s.b.userId, { type: 'tradeDone', state: publicState(frB) });
+    res.json({ ok: true, done: true, state: publicState(frA) });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    const msg = e && e.message;
+    if (msg === 'offer-invalid' || msg === 'a-full' || msg === 'b-full') {
+      s.state = 'failed';
+      pushTo(s.a.userId, { type: 'tradeCancelled', reason: 'Trade could not be completed \u2014 offers are no longer valid' });
+      pushTo(s.b.userId, { type: 'tradeCancelled', reason: 'Trade could not be completed \u2014 offers are no longer valid' });
+      res.status(400).json({ error: 'Trade failed \u2014 one of you can no longer cover the offer' });
+      return;
+    }
+    console.error('[trade-confirm]', e.message);
+    res.status(500).json({ error: 'Could not complete trade' });
+  } finally {
+    client.release();
+  }
+});
+
+// Expire stale requests/sessions.
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, r] of tradeRequests) if (now - r.createdAt > TRADE_REQUEST_TTL) tradeRequests.delete(id);
+  for (const [id, s] of tradeSessions) {
+    if (s.state === 'open' && now - s.createdAt > TRADE_TIMEOUT_MS) {
+      s.state = 'cancelled';
+      pushTo(s.a.userId, { type: 'tradeCancelled', reason: 'Trade timed out' });
+      pushTo(s.b.userId, { type: 'tradeCancelled', reason: 'Trade timed out' });
+    }
+    if (s.state !== 'open') tradeSessions.delete(id);
+  }
+}, 15000);
+
+/* ---------------------------------------------------------------
  * Worlds (in-memory, never written to the database)
  * ------------------------------------------------------------- */
 app.get('/api/servers', dbReady, auth, (req, res) => {
@@ -1605,6 +1889,7 @@ wss.on('connection', (ws, req) => {
   }
 
   ws.userId = user.id;
+  ws.username = user.username;
   ws.serverId = null;
   ws.isAlive = true;
 
