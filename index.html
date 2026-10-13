@@ -141,6 +141,20 @@
   .hud-left, .hud-right { display: flex; align-items: center; gap: 10px; pointer-events: auto; }
   .hud-center { display: flex; align-items: center; gap: 8px; color: #c3c8e6; font-size: 13px; font-weight: 600; pointer-events: none; }
   .hud-center .dot { width: 7px; height: 7px; border-radius: 50%; background: #7bdc78; box-shadow: 0 0 10px #7bdc78; }
+  .boss-bar {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: min(520px, 80vw); padding: 8px 16px 10px;
+    background: rgba(5,6,15,0.82); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px; box-shadow: 0 12px 40px -20px rgba(255,92,138,0.55);
+    backdrop-filter: blur(6px); pointer-events: none; z-index: 6;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .boss-bar.hidden { opacity: 0; transform: translate(-50%, -8px); pointer-events: none; }
+  .boss-bar-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  .boss-name { font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #ff5c8a; text-shadow: 0 0 30px rgba(255,92,138,0.5); }
+  .boss-hp-text { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #c3c8e6; }
+  .boss-bar-fill-wrap { width: 100%; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+  .boss-bar-fill { height: 100%; background: linear-gradient(90deg, #ffb648, #ff5c8a); transition: width 0.2s ease; box-shadow: 0 0 24px rgba(255,92,138,0.4); }
   .hud-btn {
     pointer-events: auto; font-family: inherit; font-weight: 700; font-size: 13px; letter-spacing: 1px;
     padding: 9px 16px; border-radius: 22px; color: #fff; cursor: pointer;
@@ -439,6 +453,15 @@
 
   <!-- ============ GAME ============ -->
   <div id="gameHud" class="hidden">
+    <div id="bossBar" class="boss-bar hidden" role="group" aria-label="World Boss">
+      <div class="boss-bar-top">
+        <span id="bossName" class="boss-name">World Boss</span>
+        <span class="boss-hp-text"><span id="bossHp">0</span> / <span id="bossMaxHp">0</span></span>
+      </div>
+      <div class="boss-bar-fill-wrap">
+        <div id="bossFill" class="boss-bar-fill"></div>
+      </div>
+    </div>
     <div class="hud-bar">
       <div class="hud-left">
         <span class="chip money">$<span id="hudMoney">0</span></span>
@@ -1574,6 +1597,10 @@ async function enterServer(sid, name) {
     renderVault();
     addChat('sys', 'You joined ' + currentServer.name + ' (slot ' + (mySlot + 1) + '/8).');
     refreshEvent();
+    try {
+      const b = await api('/boss');
+      if (b && b.boss) onBoss(b.boss);
+    } catch (e) {}
   } catch (err) {
     toast('OOPS', err.message, null, '#ff6b8a');
   }
@@ -1667,10 +1694,27 @@ function onRemoteMove(msg) {
   o.tx = msg.x; o.ty = msg.y; o.moving = msg.moving; o.facing = msg.facing || o.facing;
   o.zone = msg.zone || 'world';
 }
+function renderBossUi() {
+  const bar = $('bossBar');
+  const nameEl = $('bossName');
+  const hpEl = $('bossHp');
+  const maxEl = $('bossMaxHp');
+  const fillEl = $('bossFill');
+  if (!bar || !bossState) { if (bar) bar.classList.add('hidden'); return; }
+  const hp = Math.max(0, Number(bossState.hp) || 0);
+  const maxHp = Math.max(1, Number(bossState.maxHp) || Number(bossState.max_hp) || hp);
+  if (nameEl) nameEl.textContent = bossState.name || 'World Boss';
+  if (hpEl) hpEl.textContent = fmt(hp);
+  if (maxEl) maxEl.textContent = fmt(maxHp);
+  if (fillEl) fillEl.style.width = Math.max(0, Math.min(100, (hp / maxHp) * 100)) + '%';
+  bar.classList.remove('hidden');
+}
+
 function updateHudMeta() {
   const online = members.filter(m => m.online).length || (inGame ? 1 : 0);
   $('hudServer').textContent = currentServer ? currentServer.name : 'World';
   $('hudOnline').textContent = online + ' / ' + SERVER_CAPACITY + ' online';
+  renderBossUi();
 }
 
 /* =============================================================
@@ -2948,8 +2992,11 @@ async function claimQuest(id) {
  * ============================================================= */
 function onBoss(boss) {
   bossState = boss;
+  renderBossUi();
 }
 function onBossDefeated(info) {
+  if (bossState && info && bossState.id === info.id) bossState.hp = 0;
+  renderBossUi();
   toast('BOSS DEFEATED!', info.name + ' has fallen', '$' + fmt(info.pool) + ' pool', '#ff5c8a');
   burst(window.innerWidth / 2, window.innerHeight * 0.35, RARITIES[5]);
 }
