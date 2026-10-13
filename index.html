@@ -735,6 +735,10 @@
         <div class="modal-title">Richest Keepers</div>
         <button class="x" data-close="leaderModal" type="button">&times;</button>
       </div>
+      <div class="bazaar-search" style="margin-bottom: 12px;">
+        <input id="leaderSearch" type="text" maxlength="40" autocomplete="off" placeholder="Search users...">
+      </div>
+      <div id="leaderCount" class="empty-note" style="padding: 0 0 6px;"></div>
       <ul class="list" id="leaderList"><li class="empty">Loading leaderboard...</li></ul>
     </div>
   </div>
@@ -2920,6 +2924,9 @@ $('leadBtn').addEventListener('click', () => { ac(); openLeaders(); });
 function openLeaders() {
   if (!inGame) return;
   closeAllModals();
+  const inp = $('leaderSearch');
+  if (inp) inp.value = '';
+  $('leaderCount').textContent = '';
   $('leaderModal').classList.remove('hidden');
   loadLeaders();
 }
@@ -2928,18 +2935,34 @@ async function loadLeaders() {
   list.innerHTML = '<li class="empty">Loading leaderboard...</li>';
   try {
     const { leaders } = await api('/leaderboard');
-    if (!leaders.length) { list.innerHTML = '<li class="empty">No keepers ranked yet.</li>'; return; }
-    list.innerHTML = '';
-    for (const p of leaders) {
-      const li = document.createElement('li');
-      li.innerHTML =
-        '<span class="item-left"><span class="item-name"' + (p.me ? ' style="color:#4fd1ff"' : '') + '>#' + p.rank + ' ' + esc(p.username) + (p.me ? ' (you)' : '') + '</span>' +
-        '<span style="font-size:12px;color:#8b93bd">Level ' + p.level + '</span></span>' +
-        '<span class="item-right"><span class="item-value">$' + fmt(p.money) + '</span></span>';
-      list.appendChild(li);
-    }
+    renderLeaders(leaders);
   } catch (err) {
     list.innerHTML = '<li class="empty">' + esc(err.message) + '</li>';
+  }
+}
+let leadersAll = [];
+function renderLeaders(leaders) {
+  leadersAll = leaders || [];
+  applyLeaderSearch();
+}
+function applyLeaderSearch() {
+  const list = $('leaderList');
+  const cnt = $('leaderCount');
+  const inp = $('leaderSearch');
+  let q = '';
+  if (inp) q = inp.value.trim().toLowerCase();
+  let rows = leadersAll.slice();
+  if (q) rows = rows.filter(p => String(p.username || '').toLowerCase().indexOf(q) !== -1 || String(p.rank || '').indexOf(q) !== -1);
+  if (cnt) cnt.textContent = rows.length + ' / ' + leadersAll.length + ' shown';
+  if (!rows.length) { list.innerHTML = '<li class="empty">No keepers match.</li>'; return; }
+  list.innerHTML = '';
+  for (const p of rows) {
+    const li = document.createElement('li');
+    li.innerHTML =
+      '<span class="item-left"><span class="item-name"' + (p.me ? ' style="color:#4fd1ff"' : '') + '>#' + p.rank + ' ' + esc(p.username) + (p.me ? ' (you)' : '') + '</span>' +
+      '<span style="font-size:12px;color:#8b93bd">Level ' + p.level + '</span></span>' +
+      '<span class="item-right"><span class="item-value">$' + fmt(p.money) + '</span></span>';
+    list.appendChild(li);
   }
 }
 document.querySelectorAll('.tab[data-btab]').forEach(tab => tab.addEventListener('click', () => {
@@ -3057,9 +3080,9 @@ async function listItem(itemKey, rar, quantity, price) {
 }
 $('bazaarSearch').addEventListener('input', () => {
   bazaarQuery = $('bazaarSearch').value.trim();
-  clearTimeout(window._bazaarT);
-  window._bazaarT = setTimeout(loadBazaar, 250);
+  loadBazaar();
 });
+$('leaderSearch').addEventListener('input', applyLeaderSearch);
 $('bazaarRarity').addEventListener('change', () => { bazaarRarity = $('bazaarRarity').value; loadBazaar(); });
 $('bazaarMutation').addEventListener('change', () => { bazaarMutation = $('bazaarMutation').value; loadBazaar(); });
 

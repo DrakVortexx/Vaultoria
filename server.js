@@ -2130,7 +2130,8 @@ app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
         rank: i + 1, id: r.id, username: r.username,
         money: Number(r.money || 0), level: Number(r.level || 1),
         me: r.id === req.user.id
-      }))
+      })),
+      total: count.rows[0] ? Number(count.rows[0].total) : rows.length
     });
   } catch (e) {
     console.error('[leaderboard]', e.message);
