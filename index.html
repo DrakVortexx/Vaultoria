@@ -3175,6 +3175,10 @@ async function openBossModal() {
         html += '<span style="font-weight:700; color:#b98bff;">Your Damage:</span> ';
         html += '<span style="color:#fff;">' + fmt(b.you.damage) + ' (' + (b.you.share * 100).toFixed(1) + '%)</span>';
         html += '</div>';
+        html += '<div style="margin-top:12px; padding:12px; background:rgba(123,220,120,0.1); border-radius:12px; border:1px solid rgba(123,220,120,0.3);">';
+        html += '<span style="font-weight:700; color:#7bdc78;">Estimated Payout:</span> ';
+        html += '<span style="color:#fff;">$' + fmt(b.you.payout || 0) + '</span>';
+        html += '</div>';
       }
       html += '</div>';
       content.innerHTML = html;
