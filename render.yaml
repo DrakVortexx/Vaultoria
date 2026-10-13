@@ -1,0 +1,19 @@
+# Render Blueprint for Vaultoria
+# Push this repo to GitHub, then in Render choose "New > Blueprint"
+# and point it at the repo. Set DATABASE_URL to your Neon connection string.
+services:
+  - type: web
+    name: vaultoria
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_VERSION
+        value: "20"
