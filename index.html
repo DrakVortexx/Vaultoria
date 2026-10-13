@@ -301,6 +301,12 @@
   .item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .item-count { font-weight: 700; font-size: 13px; color: #8b93bd; }
   .item-value { font-weight: 700; font-size: 13px; color: #7bdc78; min-width: 52px; text-align: right; }
+
+  /* boss modal */
+  .boss-info { width: 100%; }
+  .boss-header { margin-bottom: 16px; }
+  .boss-hp-display { display: flex; align-items: center; gap: 8px; }
+
   .sell-btn, .mini-btn { font-family: inherit; font-size: 12px; font-weight: 700; padding: 6px 14px; border: none; border-radius: 8px; color: #fff; cursor: pointer; background: linear-gradient(135deg, #7bdc78, #4fd1ff); transition: transform 0.15s; }
   .sell-btn:hover, .mini-btn:hover { transform: translateY(-1px); }
   .mini-btn.orange { background: linear-gradient(135deg, #ffb648, #ff8c42); }
@@ -695,6 +701,19 @@
         <button class="x" data-close="leaderModal" type="button">&times;</button>
       </div>
       <ul class="list" id="leaderList"><li class="empty">Loading leaderboard...</li></ul>
+    </div>
+  </div>
+
+  <!-- Boss modal -->
+  <div id="bossModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">World Boss</div>
+        <button class="x" data-close="bossModal" type="button">&times;</button>
+      </div>
+      <div id="bossContent">
+        <div class="empty-note">Loading boss information...</div>
+      </div>
     </div>
   </div>
 
@@ -2373,7 +2392,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'wheelModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'wheelModal', 'bossModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -3112,27 +3131,7 @@ const bossBarEl = $('bossBar');
 if (bossBarEl) {
   bossBarEl.addEventListener('click', async () => {
     if (!inGame) return;
-    try {
-      const b = await api('/boss');
-      if (b) {
-        const boss = b.boss || null;
-        if (boss) onBoss(boss);
-        let info = 'Name: ' + (boss && boss.name || 'World Boss') + '\nHP: ' + fmt(boss && boss.hp || 0) + ' / ' + fmt(boss && boss.maxHp || boss && boss.max_hp || 0);
-        if (b.contributions && b.contributions.length) {
-          info += '\n\nTop Contributors:';
-          for (let i = 0; i < Math.min(10, b.contributions.length); i++) {
-            const c = b.contributions[i];
-            info += '\n' + (i+1) + '. ' + c.username + ' - ' + fmt(c.damage) + ' dmg (' + (c.share * 100).toFixed(1) + '%)';
-          }
-        }
-        if (b.you) {
-          info += '\n\nYour Damage: ' + fmt(b.you.damage) + ' (' + (b.you.share * 100).toFixed(1) + '%)';
-        }
-        alert(info);
-      }
-    } catch (e) {
-      toast('OOPS', e.message || 'Could not load boss info', null, '#ff6b8a');
-    }
+    await openBossModal();
   });
   bossBarEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -3140,6 +3139,51 @@ if (bossBarEl) {
       bossBarEl.click();
     }
   });
+}
+
+async function openBossModal() {
+  closeAllModals();
+  const content = $('bossContent');
+  if (!content) return;
+  content.innerHTML = '<div class="empty-note">Loading boss information...</div>';
+  $('bossModal').classList.remove('hidden');
+  try {
+    const b = await api('/boss');
+    if (b) {
+      const boss = b.boss || null;
+      if (boss) onBoss(boss);
+      let html = '<div class="boss-info">';
+      html += '<div class="boss-header">';
+      html += '<h2 style="color:#ff5c8a; font-weight:800; letter-spacing:3px; text-transform:uppercase; text-shadow:0 0 30px rgba(255,92,138,0.5); margin:0 0 12px;">' + (boss && boss.name || 'World Boss') + '</h2>';
+      html += '<div class="boss-hp-display" style="font-size:14px; font-weight:700; color:#c3c8e6; margin-bottom:16px;">';
+      html += 'HP: ' + fmt(boss && boss.hp || 0) + ' / ' + fmt(boss && boss.maxHp || boss && boss.max_hp || 0);
+      html += '</div></div>';
+      if (b.contributions && b.contributions.length) {
+        html += '<h3 style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#9aa2cc; margin:16px 0 12px;">Top Contributors</h3>';
+        html += '<ul class="list" style="margin:0;">';
+        for (let i = 0; i < Math.min(10, b.contributions.length); i++) {
+          const c = b.contributions[i];
+          html += '<li class="row">';
+          html += '<span class="name">#' + (i+1) + ' ' + c.username + '</span>';
+          html += '<span class="meta">' + fmt(c.damage) + ' dmg (' + (c.share * 100).toFixed(1) + '%)</span>';
+          html += '</li>';
+        }
+        html += '</ul>';
+      }
+      if (b.you) {
+        html += '<div style="margin-top:16px; padding:12px; background:rgba(124,92,255,0.1); border-radius:12px; border:1px solid rgba(124,92,255,0.3);">';
+        html += '<span style="font-weight:700; color:#b98bff;">Your Damage:</span> ';
+        html += '<span style="color:#fff;">' + fmt(b.you.damage) + ' (' + (b.you.share * 100).toFixed(1) + '%)</span>';
+        html += '</div>';
+      }
+      html += '</div>';
+      content.innerHTML = html;
+    } else {
+      content.innerHTML = '<div class="empty-note">No boss information available.</div>';
+    }
+  } catch (e) {
+    content.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + (e.message || 'Could not load boss info') + '</div>';
+  }
 }
 
 $('adminBtn').addEventListener('click', openAdminModal);
