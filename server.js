@@ -1898,12 +1898,15 @@ app.get('/api/admin/users', dbReady, auth, isAdmin, async (req, res) => {
         ORDER BY u.id ASC
         LIMIT 200`
     );
+    const online = new Set();
+    wss.clients.forEach(c => { if (c.userId && c.readyState === 1) online.add(c.userId); });
     res.json({ users: rows.map(r => ({
       id: r.id, username: r.username, isAdmin: !!r.is_admin,
       money: Number(r.money || 0), level: Number(r.level || 1),
       tutorialDone: !!r.tutorial_done, updatedAt: r.updated_at,
       bannedUntil: r.banned_until ? new Date(r.banned_until).getTime() : 0,
-      mutedUntil: r.muted_until ? new Date(r.muted_until).getTime() : 0
+      mutedUntil: r.muted_until ? new Date(r.muted_until).getTime() : 0,
+      online: online.has(r.id)
     })) });
   } catch (e) {
     console.error('[admin users]', e.message);
