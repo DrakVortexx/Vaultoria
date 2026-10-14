@@ -979,15 +979,34 @@ const SELL_MULT = 1.25;
 const luckMult = () => 1 + (state.level - 1) * LUCK_PER_LEVEL;
 const genCost = () => {
   const n = state.level + 1;
-  if (n <= 10) return Math.floor(10 * Math.pow(2.6, n - 2));
-  return Math.floor(20000 * Math.pow(2.2, n - 10));
+  // Quadratic formula: level 100 costs 100M
+  return Math.floor(n * n * 10000);
 };
 function rarityWeights() {
   const luck = luckMult();
-  return RARITIES.map((r, i) => (i >= 2 ? r.weight * luck * RARE_PLUS_BOOST : r.weight));
+  const lv = state.level;
+  // At high levels, reduce common/uncommon weights significantly
+  // Level 100: common/uncommon are almost eliminated
+  const commonScale = Math.max(0.01, 1 - (lv / 100) * 0.99); // 1.0 at lvl 1, 0.01 at lvl 100
+  const uncommonScale = Math.max(0.05, 1 - (lv / 100) * 0.95); // 1.0 at lvl 1, 0.05 at lvl 100
+  return RARITIES.map((r, i) => {
+    if (i === 0) return r.weight * commonScale;
+    if (i === 1) return r.weight * uncommonScale;
+    return r.weight * luck * RARE_PLUS_BOOST;
+  });
 }
 function pickRarity() {
-  const ws = rarityWeights();
+  const luck = luckMult();
+  const lv = state.level;
+  // At high levels, reduce common/uncommon weights significantly
+  // Level 100: common/uncommon are almost eliminated
+  const commonScale = Math.max(0.01, 1 - (lv / 100) * 0.99); // 1.0 at lvl 1, 0.01 at lvl 100
+  const uncommonScale = Math.max(0.05, 1 - (lv / 100) * 0.95); // 1.0 at lvl 1, 0.05 at lvl 100
+  const ws = RARITIES.map((r, i) => {
+    if (i === 0) return r.weight * commonScale;
+    if (i === 1) return r.weight * uncommonScale;
+    return r.weight * luck * RARE_PLUS_BOOST;
+  });
   let r = Math.random() * ws.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ws.length; i++) { r -= ws[i]; if (r <= 0) return RARITIES[i]; }
   return RARITIES[RARITIES.length - 1];

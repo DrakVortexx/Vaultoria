@@ -84,12 +84,21 @@ const GEN_GRACE = 250;
 function luckMult(level) { return 1 + (Number(level) - 1) * LUCK_PER_LEVEL; }
 function genCost(level) {
   const n = Number(level) + 1;
-  if (n <= 10) return Math.floor(10 * Math.pow(2.6, n - 2));
-  return Math.floor(20000 * Math.pow(2.2, n - 10));
+  // Quadratic formula: level 100 costs 100M
+  return Math.floor(n * n * 10000);
 }
 function pickRarity(level) {
   const luck = luckMult(level);
-  const ws = RARITIES.map((r, i) => (i >= 2 ? r.weight * luck * RARE_PLUS_BOOST : r.weight));
+  const lv = Number(level);
+  // At high levels, reduce common/uncommon weights significantly
+  // Level 100: common/uncommon are almost eliminated
+  const commonScale = Math.max(0.01, 1 - (lv / 100) * 0.99); // 1.0 at lvl 1, 0.01 at lvl 100
+  const uncommonScale = Math.max(0.05, 1 - (lv / 100) * 0.95); // 1.0 at lvl 1, 0.05 at lvl 100
+  const ws = RARITIES.map((r, i) => {
+    if (i === 0) return r.weight * commonScale;
+    if (i === 1) return r.weight * uncommonScale;
+    return r.weight * luck * RARE_PLUS_BOOST;
+  });
   let roll = Math.random() * ws.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ws.length; i++) { roll -= ws[i]; if (roll <= 0) return i; }
   return RARITIES.length - 1;
