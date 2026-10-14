@@ -7,6 +7,5 @@
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="12" fill="url(#g)"/>
-  <path d="M32 12 L44 28 L40 28 L40 44 L24 44 L24 28 L20 28 Z" fill="#fff" opacity="0.9"/>
-  <rect x="28" y="44" width="8" height="8" fill="#fff" opacity="0.9"/>
+  <path d="M18 16 L32 48 L46 16 L40 16 L32 34 L24 16 Z" fill="#fff" opacity="0.9"/>
 </svg>
