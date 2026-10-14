@@ -34,16 +34,16 @@ const SERVER_CAPACITY = 8;
  * upgrades and achievement rewards are computed and stored here.
  * ------------------------------------------------------------- */
 const RARITIES = [
-  { key: 'common',     name: 'Common',     color: '#9aa0b4', weight: 150000 },
-  { key: 'uncommon',   name: 'Uncommon',   color: '#5cd66b', weight: 70000 },
-  { key: 'rare',       name: 'Rare',       color: '#4fa8ff', weight: 45000 },
+  { key: 'common',     name: 'Common',     color: '#9aa0b4', weight: 45000 },
+  { key: 'uncommon',   name: 'Uncommon',   color: '#5cd66b', weight: 28000 },
+  { key: 'rare',       name: 'Rare',       color: '#4fa8ff', weight: 35000 },
   { key: 'epic',       name: 'Epic',       color: '#b15cff', weight: 15000 },
-  { key: 'legendary',  name: 'Legendary',  color: '#ffb648', weight: 3500 },
-  { key: 'mythic',     name: 'Mythic',     color: '#ff4d5e', weight: 700 },
-  { key: 'divine',     name: 'Divine',     color: '#fff3c0', weight: 120 },
-  { key: 'celestial',  name: 'Celestial',  color: '#5a7bff', weight: 20 },
-  { key: 'eternal',    name: 'Eternal',    color: '#ff4fd8', weight: 4 },
-  { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 1 }
+  { key: 'legendary',  name: 'Legendary',  color: '#ffb648', weight: 6000 },
+  { key: 'mythic',     name: 'Mythic',     color: '#ff4d5e', weight: 3000 },
+  { key: 'divine',     name: 'Divine',     color: '#fff3c0', weight: 1500 },
+  { key: 'celestial',  name: 'Celestial',  color: '#5a7bff', weight: 800 },
+  { key: 'eternal',    name: 'Eternal',    color: '#ff4fd8', weight: 400 },
+  { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 200 }
 ];
 const ITEMS_BY_RARITY = {
   common: ["Iron Scrap","Cracked Stone","Copper Wire","Coal Chunk","Rusty Bolt","Glass Shard","Faded Circuit","Dust Crystal","Scrap Metal","Empty Power Cell"],
@@ -84,23 +84,22 @@ const GEN_GRACE = 250;
 function luckMult(level) { return 1 + (Number(level) - 1) * LUCK_PER_LEVEL; }
 function genCost(level) {
   const n = Number(level) + 1;
-  // Quadratic formula: level 100 costs 100M
-  return Math.floor(n * n * 10000);
+  // Quadratic formula: level 100 costs 1B (n*n*100000)
+  return Math.floor(n * n * 100000);
 }
 function pickRarity(level) {
   const luck = luckMult(level);
   const lv = Number(level);
-  // At high levels, reduce common/uncommon weights significantly
-  // Level 100: common/uncommon are almost eliminated
-  const commonScale = Math.max(0.01, 1 - (lv / 100) * 0.99); // 1.0 at lvl 1, 0.01 at lvl 100
-  const uncommonScale = Math.max(0.05, 1 - (lv / 100) * 0.95); // 1.0 at lvl 1, 0.05 at lvl 100
-  // Boost mythic at high levels: level 100 averages mythic every 4 pulls (25%)
-  const mythicScale = 1 + (lv / 100) * 15; // 1.0 at lvl 1, 16.0 at lvl 100
+  const t = Math.max(0, Math.min(1, lv / 100));
+  const commonScale = Math.max(0.001, Math.pow(1 - t, 8));
+  const uncommonScale = Math.max(0.005, Math.pow(1 - t, 5));
+  const mythicScale = 1 + t * 20;
   const ws = RARITIES.map((r, i) => {
     if (i === 0) return r.weight * commonScale;
     if (i === 1) return r.weight * uncommonScale;
-    if (i === 5) return r.weight * luck * RARE_PLUS_BOOST * mythicScale; // mythic
-    return r.weight * luck * RARE_PLUS_BOOST;
+    if (i === 5) return r.weight * luck * mythicScale;
+    if (i >= 2) return r.weight * luck * (1 + t * 2);
+    return r.weight;
   });
   let roll = Math.random() * ws.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ws.length; i++) { roll -= ws[i]; if (roll <= 0) return i; }
@@ -2219,6 +2218,7 @@ app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
         ORDER BY ps.money DESC
         LIMIT 100`
     );
+    const count = await pool.query('SELECT COUNT(*)::int AS total FROM users');
     res.json({
       leaders: rows.map((r, i) => ({
         rank: i + 1, id: r.id, username: r.username,
