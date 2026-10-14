@@ -3503,7 +3503,7 @@ function renderAdminUsers(users) {
       '<button class="mini-btn" data-admin-kick="' + esc(u.username) + '">Kick</button> ' +
       '<button class="mini-btn' + (muted ? ' warn' : '') + '" data-admin-mute="' + esc(u.username) + '">' + (muted ? 'Unmute' : 'Mute') + '</button> ' +
       '<button class="mini-btn' + (banned ? ' warn' : '') + '" data-admin-ban="' + esc(u.username) + '">' + (banned ? 'Unban' : 'Ban') + '</button> ' +
-      '<button class="mini-btn" data-admin-gm="' + esc(u.username) + '">+$1k</button> ' +
+      '<button class="mini-btn" data-admin-gm="' + esc(u.username) + '">Give Money</button> ' +
       '<button class="mini-btn" data-admin-lv="' + esc(u.username) + '">Lv+1</button> ' +
       '<button class="mini-btn" data-admin-give="' + esc(u.username) + '">Give</button> ' +
       '<button class="mini-btn ghost" data-admin-clr="' + esc(u.username) + '">Clear</button> ' +
@@ -3511,7 +3511,7 @@ function renderAdminUsers(users) {
     li.querySelector('[data-admin-kick]').addEventListener('click', () => adminKick(u.username));
     li.querySelector('[data-admin-mute]').addEventListener('click', () => adminMute(u.username));
     li.querySelector('[data-admin-ban]').addEventListener('click', () => adminBan(u.username));
-    li.querySelector('[data-admin-gm]').addEventListener('click', () => adminSetMoney(u.username, 1000));
+    li.querySelector('[data-admin-gm]').addEventListener('click', () => adminGiveMoneyPrompt(u.username));
     li.querySelector('[data-admin-lv]').addEventListener('click', () => adminSetLevel(u.username, u.level + 1));
     li.querySelector('[data-admin-give]').addEventListener('click', () => adminGiveItemPrompt(u.username));
     li.querySelector('[data-admin-clr]').addEventListener('click', () => adminClearItems(u.username));
@@ -3532,6 +3532,13 @@ $('adminUserSearch')?.addEventListener('input', e => {
 async function adminSetMoney(username, amt) {
   try { await api('/admin/set-money', { method: 'POST', body: JSON.stringify({ username, amount: amt }) }); toast('ADMIN', username + ' money updated', null, '#4fd1ff'); loadAdminUsers(); }
   catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminGiveMoneyPrompt(username) {
+  const amount = prompt('Enter amount to give to ' + username + ':', '1000');
+  if (amount == null) return;
+  const amt = parseInt(amount, 10);
+  if (isNaN(amt) || amt <= 0) return toast('OOPS', 'Invalid amount', null, '#ff6b8a');
+  await adminSetMoney(username, amt);
 }
 async function adminGiveItemPrompt(username) {
   const allNames = [];
