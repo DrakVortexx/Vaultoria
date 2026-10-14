@@ -2036,6 +2036,43 @@ app.post('/api/admin/give-item', dbReady, auth, isAdmin, async (req, res) => {
   }
 });
 
+app.post('/api/admin/remove-item', dbReady, auth, isAdmin, async (req, res) => {
+  const username = String((req.body && req.body.username) || '').trim();
+  const item = String((req.body && req.body.item) || '').trim();
+  const quantity = clampInt(req.body && req.body.quantity, 1, 1000000, 1);
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  if (!item) return res.status(400).json({ error: 'Item required' });
+  const base = baseName(item) || item;
+  if (ITEM_RARITY[base] == null) return res.status(400).json({ error: 'Unknown item' });
+  const key = makeKey(item, null);
+  const client = await pool.connect();
+  try {
+    const u = await client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [username]);
+    if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
+    const id = u.rows[0].id;
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, id);
+    const counts = Object.assign({}, st.counts || {});
+    const current = Number(counts[key] || 0);
+    if (current < quantity) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(400).json({ error: 'User does not have enough of this item' });
+    }
+    counts[key] = current - quantity;
+    if (counts[key] === 0) delete counts[key];
+    await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1', [id, JSON.stringify(counts)]);
+    await client.query('COMMIT');
+    client.release();
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    console.error('[admin remove-item]', e.message);
+    res.status(500).json({ error: 'Could not remove item' });
+  }
+});
+
 app.post('/api/admin/kick', dbReady, auth, isAdmin, async (req, res) => {
   const username = String((req.body && req.body.username) || '').trim();
   if (!username) return res.status(400).json({ error: 'Username required' });
