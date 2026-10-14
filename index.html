@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -156,6 +156,10 @@
   .boss-hp-text { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #c3c8e6; }
   .boss-bar-fill-wrap { width: 100%; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
   .boss-bar-fill { height: 100%; background: linear-gradient(90deg, #ffb648, #ff5c8a); transition: width 0.2s ease; box-shadow: 0 0 24px rgba(255,92,138,0.4); }
+  .boss-bar-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 7px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+  .boss-pool { color: #ffb648; }
+  .boss-payout { color: #7bdc78; }
+  .boss-payout b { color: #b6ffb2; }
   .hud-btn {
     pointer-events: auto; font-family: inherit; font-weight: 700; font-size: 13px; letter-spacing: 1px;
     padding: 9px 16px; border-radius: 22px; color: #fff; cursor: pointer;
@@ -182,6 +186,27 @@
   #chatForm { pointer-events: auto; }
   #chatInput { width: 100%; font-family: inherit; font-size: 13px; padding: 10px 14px; border-radius: 18px; color: #fff; background: rgba(5,6,15,0.75); border: 1px solid rgba(255,255,255,0.12); outline: none; }
   #chatInput:focus { border-color: #6d4dff; }
+
+  /* ---------- mobile controls ---------- */
+  #mobileControls { position: fixed; inset: 0; z-index: 8; pointer-events: none; }
+  #joystick {
+    position: absolute; left: 22px; bottom: 26px; width: 132px; height: 132px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, rgba(124,92,255,0.16), rgba(5,6,15,0.5));
+    border: 2px solid rgba(255,255,255,0.16); pointer-events: auto; touch-action: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  }
+  #joystickKnob {
+    position: absolute; top: 50%; left: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%;
+    background: linear-gradient(135deg, #6d4dff, #b14dff); border: 2px solid rgba(255,255,255,0.35);
+    box-shadow: 0 6px 20px rgba(124,92,255,0.55); pointer-events: none; will-change: transform;
+  }
+  #mobileEBtn {
+    position: absolute; right: 24px; bottom: 104px; width: 84px; height: 84px; border-radius: 50%;
+    font-family: inherit; font-weight: 800; font-size: 30px; color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, #ffb648, #ff5c8a); border: 2px solid rgba(255,255,255,0.3);
+    box-shadow: 0 8px 26px rgba(255,120,90,0.5); pointer-events: auto; touch-action: none;
+  }
+  #mobileEBtn:active { transform: scale(0.94); }
 
   /* ---------- modals ---------- */
   .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2,3,9,0.68); backdrop-filter: blur(4px); }
@@ -468,6 +493,10 @@
       <div class="boss-bar-fill-wrap">
         <div id="bossFill" class="boss-bar-fill"></div>
       </div>
+      <div class="boss-bar-bottom">
+        <span class="boss-pool">POOL $<span id="bossPool">0</span></span>
+        <span class="boss-payout">EST. PAYOUT <b>$<span id="bossPayout">0</span></b></span>
+      </div>
     </div>
     <div class="hud-bar">
       <div class="hud-left">
@@ -496,6 +525,12 @@
       <div id="chatLog"></div>
       <form id="chatForm"><input id="chatInput" maxlength="140" autocomplete="off" placeholder="Say something..."></form>
     </div>
+  </div>
+
+  <!-- ============ MOBILE CONTROLS ============ -->
+  <div id="mobileControls" class="hidden">
+    <div id="joystick"><div id="joystickKnob"></div></div>
+    <button id="mobileEBtn" type="button" aria-label="Interact">E</button>
   </div>
 
   <!-- Vault modal -->
@@ -701,6 +736,10 @@
         <div class="modal-title">Richest Keepers</div>
         <button class="x" data-close="leaderModal" type="button">&times;</button>
       </div>
+      <div class="bazaar-search" style="margin-bottom: 12px;">
+        <input id="leaderSearch" type="text" maxlength="40" autocomplete="off" placeholder="Search users...">
+      </div>
+      <div id="leaderCount" class="empty-note" style="padding: 0 0 6px;"></div>
       <ul class="list" id="leaderList"><li class="empty">Loading leaderboard...</li></ul>
     </div>
   </div>
@@ -790,6 +829,14 @@ const EW_SPIN_COST = 50000;
  * HELPERS / STATE
  * ============================================================= */
 const $ = id => document.getElementById(id);
+// Device detection: true on phones/tablets so we can show touch controls.
+const isMobile = (function () {
+  const ua = navigator.userAgent || '';
+  const uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
+  const touch = (navigator.maxTouchPoints || 0) > 1 || 'ontouchstart' in window;
+  const coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  return uaMobile || (touch && coarse);
+})();
 function fmt(n) {
   n = Math.floor(Number(n) || 0);
   if (n < 1000) return '' + n;
@@ -1024,6 +1071,8 @@ function showScreen(name) {
   $('authScreen').classList.toggle('hidden', name !== 'auth');
   $('dashScreen').classList.toggle('hidden', name !== 'dash');
   $('gameHud').classList.toggle('hidden', name !== 'game');
+  const mc = $('mobileControls');
+  if (mc) mc.classList.toggle('hidden', !(name === 'game' && isMobile));
   inGame = (name === 'game');
   if (name !== 'game') closeAllModals();
 }
@@ -1619,7 +1668,7 @@ async function enterServer(sid, name) {
     refreshEvent();
     try {
       const b = await api('/boss');
-      if (b && b.boss) onBoss(b.boss);
+      if (b) { if (b.boss) onBoss(b.boss); setBossYou(b.you); }
     } catch (e) {}
   } catch (err) {
     toast('OOPS', err.message, null, '#ff6b8a');
@@ -1720,6 +1769,8 @@ function renderBossUi() {
   const hpEl = $('bossHp');
   const maxEl = $('bossMaxHp');
   const fillEl = $('bossFill');
+  const poolEl = $('bossPool');
+  const payoutEl = $('bossPayout');
   if (!bar || !bossState) { if (bar) bar.classList.add('hidden'); return; }
   const hp = Math.max(0, Number(bossState.hp) || 0);
   const maxHp = Math.max(1, Number(bossState.maxHp) || Number(bossState.max_hp) || hp);
@@ -1727,6 +1778,8 @@ function renderBossUi() {
   if (hpEl) hpEl.textContent = fmt(hp);
   if (maxEl) maxEl.textContent = fmt(maxHp);
   if (fillEl) fillEl.style.width = Math.max(0, Math.min(100, (hp / maxHp) * 100)) + '%';
+  if (poolEl) poolEl.textContent = fmt(bossState.poolValue || 0);
+  if (payoutEl) payoutEl.textContent = fmt(bossState.youPayout || 0);
   bar.classList.remove('hidden');
 }
 
@@ -1790,12 +1843,61 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
   }
   if (document.activeElement && document.activeElement.tagName === 'INPUT' && k !== 'escape') return;
-  if (k === 'e' && !e.repeat && inGame && !anyModalOpen()) { ac(); if (eventActive() && nearWheel()) openWheel(); else toggleVault(); return; }
+  if (k === 'e' && !e.repeat) { triggerInteract(); return; }
   if (k === 'escape') { closeAllModals(); return; }
   keys[k] = true; ac();
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+// Shared by the keyboard E key and the on-screen mobile E button.
+function triggerInteract() {
+  if (!inGame || anyModalOpen()) return;
+  ac();
+  if (eventActive() && nearWheel()) openWheel();
+  else toggleVault();
+}
+
+// Touch controls (joystick to walk, E to interact) for phones/tablets.
+(function initMobileControls() {
+  if (!isMobile) return;
+  const stick = $('joystick');
+  const knob = $('joystickKnob');
+  const eBtn = $('mobileEBtn');
+  if (!stick || !knob) return;
+  let active = false, pid = null;
+  function apply(ev) {
+    const rect = stick.getBoundingClientRect();
+    const max = rect.width / 2;
+    let dx = ev.clientX - (rect.left + rect.width / 2);
+    let dy = ev.clientY - (rect.top + rect.height / 2);
+    const dist = Math.hypot(dx, dy);
+    if (dist > max) { dx = dx / dist * max; dy = dy / dist * max; }
+    knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    const dead = max * 0.28;
+    keys.d = dx > dead; keys.a = dx < -dead;
+    keys.s = dy > dead; keys.w = dy < -dead;
+  }
+  function reset() {
+    active = false; pid = null;
+    knob.style.transform = 'translate(0px,0px)';
+    keys.d = keys.a = keys.s = keys.w = false;
+  }
+  stick.addEventListener('pointerdown', e => {
+    if (!inGame) return;
+    active = true; pid = e.pointerId;
+    try { stick.setPointerCapture(e.pointerId); } catch (err) {}
+    ac();
+    apply(e); e.preventDefault();
+  });
+  stick.addEventListener('pointermove', e => {
+    if (!active || e.pointerId !== pid) return;
+    apply(e); e.preventDefault();
+  });
+  stick.addEventListener('pointerup', e => { if (e.pointerId === pid) reset(); });
+  stick.addEventListener('pointercancel', e => { if (e.pointerId === pid) reset(); });
+  if (eBtn) eBtn.addEventListener('pointerdown', e => { e.preventDefault(); triggerInteract(); });
+})();
 
 function resize() {
   dpr = window.devicePixelRatio || 1;
@@ -2380,10 +2482,12 @@ function frame(now) {
 function updateHint() {
   const h = $('hint');
   if (nearMyVault()) {
-    h.textContent = 'Press E to open your vault';
+    h.textContent = isMobile ? 'Tap E to open your vault' : 'Press E to open your vault';
     $('zone').textContent = 'YOUR VAULT';
   } else {
-    h.textContent = 'WASD / Arrows to walk \u00b7 E opens your vault at your pad';
+    h.textContent = isMobile
+      ? 'Joystick to walk \u00b7 E opens your vault'
+      : 'WASD / Arrows to walk \u00b7 E opens your vault at your pad';
     $('zone').textContent = currentServer ? currentServer.name : 'WORLD';
   }
   const vb = $('vaultBtn');
@@ -2821,6 +2925,9 @@ $('leadBtn').addEventListener('click', () => { ac(); openLeaders(); });
 function openLeaders() {
   if (!inGame) return;
   closeAllModals();
+  const inp = $('leaderSearch');
+  if (inp) inp.value = '';
+  $('leaderCount').textContent = '';
   $('leaderModal').classList.remove('hidden');
   loadLeaders();
 }
@@ -2829,18 +2936,34 @@ async function loadLeaders() {
   list.innerHTML = '<li class="empty">Loading leaderboard...</li>';
   try {
     const { leaders } = await api('/leaderboard');
-    if (!leaders.length) { list.innerHTML = '<li class="empty">No keepers ranked yet.</li>'; return; }
-    list.innerHTML = '';
-    for (const p of leaders) {
-      const li = document.createElement('li');
-      li.innerHTML =
-        '<span class="item-left"><span class="item-name"' + (p.me ? ' style="color:#4fd1ff"' : '') + '>#' + p.rank + ' ' + esc(p.username) + (p.me ? ' (you)' : '') + '</span>' +
-        '<span style="font-size:12px;color:#8b93bd">Level ' + p.level + '</span></span>' +
-        '<span class="item-right"><span class="item-value">$' + fmt(p.money) + '</span></span>';
-      list.appendChild(li);
-    }
+    renderLeaders(leaders);
   } catch (err) {
     list.innerHTML = '<li class="empty">' + esc(err.message) + '</li>';
+  }
+}
+let leadersAll = [];
+function renderLeaders(leaders) {
+  leadersAll = leaders || [];
+  applyLeaderSearch();
+}
+function applyLeaderSearch() {
+  const list = $('leaderList');
+  const cnt = $('leaderCount');
+  const inp = $('leaderSearch');
+  let q = '';
+  if (inp) q = inp.value.trim().toLowerCase();
+  let rows = leadersAll.slice();
+  if (q) rows = rows.filter(p => String(p.username || '').toLowerCase().indexOf(q) !== -1 || String(p.rank || '').indexOf(q) !== -1);
+  if (cnt) cnt.textContent = rows.length + ' / ' + leadersAll.length + ' shown';
+  if (!rows.length) { list.innerHTML = '<li class="empty">No keepers match.</li>'; return; }
+  list.innerHTML = '';
+  for (const p of rows) {
+    const li = document.createElement('li');
+    li.innerHTML =
+      '<span class="item-left"><span class="item-name"' + (p.me ? ' style="color:#4fd1ff"' : '') + '>#' + p.rank + ' ' + esc(p.username) + (p.me ? ' (you)' : '') + '</span>' +
+      '<span style="font-size:12px;color:#8b93bd">Level ' + p.level + '</span></span>' +
+      '<span class="item-right"><span class="item-value">$' + fmt(p.money) + '</span></span>';
+    list.appendChild(li);
   }
 }
 document.querySelectorAll('.tab[data-btab]').forEach(tab => tab.addEventListener('click', () => {
@@ -2958,9 +3081,9 @@ async function listItem(itemKey, rar, quantity, price) {
 }
 $('bazaarSearch').addEventListener('input', () => {
   bazaarQuery = $('bazaarSearch').value.trim();
-  clearTimeout(window._bazaarT);
-  window._bazaarT = setTimeout(loadBazaar, 250);
+  loadBazaar();
 });
+$('leaderSearch').addEventListener('input', applyLeaderSearch);
 $('bazaarRarity').addEventListener('change', () => { bazaarRarity = $('bazaarRarity').value; loadBazaar(); });
 $('bazaarMutation').addEventListener('change', () => { bazaarMutation = $('bazaarMutation').value; loadBazaar(); });
 
@@ -3011,15 +3134,38 @@ async function claimQuest(id) {
  * WORLD BOSS
  * ============================================================= */
 function onBoss(boss) {
-  bossState = boss;
+  if (!boss) return;
+  // Merge so a live HP update never wipes our personal estimated payout.
+  bossState = Object.assign({}, bossState || {}, boss);
   renderBossUi();
 }
+// Store this player's share/payout from /api/boss so the bar can show it.
+function setBossYou(you) {
+  if (!you) return;
+  bossState = Object.assign({}, bossState || {}, {
+    youPayout: Number(you.payout) || 0,
+    youShare: Number(you.share) || 0,
+    youDamage: Number(you.damage) || 0
+  });
+  renderBossUi();
+}
+async function refreshBossPayout() {
+  if (!inGame || !token) return;
+  try {
+    const b = await api('/boss');
+    if (!b) return;
+    if (b.boss) onBoss(b.boss);
+    setBossYou(b.you);
+  } catch (e) {}
+}
 function onBossDefeated(info) {
-  if (bossState && info && bossState.id === info.id) bossState.hp = 0;
+  if (bossState && info && bossState.id === info.id) { bossState.hp = 0; bossState.youPayout = 0; bossState.youShare = 0; }
   renderBossUi();
   toast('BOSS DEFEATED!', info.name + ' has fallen', '$' + fmt(info.pool) + ' pool', '#ff5c8a');
   burst(window.innerWidth / 2, window.innerHeight * 0.35, RARITIES[5]);
 }
+// Keep the estimated payout on the boss bar reasonably fresh.
+setInterval(refreshBossPayout, 6000);
 
 /* =============================================================
  * TUTORIAL (bottom-left, never covers the generator)

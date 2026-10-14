@@ -427,6 +427,13 @@ const pool = new Pool({
 });
 pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
 
+// Never let a single failed request take the whole game offline. Without this
+// an unhandled error in an async route crashes the process and Render answers
+// with a 502 until it finishes restarting.
+process.on('unhandledRejection', err => {
+  console.error('[vaultoria] unhandled rejection:', (err && err.stack) || err);
+});
+
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
@@ -2006,7 +2013,7 @@ app.post('/api/admin/give-item', dbReady, auth, isAdmin, async (req, res) => {
     else return res.status(400).json({ error: 'Invalid mutation' });
   }
   const base = baseName(item) || item;
-  if (!valid.has(base)) return res.status(400).json({ error: 'Unknown item' });
+  if (ITEM_RARITY[base] == null) return res.status(400).json({ error: 'Unknown item' });
   const key = makeKey(item, mutObj);
   const client = await pool.connect();
   try {
@@ -2123,7 +2130,8 @@ app.get('/api/leaderboard', dbReady, auth, async (req, res) => {
         rank: i + 1, id: r.id, username: r.username,
         money: Number(r.money || 0), level: Number(r.level || 1),
         me: r.id === req.user.id
-      }))
+      })),
+      total: count.rows[0] ? Number(count.rows[0].total) : rows.length
     });
   } catch (e) {
     console.error('[leaderboard]', e.message);
