@@ -2227,6 +2227,7 @@ app.get('/api/boss', dbReady, auth, async (req, res) => {
 /* ---------------------------------------------------------------
  * Static hosting + health
  * ------------------------------------------------------------- */
+app.use(express.static(path.join(__dirname, 'assets')));
 app.get('/healthz', (req, res) => res.json({ ok: true, db: !!DATABASE_URL }));
 const INDEX_HTML = path.join(__dirname, 'index.html');
 app.get('/', (req, res) => res.sendFile(INDEX_HTML));
