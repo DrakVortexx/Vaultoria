@@ -94,9 +94,12 @@ function pickRarity(level) {
   // Level 100: common/uncommon are almost eliminated
   const commonScale = Math.max(0.01, 1 - (lv / 100) * 0.99); // 1.0 at lvl 1, 0.01 at lvl 100
   const uncommonScale = Math.max(0.05, 1 - (lv / 100) * 0.95); // 1.0 at lvl 1, 0.05 at lvl 100
+  // Boost mythic at high levels: level 100 averages mythic every 4 pulls (25%)
+  const mythicScale = 1 + (lv / 100) * 15; // 1.0 at lvl 1, 16.0 at lvl 100
   const ws = RARITIES.map((r, i) => {
     if (i === 0) return r.weight * commonScale;
     if (i === 1) return r.weight * uncommonScale;
+    if (i === 5) return r.weight * luck * RARE_PLUS_BOOST * mythicScale; // mythic
     return r.weight * luck * RARE_PLUS_BOOST;
   });
   let roll = Math.random() * ws.reduce((a, b) => a + b, 0);
