@@ -209,6 +209,8 @@ function shieldDuration(rebirths) { return SHIELD_BASE_SECONDS + Number(rebirths
 const BREACH_PRICE_PER_LEVEL = 2500;
 const BREACH_COOLDOWN_MS = 60000;
 const lastBreach = new Map(); // userId -> timestamp of last successful breach
+const BAZAAR_SELL_COOLDOWN_MS = 2000; // 2 second cooldown between bazaar listings
+const lastBazaarSell = new Map(); // userId -> timestamp of last bazaar sell
 function breachPrice(level) { return Math.max(1000, BREACH_PRICE_PER_LEVEL * Math.max(1, Number(level) || 1)); }
 // Which world a user currently belongs to (in-memory) and their socket if online.
 function worldOfUser(userId) {
@@ -1702,6 +1704,11 @@ app.get('/api/bazaar', dbReady, auth, async (req, res) => {
 });
 
 app.post('/api/bazaar', dbReady, auth, async (req, res) => {
+  const now = Date.now();
+  const lastSell = lastBazaarSell.get(req.user.id) || 0;
+  if (now - lastSell < BAZAAR_SELL_COOLDOWN_MS) {
+    return res.status(429).json({ error: 'Listing too fast \u2014 wait ' + Math.ceil((BAZAAR_SELL_COOLDOWN_MS - (now - lastSell)) / 1000) + 's' });
+  }
   const client = await pool.connect();
   try {
     const b = req.body || {};
@@ -1731,6 +1738,7 @@ app.post('/api/bazaar', dbReady, auth, async (req, res) => {
       [req.user.id, itemName, rarity, price, quantity, mutation]
     );
     await client.query('COMMIT');
+    lastBazaarSell.set(req.user.id, now);
     const fresh = await stateFor(pool, req.user.id);
     res.json({ ok: true, state: publicState(fresh) });
   } catch (e) {
