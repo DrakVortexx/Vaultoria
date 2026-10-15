@@ -2451,17 +2451,17 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
+    ws.userId = user.id;
+    ws.username = user.username;
+    ws.serverId = null;
+    ws.isAlive = true;
+
     // Check if user is already online (globally)
     const existingSocket = socketOfUserGlobal(user.id);
     if (existingSocket && existingSocket !== ws && existingSocket.readyState === 1) {
       ws.close(4002, 'already online');
       return;
     }
-
-    ws.userId = user.id;
-    ws.username = user.username;
-    ws.serverId = null;
-    ws.isAlive = true;
 
     ws.on('pong', () => { ws.isAlive = true; });
 
