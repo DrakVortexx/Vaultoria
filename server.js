@@ -93,13 +93,17 @@ function pickRarity(level) {
   const t = Math.max(0, Math.min(1, lv / 100));
   const commonScale = Math.max(0.001, Math.pow(1 - t, 8));
   const uncommonScale = Math.max(0.005, Math.pow(1 - t, 5));
-  const mythicScale = 1 + t * 20;
+  // Mythic starts at level 15, scales to 21x at level 100
+  const mythicScale = lv < 15 ? 0 : 1 + ((lv - 15) / 85) * 20;
   const legendaryScale = 1 + t * 10; // 2.0 at lvl 10 for first legendary
+  // Divine+ only available after level 35
+  const divineGate = lv >= 35 ? 1 : 0;
   const ws = RARITIES.map((r, i) => {
     if (i === 0) return r.weight * commonScale;
     if (i === 1) return r.weight * uncommonScale;
     if (i === 5) return r.weight * luck * mythicScale;
     if (i === 4) return r.weight * luck * legendaryScale; // legendary
+    if (i >= 6) return r.weight * luck * divineGate; // divine+ only after level 35
     if (i >= 2) return r.weight * luck * (1 + t * 2);
     return r.weight;
   });
