@@ -1867,7 +1867,11 @@ function connectWS() {
   });
   sock.addEventListener('close', async ev => {
     if (sock !== ws) return;
-    // 4003 = banned, 4004 = admin kicked. Do not auto-reconnect.
+    // 4002 = already online, 4003 = banned, 4004 = admin kicked. Do not auto-reconnect.
+    if (ev.code === 4002) {
+      toast('ALREADY ONLINE', 'You are already logged in on another device. Log out there first.', null, '#ff6b8a');
+      return;
+    }
     if (ev.code === 4003) {
       toast('BANNED', 'You have been banned by an admin.', null, '#ff6b8a');
       token = null; localStorage.removeItem('vaultoria_token');

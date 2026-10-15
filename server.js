@@ -1021,8 +1021,13 @@ app.post('/api/rebirth', dbReady, auth, async (req, res) => {
 app.post('/api/shield', dbReady, auth, async (req, res) => {
   try {
     const st = await stateFor(pool, req.user.id);
+    const now = Date.now();
+    // Check if shield is already active
+    if (st.shield_until && new Date(st.shield_until).getTime() > now) {
+      return res.status(400).json({ error: 'Shield is already active' });
+    }
     const secs = shieldDuration(st.rebirths);
-    const until = new Date(Date.now() + secs * 1000);
+    const until = new Date(now + secs * 1000);
     await pool.query('UPDATE player_state SET shield_until = $2, updated_at = NOW() WHERE user_id = $1', [req.user.id, until]);
     const fresh = await stateFor(pool, req.user.id);
     const w = worldOfUser(req.user.id);
@@ -2431,6 +2436,13 @@ wss.on('connection', (ws, req) => {
   const start = bannedUntil => {
     if (bannedUntil > Date.now()) {
       ws.close(4003, 'banned');
+      return;
+    }
+
+    // Check if user is already online
+    const existingSocket = socketOfUser(user.id);
+    if (existingSocket && existingSocket.readyState === 1) {
+      ws.close(4002, 'already online');
       return;
     }
 
