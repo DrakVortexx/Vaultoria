@@ -84,8 +84,8 @@ const GEN_GRACE = 250;
 function luckMult(level) { return 1 + (Number(level) - 1) * LUCK_PER_LEVEL; }
 function genCost(level) {
   const n = Number(level) + 1;
-  // Quadratic formula: level 100 costs 100M
-  return Math.floor(n * n * 10000);
+  // Quadratic formula: level 100 costs 150M (increased from 100M)
+  return Math.floor(n * n * 15000);
 }
 function pickRarity(level) {
   const luck = luckMult(level);
@@ -1758,6 +1758,8 @@ app.post('/api/bazaar/:id/buy', dbReady, auth, async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'You cannot afford that' });
     }
+    // Ensure seller state exists
+    await stateFor(client, listing.seller_id);
     const bCounts = Object.assign({}, buyer.counts || {});
     const buyKey = makeKey(listing.item_name, MUT_BY_ID[listing.mutation] ? { id: listing.mutation } : null);
     bCounts[buyKey] = Number(bCounts[buyKey] || 0) + Number(listing.quantity);
@@ -1779,8 +1781,8 @@ app.post('/api/bazaar/:id/buy', dbReady, auth, async (req, res) => {
     res.json({ ok: true, state: publicState(fresh), newAch });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('[bazaar buy]', e.message);
-    res.status(500).json({ error: 'Could not buy item' });
+    console.error('[bazaar buy]', e.message, e.stack);
+    res.status(500).json({ error: 'Could not buy item: ' + e.message });
   } finally {
     client.release();
   }

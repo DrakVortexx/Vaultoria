@@ -979,8 +979,8 @@ const SELL_MULT = 1.25;
 const luckMult = () => 1 + (state.level - 1) * LUCK_PER_LEVEL;
 const genCost = () => {
   const n = state.level + 1;
-  // Quadratic formula: level 100 costs 100M
-  return Math.floor(n * n * 10000);
+  // Quadratic formula: level 100 costs 150M (increased from 100M)
+  return Math.floor(n * n * 15000);
 };
 function rarityWeights() {
   const luck = luckMult();
