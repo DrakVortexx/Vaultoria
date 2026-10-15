@@ -1707,7 +1707,7 @@ app.post('/api/servers', dbReady, auth, (req, res) => {
   res.json({ server: worldPublic(w) });
 });
 
-app.post('/api/servers/:id/join', dbReady, auth, (req, res) => {
+app.post('/api/servers/:id/join', dbReady, auth, async (req, res) => {
   const sid = parseInt(req.params.id, 10);
   const w = worlds.get(sid);
   if (!w) return res.status(404).json({ error: 'That world is unavailable' });
@@ -1717,6 +1717,12 @@ app.post('/api/servers/:id/join', dbReady, auth, (req, res) => {
     if (slot < 0) return res.status(409).json({ error: 'That world is full (8/8)' });
     w.members.set(req.user.id, slot);
     persistWorldMember(sid, req.user.id, slot);
+  }
+  // Clear shield when joining/rejoining a server
+  try {
+    await pool.query('UPDATE player_state SET shield_until = NULL, updated_at = NOW() WHERE user_id = $1', [req.user.id]);
+  } catch (e) {
+    console.error('[join shield clear]', e.message);
   }
   res.json({ ok: true, slot });
 });
