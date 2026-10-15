@@ -218,6 +218,10 @@ function worldOfUser(userId) {
   return null;
 }
 function socketOfUser(userId) {
+  // Check global sockets first (tracks all connections regardless of world)
+  const ws = socketOfUserGlobal(userId);
+  if (ws && ws.readyState === 1) return ws;
+  // Fallback to world-based check
   for (const w of worlds.values()) {
     const room = presence.get(w.id);
     const e = room && room.get(userId);
@@ -2447,9 +2451,9 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // Check if user is already online
-    const existingSocket = socketOfUser(user.id);
-    if (existingSocket && existingSocket.readyState === 1) {
+    // Check if user is already online (globally)
+    const existingSocket = socketOfUserGlobal(user.id);
+    if (existingSocket && existingSocket !== ws && existingSocket.readyState === 1) {
       ws.close(4002, 'already online');
       return;
     }
