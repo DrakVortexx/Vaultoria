@@ -1862,16 +1862,13 @@ function connectWS() {
     else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);
     else if (msg.type === 'wheel') onWheelMsg(msg);
     else if (msg.type === 'restart') onRestart();
+    else if (msg.type === 'reload') location.reload();
     else if (msg.type === 'announce') announce(msg.text);
     else if (msg.type === 'sayDenied') { toast('CHAT', msg.reason, null, '#ff6b8a'); }
   });
   sock.addEventListener('close', async ev => {
     if (sock !== ws) return;
-    // 4002 = already online, 4003 = banned, 4004 = admin kicked. Do not auto-reconnect.
-    if (ev.code === 4002) {
-      toast('ALREADY ONLINE', 'You are already logged in on another device. Log out there first.', null, '#ff6b8a');
-      return;
-    }
+    // 4003 = banned, 4004 = admin kicked. Do not auto-reconnect.
     if (ev.code === 4003) {
       toast('BANNED', 'You have been banned by an admin.', null, '#ff6b8a');
       token = null; localStorage.removeItem('vaultoria_token');
@@ -3736,3 +3733,4 @@ requestAnimationFrame(frame);
 </script>
 </body>
 </html>
+`

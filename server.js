@@ -2456,11 +2456,13 @@ wss.on('connection', (ws, req) => {
     ws.serverId = null;
     ws.isAlive = true;
 
-    // Check if user is already online (globally)
+    // Check if user is already online (globally) - if so, reload the old tab
     const existingSocket = socketOfUserGlobal(user.id);
     if (existingSocket && existingSocket !== ws && existingSocket.readyState === 1) {
-      ws.close(4002, 'already online');
-      return;
+      try {
+        existingSocket.send(JSON.stringify({ type: 'reload' }));
+        existingSocket.close();
+      } catch (e) {}
     }
 
     ws.on('pong', () => { ws.isAlive = true; });
