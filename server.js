@@ -84,8 +84,8 @@ const GEN_GRACE = 250;
 function luckMult(level) { return 1 + (Number(level) - 1) * LUCK_PER_LEVEL; }
 function genCost(level) {
   const n = Number(level) + 1;
-  // Quadratic formula: level 100 costs 50M (reduced from 1B)
-  return Math.floor(n * n * 5000);
+  // Quadratic formula: level 100 costs 100M
+  return Math.floor(n * n * 10000);
 }
 function pickRarity(level) {
   const luck = luckMult(level);
