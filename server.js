@@ -94,10 +94,12 @@ function pickRarity(level) {
   const commonScale = Math.max(0.001, Math.pow(1 - t, 8));
   const uncommonScale = Math.max(0.005, Math.pow(1 - t, 5));
   const mythicScale = 1 + t * 20;
+  const legendaryScale = 1 + t * 10; // 2.0 at lvl 10 for first legendary
   const ws = RARITIES.map((r, i) => {
     if (i === 0) return r.weight * commonScale;
     if (i === 1) return r.weight * uncommonScale;
     if (i === 5) return r.weight * luck * mythicScale;
+    if (i === 4) return r.weight * luck * legendaryScale; // legendary
     if (i >= 2) return r.weight * luck * (1 + t * 2);
     return r.weight;
   });
