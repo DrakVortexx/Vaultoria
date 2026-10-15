@@ -347,6 +347,32 @@ const lastChat = new Map(); // userId -> timestamp of last chat message
 const banCache = new Map();  // userId -> { until (epoch ms), at }
 const muteCache = new Map(); // userId -> { until (epoch ms), at }
 
+// Rate limiting: endpoint -> (userId -> { count, resetAt })
+const rateLimits = new Map();
+
+function checkRateLimit(userId, endpoint, maxRequests, windowMs) {
+  const key = endpoint + ':' + userId;
+  const now = Date.now();
+  let entry = rateLimits.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + windowMs };
+    rateLimits.set(key, entry);
+  }
+
+  entry.count++;
+  return entry.count <= maxRequests;
+}
+
+function rateLimit(endpoint, maxRequests, windowMs) {
+  return (req, res, next) => {
+    if (!checkRateLimit(req.user.id, endpoint, maxRequests, windowMs)) {
+      return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+    }
+    next();
+  };
+}
+
 const BAD_WORDS = ['fuck', 'shit', 'bitch', 'cunt', 'dick', 'pussy', 'whore', 'slut', 'bastard',
   'asshole', 'nigger', 'nigga', 'fag', 'faggot', 'retard', 'kill yourself', 'nazi', 'kkk'];
 function filterBad(text) {
@@ -598,7 +624,10 @@ function publicState(row) {
     used: vaultUsed(counts),
     shieldUntil: row.shield_until ? new Date(row.shield_until).getTime() : 0,
     tradePrivacy: row.trade_privacy || 'everyone',
-    breaches: Number(row.breaches || 0)
+    breaches: Number(row.breaches || 0),
+    customColor: row.custom_color || '47',
+    customTrail: row.custom_trail || 'none',
+    customGlow: row.custom_glow || 'none'
   };
 }
 
@@ -808,7 +837,7 @@ app.post('/api/save', dbReady, auth, async (req, res) => {
 /* ---------------------------------------------------------------
  * Economy actions (server-authoritative)
  * ------------------------------------------------------------- */
-app.post('/api/generate', dbReady, auth, async (req, res) => {
+app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -872,7 +901,7 @@ app.post('/api/generate', dbReady, auth, async (req, res) => {
   }
 });
 
-app.post('/api/sell', dbReady, auth, async (req, res) => {
+app.post('/api/sell', dbReady, auth, rateLimit('sell', 30, 60000), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -1067,7 +1096,7 @@ app.get('/api/market', dbReady, auth, async (req, res) => {
   }
 });
 
-app.post('/api/market/buy', dbReady, auth, async (req, res) => {
+app.post('/api/market/buy', dbReady, auth, rateLimit('market_buy', 10, 60000), async (req, res) => {
   try {
     const body = req.body || {};
     const item = String(body.item || '');
@@ -1240,7 +1269,71 @@ app.post('/api/settings', dbReady, auth, async (req, res) => {
   }
 });
 
-app.post('/api/trade/request', dbReady, auth, async (req, res) => {
+const CUSTOMIZATION = {
+  colors: [
+    { id: '47', name: 'Default', price: 0 },
+    { id: '0', name: 'Red', price: 5000 },
+    { id: '120', name: 'Green', price: 5000 },
+    { id: '200', name: 'Blue', price: 5000 },
+    { id: '280', name: 'Purple', price: 10000 },
+    { id: '60', name: 'Gold', price: 25000 },
+    { id: '180', name: 'Cyan', price: 50000 },
+    { id: '300', name: 'Magenta', price: 100000 },
+  ],
+  trails: [
+    { id: 'none', name: 'None', price: 0 },
+    { id: 'sparkle', name: 'Sparkle', price: 25000 },
+    { id: 'fire', name: 'Fire', price: 100000 },
+    { id: 'rainbow', name: 'Rainbow', price: 500000 },
+  ],
+  glows: [
+    { id: 'none', name: 'None', price: 0 },
+    { id: 'soft', name: 'Soft Glow', price: 50000 },
+    { id: 'bright', name: 'Bright Glow', price: 250000 },
+    { id: 'pulsing', name: 'Pulsing Glow', price: 1000000 },
+  ]
+};
+
+app.post('/api/customize', dbReady, auth, rateLimit('customize', 5, 60000), async (req, res) => {
+  const b = req.body || {};
+  const type = String(b.type || '');
+  const id = String(b.id || '');
+
+  if (!['color', 'trail', 'glow'].includes(type)) {
+    return res.status(400).json({ error: 'Invalid customization type' });
+  }
+
+  const options = type === 'color' ? CUSTOMIZATION.colors : type === 'trail' ? CUSTOMIZATION.trails : CUSTOMIZATION.glow;
+  const option = options.find(o => o.id === id);
+
+  if (!option) {
+    return res.status(400).json({ error: 'Invalid option' });
+  }
+
+  try {
+    const { rows } = await pool.query('SELECT money FROM player_state WHERE user_id = $1', [req.user.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Player not found' });
+
+    const money = Number(rows[0].money || 0);
+    if (money < option.price) {
+      return res.status(400).json({ error: 'Not enough money' });
+    }
+
+    const column = type === 'color' ? 'custom_color' : type === 'trail' ? 'custom_trail' : 'custom_glow';
+    await pool.query(
+      'UPDATE player_state SET ' + column + ' = $2, money = money - $3, updated_at = NOW() WHERE user_id = $1',
+      [req.user.id, id, option.price]
+    );
+
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, state: publicState(fresh) });
+  } catch (e) {
+    console.error('[customize]', e.message);
+    res.status(500).json({ error: 'Could not save customization' });
+  }
+});
+
+app.post('/api/trade/request', dbReady, auth, rateLimit('trade_request', 5, 60000), async (req, res) => {
   try {
     const b = req.body || {};
     let toId = Math.floor(Number(b.toUserId));
@@ -1707,7 +1800,7 @@ app.get('/api/bazaar', dbReady, auth, async (req, res) => {
   }
 });
 
-app.post('/api/bazaar', dbReady, auth, async (req, res) => {
+app.post('/api/bazaar', dbReady, auth, rateLimit('bazaar_sell', 10, 60000), async (req, res) => {
   const now = Date.now();
   const lastSell = lastBazaarSell.get(req.user.id) || 0;
   if (now - lastSell < BAZAAR_SELL_COOLDOWN_MS) {
@@ -1754,7 +1847,7 @@ app.post('/api/bazaar', dbReady, auth, async (req, res) => {
   }
 });
 
-app.post('/api/bazaar/:id/buy', dbReady, auth, async (req, res) => {
+app.post('/api/bazaar/:id/buy', dbReady, auth, rateLimit('bazaar_buy', 10, 60000), async (req, res) => {
   const id = parseInt(req.params.id, 10);
   const client = await pool.connect();
   try {
@@ -2402,7 +2495,7 @@ async function broadcastMembers(serverId) {
     const byId = new Map();
     if (ids.length) {
       const { rows } = await pool.query(
-        `SELECT u.id, u.username, ps.money, ps.level, ps.shield_until
+        `SELECT u.id, u.username, ps.money, ps.level, ps.shield_until, ps.custom_color, ps.custom_trail, ps.custom_glow
            FROM users u
            LEFT JOIN player_state ps ON ps.user_id = u.id
           WHERE u.id = ANY($1::int[])`,
@@ -2426,7 +2519,10 @@ async function broadcastMembers(serverId) {
           shieldUntil: r.shield_until ? new Date(r.shield_until).getTime() : 0,
           x: c ? c.x : null,
           y: c ? c.y : null,
-          zone: c ? c.zone : 'world'
+          zone: c ? c.zone : 'world',
+          customColor: r.custom_color || '47',
+          customTrail: r.custom_trail || 'none',
+          customGlow: r.custom_glow || 'none'
         };
       })
     });

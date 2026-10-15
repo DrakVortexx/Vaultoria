@@ -117,6 +117,40 @@
   .play-card .dc-icon { color: #b98bff; text-shadow: 0 0 22px #b14dff; }
   .dash-panel { width: min(920px, 92vw); margin: 0 auto 48px; background: rgba(11,13,29,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 22px; }
   .dash-panel h3 { margin: 0 0 16px; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; }
+  .customize-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .customize-option {
+    font-family: inherit; cursor: pointer; color: #e8eaf2;
+    background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 16px 12px; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .customize-option:hover:not(.disabled) { transform: translateY(-4px); border-color: rgba(124,92,255,0.6); box-shadow: 0 12px 30px rgba(124,92,255,0.2); }
+  .customize-option.selected { border-color: #7bdc78; box-shadow: 0 0 20px rgba(123,220,120,0.3); }
+  .customize-option.disabled { opacity: 0.4; cursor: not-allowed; }
+  .customize-option.loading { opacity: 0.6; pointer-events: none; }
+  .co-name { font-size: 14px; font-weight: 700; }
+  .co-price { font-size: 12px; color: #8b93bd; }
+
+  /* Item tooltips */
+  .item-tooltip {
+    position: fixed; z-index: 1000;
+    background: rgba(11,13,29,0.95);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 16px;
+    max-width: 280px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .item-tooltip.visible { opacity: 1; }
+  .item-tooltip .tt-name { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+  .item-tooltip .tt-rarity { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .item-tooltip .tt-value { font-size: 13px; color: #7bdc78; margin-bottom: 4px; }
+  .item-tooltip .tt-base { font-size: 11px; color: #8b93bd; }
+  .item-tooltip .tt-mut { font-size: 12px; color: #ffb648; margin-top: 6px; }
+  .item-name[data-tooltip] { cursor: help; border-bottom: 1px dashed rgba(255,255,255,0.3); }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
   .row:last-child { border-bottom: none; }
   .row .meta { font-size: 13px; color: #8b93bd; }
@@ -515,10 +549,38 @@
   .quest-name { font-weight: 700; font-size: 14px; }
   .quest-desc { font-size: 12px; color: #8b93bd; margin: 3px 0 8px; }
   .quest-reward { font-size: 12px; color: #7bdc78; font-weight: 700; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .dash-grid { grid-template-columns: 1fr; }
+    .dash-card { padding: 20px 16px; }
+    .dc-icon { font-size: 28px; }
+    .dc-title { font-size: 18px; }
+    .dc-desc { font-size: 12px; }
+    .dash-panel { padding: 16px; }
+    .customize-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .modal { width: 92vw; max-height: 85vh; }
+    .modal-content { padding: 16px; }
+    .hud-bar { height: 56px; padding: 0 12px; }
+    .hud-btn { padding: 7px 12px; font-size: 12px; }
+    .boss-bar { width: 90vw; top: 70px; }
+    .boss-name { font-size: 11px; }
+    .customize-option { padding: 12px 8px; }
+    .co-name { font-size: 12px; }
+  }
+  @media (max-width: 480px) {
+    .dash-grid { margin: 24px auto; }
+    .modal { width: 95vw; }
+    .modal-content { padding: 12px; }
+    .hud-left, .hud-right { gap: 6px; }
+    .hud-center { font-size: 11px; }
+    .customize-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+  }
 </style>
 </head>
 <body>
   <canvas id="game"></canvas>
+  <div id="itemTooltip" class="item-tooltip"></div>
 
   <!-- ============ AUTH ============ -->
   <div id="authScreen" class="screen">
@@ -573,6 +635,11 @@
         <div class="dc-icon">&#9881;</div>
         <div class="dc-title">Settings</div>
         <div class="dc-desc">Who can send you trade requests and other preferences.</div>
+      </button>
+      <button class="dash-card" id="customizeBtn" type="button">
+        <div class="dc-icon">&#127911;</div>
+        <div class="dc-title">Customize</div>
+        <div class="dc-desc">Customize your character appearance with colors and effects.</div>
       </button>
     </div>
     <div id="dashPanel" class="dash-panel hidden"></div>
@@ -1073,6 +1140,46 @@ function legendaryLuck() {
   const total = ws.reduce((a, b) => a + b, 0);
   const top = ws.slice(4).reduce((a, b) => a + b, 0);
   return (top / total * 100).toFixed(2);
+}
+
+// Item tooltips
+const ITEM_BASE = {
+  "Iron Scrap": 5, "Cracked Stone": 3, "Copper Wire": 8, "Coal Chunk": 6, "Rusty Bolt": 4, "Glass Shard": 7, "Faded Circuit": 12, "Dust Crystal": 10, "Scrap Metal": 9, "Empty Power Cell": 15,
+  "Refined Iron": 25, "Charged Battery": 35, "Polished Copper": 30, "Reinforced Gear": 45, "Emerald Circuit": 60, "Stable Energy Core": 75, "Quartz Lens": 55, "Dense Alloy": 80, "Neon Shard": 90, "Compressed Coal": 40,
+  "Plasma Crystal": 180, "Quantum Circuit": 240, "Titanium Plate": 200, "Void Glass": 300, "Flux Capacitor": 350, "Synthetic Diamond": 275, "Magnetic Core": 400, "Arc Battery": 450, "Echo Fragment": 500, "Reinforced Data Chip": 325,
+  "Rift Crystal": 1000, "Quantum Battery": 1250, "Phantom Alloy": 1500, "Chrono Gear": 1800, "Dimensional Lens": 2000, "Singularity Dust": 2500, "Astral Circuit": 2200, "Void Battery": 3000, "Gravity Core": 3500, "Phase Fragment": 4000,
+  "Solar Core": 8000, "Golden Singularity": 10000, "Phoenix Circuit": 12000, "Celestial Alloy": 15000, "Eternal Battery": 18000, "Starforge Crystal": 22000, "Timekeeper Gear": 25000, "Royal Voidstone": 30000, "Aether Engine": 35000, "Crown Fragment": 40000,
+  "Bloodmoon Core": 75000, "Oblivion Shard": 90000, "Infernal Reactor": 110000, "Reality Fracture": 135000, "Dragonheart Battery": 160000, "Chaos Engine": 200000, "Worldbreaker Alloy": 250000, "Crimson Singularity": 300000, "Godforge Fragment": 400000, "Eclipse Relic": 500000,
+  "Heavenstone": 1000000, "Genesis Core": 1250000, "Seraphic Engine": 1500000, "Miracle Fragment": 1800000, "Dawn Singularity": 2200000, "Divine Circuit": 2700000, "Worldroot Crystal": 3200000, "Sacred Chrono Gear": 4000000, "Creation Battery": 5000000, "Halo of Eternity": 7500000,
+  "Nebula Heart": 10000000, "Galaxy Engine": 12500000, "Starborn Relic": 15000000, "Cosmic Prism": 20000000, "Astral Crown": 25000000, "Blackstar Core": 35000000, "Universe Fragment": 50000000, "Event Horizon Lens": 65000000, "Multiverse Battery": 85000000, "Celestial Throne": 100000000,
+  "Infinity Heart": 150000000, "Eternal Singularity": 200000000, "Timebreak Relic": 250000000, "Unending Engine": 300000000, "Immortal Prism": 400000000, "Endlessness Core": 500000000, "Absolute Chrono Gear": 650000000, "Evernight Crystal": 800000000, "Eternal Crown": 1000000000, "Last Light of Time": 1500000000,
+  "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000
+};
+
+const tooltipEl = $('itemTooltip');
+function showItemTooltip(e, itemKey, rar, mut, baseValue, mult) {
+  const rect = e.target.getBoundingClientRect();
+  const name = itemDisplayName(itemKey);
+  const sellValue = itemValueKey(itemKey);
+
+  tooltipEl.innerHTML =
+    '<div class="tt-name" style="color:' + rar.color + '">' + name + '</div>' +
+    '<div class="tt-rarity" style="color:' + rar.color + '">' + rar.name + '</div>' +
+    '<div class="tt-value">Sell Value: $' + fmt(sellValue) + '</div>' +
+    '<div class="tt-base">Base Value: $' + fmt(baseValue) + '</div>' +
+    (mut ? '<div class="tt-mut">' + mut.name.toUpperCase() + ' (x' + mult + ' multiplier)</div>' : '');
+
+  let x = rect.right + 12;
+  let y = rect.top;
+  if (x + 280 > window.innerWidth) x = rect.left - 292;
+  if (y + 150 > window.innerHeight) y = window.innerHeight - 150;
+
+  tooltipEl.style.left = x + 'px';
+  tooltipEl.style.top = y + 'px';
+  tooltipEl.classList.add('visible');
+}
+function hideItemTooltip() {
+  tooltipEl.classList.remove('visible');
 }
 
 /* rebirth / vault capacity / shield */
@@ -1689,11 +1796,13 @@ function openDashPanel(which) {
   if (which === 'servers') renderServersPanel();
   else if (which === 'friends') renderFriendsPanel();
   else if (which === 'settings') renderSettingsPanel();
+  else if (which === 'customize') renderCustomizePanel();
 }
 $('playBtn').addEventListener('click', play);
 $('serversBtn').addEventListener('click', () => openDashPanel('servers'));
 $('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
 $('settingsBtn').addEventListener('click', () => openDashPanel('settings'));
+$('customizeBtn').addEventListener('click', () => openDashPanel('customize'));
 
 function renderSettingsPanel() {
   const p = $('dashPanel');
@@ -1713,6 +1822,85 @@ function renderSettingsPanel() {
       toast('SAVED', 'Trade privacy set to ' + e.target.value.toUpperCase(), null, '#7bdc78');
     } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
   });
+}
+
+function renderCustomizePanel() {
+  const p = $('dashPanel');
+  p.classList.remove('hidden');
+  const money = Number(state.money || 0);
+
+  p.innerHTML =
+    '<h3 style="margin:0 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">CHARACTER COLOR</h3>' +
+    '<div class="customize-grid" id="colorGrid"></div>' +
+    '<h3 style="margin:20px 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">TRAIL EFFECT</h3>' +
+    '<div class="customize-grid" id="trailGrid"></div>' +
+    '<h3 style="margin:20px 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">GLOW EFFECT</h3>' +
+    '<div class="customize-grid" id="glowGrid"></div>';
+
+  const colors = [
+    { id: '47', name: 'Default', price: 0 },
+    { id: '0', name: 'Red', price: 5000 },
+    { id: '120', name: 'Green', price: 5000 },
+    { id: '200', name: 'Blue', price: 5000 },
+    { id: '280', name: 'Purple', price: 10000 },
+    { id: '60', name: 'Gold', price: 25000 },
+    { id: '180', name: 'Cyan', price: 50000 },
+    { id: '300', name: 'Magenta', price: 100000 },
+  ];
+
+  const trails = [
+    { id: 'none', name: 'None', price: 0 },
+    { id: 'sparkle', name: 'Sparkle', price: 25000 },
+    { id: 'fire', name: 'Fire', price: 100000 },
+    { id: 'rainbow', name: 'Rainbow', price: 500000 },
+  ];
+
+  const glows = [
+    { id: 'none', name: 'None', price: 0 },
+    { id: 'soft', name: 'Soft Glow', price: 50000 },
+    { id: 'bright', name: 'Bright Glow', price: 250000 },
+    { id: 'pulsing', name: 'Pulsing Glow', price: 1000000 },
+  ];
+
+  function renderOption(type, options, containerId, current) {
+    const container = $(containerId);
+    container.innerHTML = '';
+    options.forEach(opt => {
+      const owned = opt.price === 0 || current === opt.id;
+      const canAfford = money >= opt.price;
+      const selected = current === opt.id;
+
+      const btn = document.createElement('button');
+      btn.className = 'customize-option' + (selected ? ' selected' : '');
+      btn.style.backgroundColor = type === 'color' ? 'hsl(' + opt.id + ', 70%, 50%)' : '#2a2d3e';
+      btn.innerHTML =
+        '<div class="co-name">' + opt.name + '</div>' +
+        '<div class="co-price">' + (owned ? 'OWNED' : '$' + formatNumber(opt.price)) + '</div>';
+
+      if (!owned && !canAfford) {
+        btn.classList.add('disabled');
+      } else if (!selected) {
+        btn.addEventListener('click', async () => {
+          try {
+            btn.classList.add('loading');
+            const r = await api('/customize', { method: 'POST', body: JSON.stringify({ type, id: opt.id }) });
+            state = r.state;
+            renderCustomizePanel();
+            toast('CUSTOMIZED', opt.name + ' applied!', null, '#7bdc78');
+          } catch (err) {
+            toast('OOPS', err.message, null, '#ff6b8a');
+            btn.classList.remove('loading');
+          }
+        });
+      }
+
+      container.appendChild(btn);
+    });
+  }
+
+  renderOption('color', colors, 'colorGrid', state.customColor || '47');
+  renderOption('trail', trails, 'trailGrid', state.customTrail || 'none');
+  renderOption('glow', glows, 'glowGrid', state.customGlow || 'none');
 }
 
 async function play() {
@@ -1909,9 +2097,11 @@ function onMembers(list) {
       others[m.id] = { id: m.id, username: m.username, slot: m.slot,
         x: m.x == null ? vp.x : m.x, y: m.y == null ? vp.y : m.y,
         tx: m.x == null ? vp.x : m.x, ty: m.y == null ? vp.y : m.y,
-        online: m.online, moving: false, facing: { x: 1, y: 0 }, walk: 0, hue: (m.slot * 47 + 180) % 360 };
+        online: m.online, moving: false, facing: { x: 1, y: 0 }, walk: 0, hue: (m.slot * 47 + 180) % 360,
+        customColor: m.customColor || null };
     } else {
       others[m.id].online = m.online;
+      others[m.id].customColor = m.customColor || null;
       if (m.x != null) { others[m.id].tx = m.x; others[m.id].ty = m.y; }
     }
   }
@@ -2351,6 +2541,7 @@ function drawWorld(now) {
   drawAurora(now);
   drawMotes(now);
   drawWheel(now);
+  drawWarzone(now);
   for (let i = 0; i < 8; i++) drawVaultPad(i);
   for (const s of solidList) drawWall(s);
   if (inGame) {
@@ -2363,13 +2554,15 @@ function drawWorld(now) {
   }
   for (const id in others) {
     const o = others[id];
-    const color = 'hsl(' + o.hue + ', 65%, 58%)';
+    const member = members.find(m => m.id === id);
+    const color = member && member.customColor ? 'hsl(' + member.customColor + ', 65%, 58%)' : 'hsl(' + o.hue + ', 65%, 58%)';
     if (o.zone === 'vault') continue;
     drawCharacter(o.x, o.y, color, o.facing, o.moving, o.walk);
     drawNameTag(o.x + 20, o.y - 6, o.username, color);
   }
   if (inGame) {
-    drawCharacter(player.x, player.y, '#7c5cff', player.facing, player.moving, player.walk);
+    const myColor = state && state.customColor ? 'hsl(' + state.customColor + ', 65%, 58%)' : '#7c5cff';
+    drawCharacter(player.x, player.y, myColor, player.facing, player.moving, player.walk);
     if (shieldActive()) {
       const spx = player.x + player.w / 2, spy = player.y + player.h / 2;
       const ph = ((now / 900) % 1);
@@ -2381,9 +2574,74 @@ function drawWorld(now) {
       ctx.beginPath(); ctx.arc(spx, spy + 18, 40 + ph * 7, 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
     }
-    drawNameTag(player.x + 20, player.y - 6, me.username, '#4fd1ff');
+    drawNameTag(player.x + 20, player.y - 6, me.username, myColor);
   }
   drawGuideArrow(now);
+}
+function drawWarzone(now) {
+  const wx = EL.x + 180, wy = EL.y - 50;
+  const pulse = 0.5 + 0.5 * Math.sin(now / 400);
+  ctx.save();
+  ctx.translate(wx, wy);
+
+  // Ground glow
+  const glowR = 50 + pulse * 8;
+  const gg = ctx.createRadialGradient(0, 0, 6, 0, 0, glowR);
+  gg.addColorStop(0, 'rgba(255,92,138,0.35)');
+  gg.addColorStop(0.6, 'rgba(255,92,138,0.08)');
+  gg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gg;
+  ctx.beginPath(); ctx.arc(0, 0, glowR, 0, Math.PI * 2); ctx.fill();
+
+  // Warning beacon
+  const beam = ctx.createLinearGradient(0, -200, 0, 0);
+  beam.addColorStop(0, 'rgba(255,92,138,0)');
+  beam.addColorStop(1, 'rgba(255,92,138,' + (0.08 + pulse * 0.06).toFixed(3) + ')');
+  ctx.fillStyle = beam;
+  ctx.beginPath();
+  ctx.moveTo(-20, -200); ctx.lineTo(20, -200);
+  ctx.lineTo(35, 0); ctx.lineTo(-35, 0);
+  ctx.closePath(); ctx.fill();
+
+  // Base platform
+  ctx.fillStyle = 'rgba(20,10,15,0.9)';
+  ctx.strokeStyle = 'rgba(255,92,138,0.7)';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = 'rgba(255,92,138,0.8)';
+  ctx.shadowBlur = 18;
+  rr(-40, -20, 80, 60, 12);
+  ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Hazard stripes
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = 'rgba(255,92,138,0.3)';
+  for (let i = -2; i < 4; i++) {
+    const offset = ((now / 200) % 40) - 20;
+    ctx.beginPath();
+    ctx.moveTo(-40 + i * 20 + offset, -20);
+    ctx.lineTo(-30 + i * 20 + offset, -20);
+    ctx.lineTo(-45 + i * 20 + offset, 40);
+    ctx.lineTo(-55 + i * 20 + offset, 40);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Label
+  ctx.font = "800 11px 'Segoe UI', sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ff5c8a';
+  ctx.shadowColor = 'rgba(255,92,138,0.9)';
+  ctx.shadowBlur = 12;
+  ctx.fillText('WARZONE', 0, 50);
+  ctx.font = "700 9px 'Segoe UI', sans-serif";
+  ctx.fillStyle = 'rgba(255,92,138,0.7)';
+  ctx.shadowBlur = 0;
+  ctx.fillText('COMING SOON', 0, 65);
+
+  ctx.restore();
 }
 function drawWheel(now) {
   const cx = EL.x, cy = EL.y;
@@ -2739,14 +2997,19 @@ function renderVault() {
     const entries = Object.entries(state.counts).sort((a, b) => itemValueKey(b[0]) - itemValueKey(a[0]));
     for (const [it, count] of entries) {
       const rar = rarityFor(baseName(it));
+      const mut = mutationOf(it);
+      const baseValue = ITEM_BASE[baseName(it)] || 0;
+      const mult = mut ? mut.mult : 1;
       const li = document.createElement('li');
       li.innerHTML =
-        '<span class="item-left"><span class="item-name">' + itemDisplayName(it) + '</span>' + mutBadge(it) +
+        '<span class="item-left"><span class="item-name" data-item="' + it + '">' + itemDisplayName(it) + '</span>' + mutBadge(it) +
         '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
         '<span class="item-right"><span class="item-count">x' + count + '</span>' +
         '<span class="item-value">$' + fmt(itemValueKey(it) * count) + '</span>' +
         '<button class="sell-btn">SELL</button></span>';
       li.querySelector('.sell-btn').addEventListener('click', e => sellItem(it, e));
+      li.querySelector('.item-name').addEventListener('mouseenter', e => showItemTooltip(e, it, rar, mut, baseValue, mult));
+      li.querySelector('.item-name').addEventListener('mouseleave', hideItemTooltip);
       list.appendChild(li);
     }
   }

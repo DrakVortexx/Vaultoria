@@ -116,6 +116,11 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS trade_privacy TEXT        
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_wheel    BIGINT      NOT NULL DEFAULT 0;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS breaches      INTEGER     NOT NULL DEFAULT 0;
 
+-- Character customization
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_color  TEXT        NOT NULL DEFAULT '47';
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_trail  TEXT        NOT NULL DEFAULT 'none';
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_glow   TEXT        NOT NULL DEFAULT 'none';
+
 -- Moderation: temporary ban / chat mute windows (NULL = not restricted).
 ALTER TABLE users            ADD COLUMN IF NOT EXISTS banned_until  TIMESTAMPTZ;
 ALTER TABLE users            ADD COLUMN IF NOT EXISTS muted_until   TIMESTAMPTZ;
