@@ -1956,11 +1956,10 @@ async function renderFriendsPanel() {
       }
     }
     html += '<h3 style="margin-top:18px">Your Friends</h3>';
-    const onlineFriends = data.friends.filter(f => f.online);
-    if (!onlineFriends.length) html += '<div class="empty-note">No friends online right now.</div>';
-    for (const f of onlineFriends) {
+    if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
+    for (const f of data.friends) {
       html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div>' +
-        '<div class="meta"><span class="status-dot on"></span>Online now</div></div>' +
+        '<div class="meta"><span class="status-dot ' + (f.online ? 'on' : 'off') + '"></span>' + (f.online ? 'Online now' : 'Offline') + '</div></div>' +
         '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + f.id + '" type="button">Remove</button></span></div>';
     }
     p.innerHTML = html;
@@ -2080,6 +2079,7 @@ function onMembers(list) {
   for (const m of list) {
     seen[m.id] = true;
     if (m.id === me.id) continue;
+    if (!m.online) continue;
     if (!others[m.id]) {
       const vp = VAULT_POS[m.slot] || SPAWN;
       others[m.id] = { id: m.id, username: m.username, slot: m.slot,
@@ -2542,6 +2542,7 @@ function drawWorld(now) {
   }
   for (const id in others) {
     const o = others[id];
+    if (!o.online) continue;
     const member = members.find(m => m.id === id);
     const color = member && member.customColor ? 'hsl(' + member.customColor + ', 65%, 58%)' : 'hsl(' + o.hue + ', 65%, 58%)';
     if (o.zone === 'vault') continue;
@@ -2856,6 +2857,7 @@ function frame(now) {
     // interpolate other players
     for (const id in others) {
       const o = others[id];
+      if (!o.online) continue;
       const k = Math.min(1, dt * 8);
       o.x += (o.tx - o.x) * k;
       o.y += (o.ty - o.y) * k;

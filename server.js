@@ -1136,7 +1136,11 @@ app.post('/api/breach', dbReady, auth, async (req, res) => {
     const tgtW = worldOfUser(targetId);
     if (!atkW || !tgtW || atkW.id !== tgtW.id) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Target is not online in your world' });
+      return res.status(400).json({ error: 'Target is not in your world' });
+    }
+    if (!socketOfUserGlobal(targetId)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Target is not online' });
     }
     const vic = await stateForUpdate(client, targetId);
     if (vic.shield_until && new Date(vic.shield_until).getTime() > now) {
@@ -2635,13 +2639,16 @@ wss.on('connection', (ws, req) => {
       if (ws.serverId) {
         const room = presence.get(ws.serverId);
         if (room) room.delete(user.id);
-        // Leaving (or disconnecting) fully kicks the player out of the world.
-        const w = worlds.get(ws.serverId);
-        if (w && w.members.has(user.id)) {
-          w.members.delete(user.id);
-          persistWorldMember(ws.serverId, user.id, null);
-        }
+        // Only remove from presence on disconnect - keep world membership
         broadcastMembers(ws.serverId).catch(() => {});
+      }
+      // Cancel any active trade sessions for this user
+      for (const [id, s] of tradeSessions) {
+        if (s.state === 'open' && (s.a.userId === user.id || s.b.userId === user.id)) {
+          s.state = 'cancelled';
+          const otherId = s.a.userId === user.id ? s.b.userId : s.a.userId;
+          pushTo(otherId, { type: 'tradeCancelled', reason: 'Your trade partner disconnected' });
+        }
       }
     });
   };
