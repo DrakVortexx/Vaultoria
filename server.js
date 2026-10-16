@@ -449,11 +449,12 @@ async function persistWorldMember(sid, userId, slot) {
   } catch (e) { console.error('[world_members save]', e.message); }
 }
 
-// Remove a user from their current world (if any) and notify remaining members.
+// Remove a user from their current world and clear their live avatar.
 function removeFromWorld(uid) {
   for (const [sid, w] of worlds) {
-    if (w.members.has(uid)) {
-      w.members.delete(uid);
+    const room = presence.get(sid);
+    if (room) room.delete(uid);
+    if (w.members.delete(uid)) {
       persistWorldMember(sid, uid, null);
       broadcastMembers(sid).catch(() => {});
     }
@@ -961,9 +962,10 @@ app.post('/api/sell', dbReady, auth, rateLimit('sell', 30, 60000), async (req, r
   }
 });
 
-app.post('/api/upgrade', dbReady, auth, async (req, res) => {
-  const client = await pool.connect();
+app.post('/api/upgrade', dbReady, auth, rateLimit('upgrade', 30, 10000), async (req, res) => {
+  let client;
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
     const st = await stateForUpdate(client, req.user.id);
     const level = Number(st.level || 1);
@@ -989,11 +991,11 @@ app.post('/api/upgrade', dbReady, auth, async (req, res) => {
     const fresh = await stateFor(pool, req.user.id);
     res.json({ ok: true, level: newLevel, cost, state: publicState(fresh), newAch });
   } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('[upgrade]', e.message);
     res.status(500).json({ error: 'Could not upgrade' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
@@ -2674,18 +2676,31 @@ wss.on('connection', (ws, req) => {
     });
 
     ws.on('close', () => {
-      if (ws.serverId) {
-        const room = presence.get(ws.serverId);
-        if (room) room.delete(user.id);
-        // Only remove from presence on disconnect - keep world membership
-        broadcastMembers(ws.serverId).catch(() => {});
+      const sid = ws.serverId;
+      if (sid) {
+        const room = presence.get(sid);
+        const entry = room && room.get(user.id);
+        // A replaced tab may close after its new socket has already joined.
+        if (entry && entry.ws === ws) room.delete(user.id);
       }
-      // Cancel any active trade sessions for this user
-      for (const [id, s] of tradeSessions) {
-        if (s.state === 'open' && (s.a.userId === user.id || s.b.userId === user.id)) {
-          s.state = 'cancelled';
-          const otherId = s.a.userId === user.id ? s.b.userId : s.a.userId;
-          pushTo(otherId, { type: 'tradeCancelled', reason: 'Your trade partner disconnected' });
+
+      const replacement = socketOfUserGlobal(user.id);
+      if (!replacement) {
+        // A disconnected keeper leaves the world: free their vault slot and
+        // remove their avatar so the pad is empty for everyone else.
+        removeFromWorld(user.id);
+      } else if (sid) {
+        broadcastMembers(sid).catch(() => {});
+      }
+
+      // Only cancel trades when this was the user's last live connection.
+      if (!replacement) {
+        for (const [id, s] of tradeSessions) {
+          if (s.state === 'open' && (s.a.userId === user.id || s.b.userId === user.id)) {
+            s.state = 'cancelled';
+            const otherId = s.a.userId === user.id ? s.b.userId : s.a.userId;
+            pushTo(otherId, { type: 'tradeCancelled', reason: 'Your trade partner disconnected' });
+          }
         }
       }
     });

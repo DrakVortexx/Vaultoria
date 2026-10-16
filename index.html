@@ -1257,6 +1257,7 @@ let ev = null;
 let vaultOpen = false;
 let generating = false;
 let genBusy = false;
+let upgradeBusy = false;
 let genEnd = 0;
 let tutorialDone = false;
 let tutIdx = 0;
@@ -3010,7 +3011,7 @@ function renderVault() {
     $('progressFill').style.width = Math.min(100, (state.money / c) * 100) + '%';
     $('progressLabel').textContent = '$' + fmt(Math.min(state.money, c)) + ' / $' + fmt(c) + ' to Level ' + (state.level + 1);
     gb.className = 'buy'; gb.textContent = 'Upgrade to Level ' + (state.level + 1) + ' \u2014 $' + fmt(c);
-    gb.disabled = state.money < c;
+    gb.disabled = upgradeBusy || state.money < c;
   }
 
   let total = 0, worth = 0;
@@ -3134,13 +3135,19 @@ $('sellAll').addEventListener('click', async () => {
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
 });
 $('genBuy').addEventListener('click', async () => {
-  if (state.level >= MAX_LEVEL) return;
+  if (upgradeBusy || state.level >= MAX_LEVEL) return;
+  upgradeBusy = true;
+  $('genBuy').disabled = true;
   try {
     const r = await api('/upgrade', { method: 'POST' });
     state = r.state; sfxBuy();
     if (r.newAch && r.newAch.length) showNewAch(r.newAch);
     renderVault(); refreshTutorial();
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+  finally {
+    upgradeBusy = false;
+    renderVault();
+  }
 });
 
 /* shield + rebirth */
