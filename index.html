@@ -3430,7 +3430,8 @@ async function loadBazaar() {
       const li = document.createElement('li');
       li.innerHTML =
         '<span class="item-left"><span class="item-name">' + nameHtml + ' x' + l.quantity + '</span>' +
-        '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + (mut ? ' \u00b7 ' + mut.name : '') + '</span></span>' +
+        '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + (mut ? ' \u00b7 ' + mut.name : '') + '</span>' +
+        '<span style="font-size:11px;color:#8b93bd">Seller: ' + esc(l.seller) + '</span></span>' +
         '<span class="item-right"><span class="item-value">$' + fmt(l.price) + '</span>' +
         (l.mine
           ? '<button class="mini-btn ghost" data-cancel="' + l.id + '">Cancel</button>'
