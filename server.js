@@ -2087,6 +2087,7 @@ app.post('/api/admin/set-level', dbReady, auth, isAdmin, async (req, res) => {
     if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
     const id = u.rows[0].id;
     await client.query('BEGIN');
+    await stateForUpdate(client, id);
     await client.query('UPDATE player_state SET level = $2, updated_at = NOW() WHERE user_id = $1', [id, level]);
     await client.query('COMMIT');
     client.release();
@@ -2108,6 +2109,7 @@ app.post('/api/admin/clear-items', dbReady, auth, isAdmin, async (req, res) => {
     if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
     const id = u.rows[0].id;
     await client.query('BEGIN');
+    await stateForUpdate(client, id);
     await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1', [id, JSON.stringify({})]);
     await client.query('COMMIT');
     client.release();
@@ -2129,6 +2131,7 @@ app.post('/api/admin/reset-progress', dbReady, auth, isAdmin, async (req, res) =
     if (!u.rowCount) { client.release(); return res.status(404).json({ error: 'User not found' }); }
     const id = u.rows[0].id;
     await client.query('BEGIN');
+    await stateForUpdate(client, id);
     await client.query('UPDATE player_state SET money = $2, level = 1, counts = $3, stats = $4, achievements = $5, shield_until = NULL, tutorial_done = FALSE, updated_at = NOW() WHERE user_id = $1',
       [id, STARTER_MONEY, JSON.stringify({}), JSON.stringify(defaultStats()), JSON.stringify([])]);
     await client.query('COMMIT');
