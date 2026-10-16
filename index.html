@@ -113,6 +113,12 @@
   .dc-icon { font-size: 34px; color: #4fd1ff; text-shadow: 0 0 20px #4fd1ff; margin-bottom: 12px; }
   .dc-title { font-size: 22px; font-weight: 800; letter-spacing: 1px; }
   .dc-desc { font-size: 13px; color: #8b93bd; margin-top: 6px; line-height: 1.5; }
+  .rules-card { cursor: default; }
+  .rules-card summary { list-style: none; cursor: pointer; }
+  .rules-card summary::-webkit-details-marker { display: none; }
+  .rules-card[open] { grid-column: 1 / -1; }
+  .rules-list { color: #c3c8e6; font-size: 13px; line-height: 1.65; padding-left: 20px; margin: 14px 0 0; }
+  .rules-list li { margin: 5px 0; }
   .play-card { background: linear-gradient(160deg, rgba(109,77,255,0.35), rgba(11,13,29,0.9)); border-color: rgba(124,92,255,0.5); }
   .play-card .dc-icon { color: #b98bff; text-shadow: 0 0 22px #b14dff; }
   .dash-panel { width: min(920px, 92vw); margin: 0 auto 48px; background: rgba(11,13,29,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 22px; }
@@ -641,6 +647,23 @@
         <div class="dc-title">Customize</div>
         <div class="dc-desc">Customize your character appearance with colors and effects.</div>
       </button>
+      <details class="dash-card rules-card">
+        <summary>
+          <div class="dc-icon">&#128220;</div>
+          <div class="dc-title">Rules</div>
+          <div class="dc-desc">Open to read all rules.</div>
+        </summary>
+        <h3>All Rules</h3>
+        <ul class="rules-list">
+          <li>Be respectful. Harassment, hate speech, and threats are not allowed.</li>
+          <li>Keep usernames and chat appropriate; do not evade the chat filter.</li>
+          <li>No cheating, exploiting bugs, automation, or attempts to disrupt the game.</li>
+          <li>Do not scam or impersonate other players.</li>
+          <li>No spam, flooding, or advertising.</li>
+          <li>Use trading and raiding fairly; do not use alternate accounts to exploit them.</li>
+          <li>Follow moderator instructions. Rule-breaking may result in a mute or ban.</li>
+        </ul>
+      </details>
     </div>
     <div id="dashPanel" class="dash-panel hidden"></div>
   </div>
