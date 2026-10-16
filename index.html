@@ -909,13 +909,33 @@
               </div>
             </div>
           </div>
+          <div class="admin-section">
+            <h3 class="admin-section-title">Give Money</h3>
+            <div class="admin-tools-full">
+              <div class="admin-row">
+                <input id="adminGiveMoneyUser" placeholder="Username">
+                <input id="adminGiveMoneyAmount" type="number" placeholder="Amount">
+              </div>
+              <button class="buy" id="adminGiveMoneyBtn" type="button">Give Money</button>
+            </div>
+          </div>
+          <div class="admin-section">
+            <h3 class="admin-section-title">Give Everyone Item</h3>
+            <div class="admin-tools-full">
+              <div class="admin-row">
+                <input id="adminGiveAllItem" placeholder="Item name">
+                <input id="adminGiveAllQty" type="number" placeholder="Qty" value="1">
+              </div>
+              <input id="adminGiveAllMutation" placeholder="Mutation (optional)">
+              <button class="buy" id="adminGiveAllBtn" type="button">Give to Everyone</button>
+            </div>
+          </div>
         </div>
         <div class="admin-main">
           <div class="admin-list-header">
-            <h3 class="admin-section-title">Users</h3>
-            <input id="adminUserSearch" type="text" placeholder="Search users..." class="admin-search">
+            <h3 class="admin-section-title">User Management</h3>
           </div>
-          <ul id="adminUsers" class="admin-user-list"></ul>
+          <div class="empty-note" style="padding: 20px;">Use the tools in the sidebar to manage users. Type a username to perform actions on specific users.</div>
         </div>
       </div>
     </div>
@@ -3761,185 +3781,64 @@ $('adminBtn').addEventListener('click', openAdminModal);
 async function openAdminModal() {
   closeAllModals();
   $('adminModal').classList.remove('hidden');
-  await loadAdminUsers();
+  await loadAdminStats();
 }
 
-let adminUsersCache = [];
-
-async function loadAdminUsers() {
-  const list = $('adminUsers');
+async function loadAdminStats() {
   const totalEl = $('adminTotalUsers');
   const onlineEl = $('adminOnlineUsers');
-  if (!list) return;
-  list.innerHTML = '<li class="empty">Loading...</li>';
   try {
     const { users } = await api('/admin/users');
-    adminUsersCache = users;
-    if (!users.length) { list.innerHTML = '<li class="empty">No users found</li>'; return; }
     if (totalEl) totalEl.textContent = users.length;
     if (onlineEl) onlineEl.textContent = users.filter(u => u.online).length;
-    renderAdminUsers(users);
   } catch (e) {
-    list.innerHTML = '<li class="empty">' + esc(e.message) + '</li>';
+    console.error('[admin stats]', e.message);
   }
 }
 
-function renderAdminUsers(users) {
-  const list = $('adminUsers');
-  if (!list) return;
-  list.innerHTML = '';
-  for (const u of users) {
-    const banned = u.bannedUntil && u.bannedUntil > Date.now();
-    const muted = u.mutedUntil && u.mutedUntil > Date.now();
-    const status = (banned ? '<span class="mod-ban">BANNED</span> ' : '') + (muted ? '<span class="mod-mute">MUTED</span>' : '');
-    const li = document.createElement('li');
-    li.innerHTML = '<div class="admin-user-info"><span class="admin-user-name">' + esc(u.username) + (u.isAdmin ? ' <span style="color:#b98bff;">[ADMIN]</span>' : '') + ' ' + status + '</span><span class="admin-user-meta">Lv ' + u.level + ' \u00b7 $' + fmt(u.money) + (u.online ? ' \u00b7 <span style="color:#7bdc78;">Online</span>' : '') + '</span></div>' +
-      '<div class="admin-user-actions">' +
-      '<button class="mini-btn" data-admin-kick="' + esc(u.username) + '">Kick</button> ' +
-      '<button class="mini-btn' + (muted ? ' warn' : '') + '" data-admin-mute="' + esc(u.username) + '">' + (muted ? 'Unmute' : 'Mute') + '</button> ' +
-      '<button class="mini-btn' + (banned ? ' warn' : '') + '" data-admin-ban="' + esc(u.username) + '">' + (banned ? 'Unban' : 'Ban') + '</button> ' +
-      '<button class="mini-btn" data-admin-gm="' + esc(u.username) + '">Give $</button> ' +
-      '<button class="mini-btn" data-admin-sm="' + esc(u.username) + '">Set $</button> ' +
-      '<button class="mini-btn" data-admin-lv="' + esc(u.username) + '">Lv+1</button> ' +
-      '<button class="mini-btn" data-admin-give="' + esc(u.username) + '">Give</button> ' +
-      '<button class="mini-btn" data-admin-rem="' + esc(u.username) + '">Remove</button> ' +
-      '<button class="mini-btn" data-admin-rmm="' + esc(u.username) + '">Rem Mut</button> ' +
-      '<button class="mini-btn ghost" data-admin-clr="' + esc(u.username) + '">Clear</button> ' +
-      '<button class="mini-btn ghost" data-admin-rst="' + esc(u.username) + '">Reset</button></div>';
-    li.querySelector('[data-admin-kick]').addEventListener('click', () => adminKick(u.username, u.online));
-    li.querySelector('[data-admin-mute]').addEventListener('click', () => adminMute(u.username, u.online));
-    li.querySelector('[data-admin-ban]').addEventListener('click', () => adminBan(u.username, u.online));
-    li.querySelector('[data-admin-gm]').addEventListener('click', () => adminGiveMoneyPrompt(u.username, u.online));
-    li.querySelector('[data-admin-sm]').addEventListener('click', () => adminSetMoneyPrompt(u.username, u.online));
-    li.querySelector('[data-admin-lv]').addEventListener('click', () => adminSetLevel(u.username, u.level + 1, u.online));
-    li.querySelector('[data-admin-give]').addEventListener('click', () => adminGiveItemPrompt(u.username, u.online));
-    li.querySelector('[data-admin-rem]').addEventListener('click', () => adminRemoveItemPrompt(u.username, u.online));
-    li.querySelector('[data-admin-rmm]').addEventListener('click', () => adminRemoveMutationPrompt(u.username, u.online));
-    li.querySelector('[data-admin-clr]').addEventListener('click', () => adminClearItems(u.username, u.online));
-    li.querySelector('[data-admin-rst]').addEventListener('click', () => adminResetProgress(u.username, u.online));
-    list.appendChild(li);
-  }
-}
-
-$('adminUserSearch')?.addEventListener('input', e => {
-  const query = e.target.value.toLowerCase().trim();
-  if (!query) {
-    renderAdminUsers(adminUsersCache);
-    return;
-  }
-  const filtered = adminUsersCache.filter(u => u.username.toLowerCase().includes(query));
-  renderAdminUsers(filtered);
+$('adminGiveMoneyBtn').addEventListener('click', async () => {
+  const username = $('adminGiveMoneyUser').value.trim();
+  const amount = parseInt($('adminGiveMoneyAmount').value, 10);
+  if (!username) return toast('OOPS', 'Username required', null, '#ff6b8a');
+  if (isNaN(amount) || amount === 0) return toast('OOPS', 'Invalid amount', null, '#ff6b8a');
+  try {
+    await api('/admin/set-money', { method: 'POST', body: JSON.stringify({ username, amount }) });
+    toast('ADMIN', 'Money updated for ' + username, null, '#4fd1ff');
+    $('adminGiveMoneyUser').value = '';
+    $('adminGiveMoneyAmount').value = '';
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
 });
-async function adminSetMoney(username, amt) {
-  try { await api('/admin/set-money', { method: 'POST', body: JSON.stringify({ username, amount: amt }) }); toast('ADMIN', username + ' money updated', null, '#4fd1ff'); loadAdminUsers(); }
-  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminGiveMoneyPrompt(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  const amount = prompt('Enter amount to give to ' + username + ':', '1000');
-  if (amount == null) return;
-  const amt = parseInt(amount, 10);
-  if (isNaN(amt) || amt <= 0) return toast('OOPS', 'Invalid amount', null, '#ff6b8a');
-  await adminSetMoney(username, amt);
-}
-async function adminSetMoneyPrompt(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  const amount = prompt('Set ' + username + '\'s money to:', '0');
-  if (amount == null) return;
-  const amt = parseInt(amount, 10);
-  if (isNaN(amt) || amt < 0) return toast('OOPS', 'Invalid amount', null, '#ff6b8a');
-  await adminSetMoney(username, amt);
-}
-async function adminGiveItemPrompt(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  const allNames = [];
-  for (const r of RARITIES) (ITEMS_BY_RARITY[r.key] || []).forEach(it => { if (allNames.indexOf(it) === -1) allNames.push(it); });
-  allNames.sort();
-  const itemSel = prompt('Give item to ' + username + ' (enter exact item name from list, or cancel):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
-  if (itemSel == null) return;
-  const item = itemSel.trim();
+
+$('adminGiveAllBtn').addEventListener('click', async () => {
+  const item = $('adminGiveAllItem').value.trim();
+  const quantity = parseInt($('adminGiveAllQty').value, 10) || 1;
+  const mutation = $('adminGiveAllMutation').value.trim() || null;
   if (!item) return toast('OOPS', 'Item name required', null, '#ff6b8a');
-  const mutId = prompt('Mutation (blank for none; valid: gold, diamond, electric)', '');
-  if (mutId == null) return;
-  const qty = parseInt(prompt('Quantity', '1') || '1', 10);
-  if (isNaN(qty) || qty <= 0 || qty > 1000000) return toast('OOPS', 'Invalid quantity', null, '#ff6b8a');
+  if (mutation && !MUT_BY_ID[mutation]) return toast('OOPS', 'Invalid mutation', null, '#ff6b8a');
   try {
-    await api('/admin/give-item', { method: 'POST', body: JSON.stringify({ username, item, mutation: mutId.trim() || null, quantity: qty }) });
-    toast('ADMIN', 'Gave ' + qty + 'x ' + item + ' to ' + username, null, '#4fd1ff');
-    loadAdminUsers();
+    await api('/admin/give-all', { method: 'POST', body: JSON.stringify({ item, quantity, mutation }) });
+    toast('ADMIN', 'Gave ' + quantity + 'x ' + item + (mutation ? ' (' + mutation + ')' : '') + ' to everyone', null, '#4fd1ff');
+    $('adminGiveAllItem').value = '';
+    $('adminGiveAllQty').value = '1';
+    $('adminGiveAllMutation').value = '';
   } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminRemoveItemPrompt(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  const allNames = [];
-  for (const r of RARITIES) (ITEMS_BY_RARITY[r.key] || []).forEach(it => { if (allNames.indexOf(it) === -1) allNames.push(it); });
-  allNames.sort();
-  const itemSel = prompt('Remove item from ' + username + ' (enter exact item name from list, or cancel):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
-  if (itemSel == null) return;
-  const item = itemSel.trim();
-  if (!item) return toast('OOPS', 'Item name required', null, '#ff6b8a');
-  const qty = parseInt(prompt('Quantity to remove', '1') || '1', 10);
-  if (isNaN(qty) || qty <= 0 || qty > 1000000) return toast('OOPS', 'Invalid quantity', null, '#ff6b8a');
-  try {
-    await api('/admin/remove-item', { method: 'POST', body: JSON.stringify({ username, item, quantity: qty }) });
-    toast('ADMIN', 'Removed ' + qty + 'x ' + item + ' from ' + username, null, '#4fd1ff');
-    loadAdminUsers();
-  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminRemoveMutationPrompt(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  const allNames = [];
-  for (const r of RARITIES) (ITEMS_BY_RARITY[r.key] || []).forEach(it => { if (allNames.indexOf(it) === -1) allNames.push(it); });
-  allNames.sort();
-  const itemSel = prompt('Remove mutation from item for ' + username + ' (enter exact item name, or cancel):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
-  if (itemSel == null) return;
-  const item = itemSel.trim();
-  if (!item) return toast('OOPS', 'Item name required', null, '#ff6b8a');
-  const mutId = prompt('Mutation to remove (valid: gold, diamond, electric)', '');
-  if (mutId == null) return;
-  const qty = parseInt(prompt('Quantity to remove mutation from', '1') || '1', 10);
-  if (isNaN(qty) || qty <= 0 || qty > 1000000) return toast('OOPS', 'Invalid quantity', null, '#ff6b8a');
-  try {
-    await api('/admin/remove-mutation', { method: 'POST', body: JSON.stringify({ username, item, mutation: mutId.trim().toLowerCase() || null, quantity: qty }) });
-    toast('ADMIN', 'Removed mutation from ' + qty + 'x ' + item + ' for ' + username, null, '#4fd1ff');
-    loadAdminUsers();
-  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminSetLevel(username, level, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  try { await api('/admin/set-level', { method: 'POST', body: JSON.stringify({ username, level }) }); toast('ADMIN', username + ' level updated', null, '#4fd1ff'); loadAdminUsers(); }
-  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminClearItems(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  if (!confirm('Clear all items for ' + username + '?')) return;
-  try { await api('/admin/clear-items', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' items cleared', null, '#4fd1ff'); loadAdminUsers(); }
-  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminResetProgress(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  if (!confirm('Reset ALL progress for ' + username + '? This cannot be undone.')) return;
-  try { await api('/admin/reset-progress', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' reset', null, '#4fd1ff'); loadAdminUsers(); }
-  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminKick(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
-  if (!confirm('Kick ' + username + ' out of their world?')) return;
-  try { await api('/admin/kick', { method: 'POST', body: JSON.stringify({ username }) }); toast('ADMIN', username + ' kicked', null, '#ffb648'); loadAdminUsers(); }
-  catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-}
-async function adminMute(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
+});
+async function adminMute(username) {
   try {
     const r = await api('/admin/mute', { method: 'POST', body: JSON.stringify({ username, minutes: 10 }) });
-    toast('ADMIN', username + (r.muted ? ' muted for 10 min' : ' unmuted'), null, '#ffb648'); loadAdminUsers();
+    toast('ADMIN', username + (r.muted ? ' muted for 10 min' : ' unmuted'), null, '#ffb648');
   } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
 }
-async function adminBan(username, online) {
-  if (!online) return toast('OOPS', 'User must be online', null, '#ff6b8a');
+async function adminBan(username) {
   try {
     const r = await api('/admin/ban', { method: 'POST', body: JSON.stringify({ username, minutes: 1440 }) });
-    toast('ADMIN', username + (r.banned ? ' banned for 24h' : ' unbanned'), null, r.banned ? '#ff5c8a' : '#7bdc78'); loadAdminUsers();
+    toast('ADMIN', username + (r.banned ? ' banned for 24h' : ' unbanned'), null, r.banned ? '#ff5c8a' : '#7bdc78');
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+}
+async function adminKick(username) {
+  try {
+    await api('/admin/kick', { method: 'POST', body: JSON.stringify({ username }) });
+    toast('ADMIN', username + ' kicked', null, '#ffb648');
   } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
 }
 async function adminAnnounce() {
@@ -3960,6 +3859,32 @@ if ($('adminRestartBtn')) $('adminRestartBtn').addEventListener('click', () => {
 });
 if ($('adminAnnounceBtn')) $('adminAnnounceBtn').addEventListener('click', adminAnnounce);
 if ($('adminAnnounceInp')) $('adminAnnounceInp').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); adminAnnounce(); } });
+if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', async () => {
+  const username = $('adminGiveMoneyUser').value.trim();
+  const amount = parseInt($('adminGiveMoneyAmount').value, 10);
+  if (!username) return toast('OOPS', 'Username required', null, '#ff6b8a');
+  if (isNaN(amount) || amount === 0) return toast('OOPS', 'Invalid amount', null, '#ff6b8a');
+  try {
+    await api('/admin/set-money', { method: 'POST', body: JSON.stringify({ username, amount }) });
+    toast('ADMIN', 'Money updated for ' + username, null, '#4fd1ff');
+    $('adminGiveMoneyUser').value = '';
+    $('adminGiveMoneyAmount').value = '';
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
+if ($('adminGiveAllBtn')) $('adminGiveAllBtn').addEventListener('click', async () => {
+  const item = $('adminGiveAllItem').value.trim();
+  const quantity = parseInt($('adminGiveAllQty').value, 10) || 1;
+  const mutation = $('adminGiveAllMutation').value.trim() || null;
+  if (!item) return toast('OOPS', 'Item name required', null, '#ff6b8a');
+  if (mutation && !MUT_BY_ID[mutation]) return toast('OOPS', 'Invalid mutation', null, '#ff6b8a');
+  try {
+    await api('/admin/give-all', { method: 'POST', body: JSON.stringify({ item, quantity, mutation }) });
+    toast('ADMIN', 'Gave ' + quantity + 'x ' + item + (mutation ? ' (' + mutation + ')' : '') + ' to everyone', null, '#4fd1ff');
+    $('adminGiveAllItem').value = '';
+    $('adminGiveAllQty').value = '1';
+    $('adminGiveAllMutation').value = '';
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
 function transitionTo(text) {
   const t = $('transition');
   t.textContent = text; t.classList.add('on');

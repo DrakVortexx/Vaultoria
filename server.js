@@ -2275,6 +2275,41 @@ app.post('/api/admin/kick', dbReady, auth, isAdmin, async (req, res) => {
   res.json({ ok: true, offSocket: onlineOff });
 });
 
+app.post('/api/admin/give-all', dbReady, auth, isAdmin, async (req, res) => {
+  const item = String((req.body && req.body.item) || '').trim();
+  const mutation = req.body && req.body.mutation ? String(req.body.mutation).trim().toLowerCase() : null;
+  const quantity = clampInt(req.body && req.body.quantity, 1, 1000000, 1);
+  if (!item) return res.status(400).json({ error: 'Item required' });
+  let mutObj = null;
+  if (mutation) {
+    if (MUT_BY_ID[mutation]) mutObj = { id: mutation };
+    else return res.status(400).json({ error: 'Invalid mutation' });
+  }
+  const base = baseName(item) || item;
+  if (ITEM_RARITY[base] == null) return res.status(400).json({ error: 'Unknown item' });
+  const key = makeKey(item, mutObj);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query('SELECT user_id, counts FROM player_state');
+    let updated = 0;
+    for (const row of rows) {
+      const counts = Object.assign({}, row.counts || {});
+      counts[key] = Number(counts[key] || 0) + quantity;
+      await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1', [row.user_id, JSON.stringify(counts)]);
+      updated++;
+    }
+    await client.query('COMMIT');
+    client.release();
+    res.json({ ok: true, updated });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+    console.error('[admin give-all]', e.message);
+    res.status(500).json({ error: 'Could not give item to all users' });
+  }
+});
+
 // Ban / unban toggle. Banning kicks the player out of the world and their sockets.
 app.post('/api/admin/ban', dbReady, auth, isAdmin, async (req, res) => {
   const username = String((req.body && req.body.username) || '').trim();
