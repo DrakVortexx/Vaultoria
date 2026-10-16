@@ -2382,7 +2382,9 @@ function drawWall(s) {
 }
 function drawVaultPad(slot) {
   const pos = VAULT_POS[slot];
-  const owner = vaultAtPosition(slot);
+  const member = vaultAtPosition(slot);
+  // A vault is visually claimed only while its owner is actually online.
+  const owner = member && member.online ? member : null;
   const mine = slot === mySlot;
   const t = performance.now() / 1000;
   const isMine = !!owner && owner.id === me.id;
@@ -3944,4 +3946,3 @@ requestAnimationFrame(frame);
 </script>
 </body>
 </html>
-`

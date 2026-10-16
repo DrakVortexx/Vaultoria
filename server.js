@@ -336,9 +336,8 @@ function evaluateAch(stats, level, achievements) {
 }
 
 /* ---------------------------------------------------------------
- * In-memory worlds. Membership is mirrored to the database so a
- * server restart or deploy does not wipe rooms, but the live seat
- * map is the source of truth while running.
+ * In-memory worlds. World names persist, but memberships are only
+ * live while a player is connected and must not survive a restart.
  * ------------------------------------------------------------- */
 const worlds = new Map(); // id -> { id, name, members: Map<userId, slot> }
 let nextWorldId = 1;
@@ -501,18 +500,15 @@ async function initDb() {
 
   try { await purgeLegacyItems(); } catch (e) { console.error('[purge]', e.message); }
 
-  // Restore persisted worlds + memberships so a restart keeps rooms alive.
+  // World names persist, but no player is online after a server restart.
+  // Clear old seat records instead of restoring ghost/offline vault owners.
   try {
     const { rows } = await pool.query('SELECT id, name FROM worlds ORDER BY id');
     for (const r of rows) {
       worlds.set(r.id, { id: r.id, name: r.name, members: new Map() });
       if (r.id >= nextWorldId) nextWorldId = r.id + 1;
     }
-    const ms = await pool.query('SELECT world_id, user_id, slot FROM world_members');
-    for (const m of ms.rows) {
-      const w = worlds.get(m.world_id);
-      if (w) w.members.set(m.user_id, m.slot);
-    }
+    await pool.query('DELETE FROM world_members');
   } catch (e) { console.error('[worlds load]', e.message); }
 
   if (!worlds.size) createWorld('The Grand Bazaar');
