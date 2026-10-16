@@ -1956,10 +1956,11 @@ async function renderFriendsPanel() {
       }
     }
     html += '<h3 style="margin-top:18px">Your Friends</h3>';
-    if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
-    for (const f of data.friends) {
+    const onlineFriends = data.friends.filter(f => f.online);
+    if (!onlineFriends.length) html += '<div class="empty-note">No friends online right now.</div>';
+    for (const f of onlineFriends) {
       html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div>' +
-        '<div class="meta"><span class="status-dot ' + (f.online ? 'on' : 'off') + '"></span>' + (f.online ? 'Online now' : 'Offline') + '</div></div>' +
+        '<div class="meta"><span class="status-dot on"></span>Online now</div></div>' +
         '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + f.id + '" type="button">Remove</button></span></div>';
     }
     p.innerHTML = html;
