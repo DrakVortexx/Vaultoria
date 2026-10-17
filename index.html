@@ -438,6 +438,9 @@
   .offer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
   .offer-row .item-left { flex: 1; }
   .offer-row .item-value { min-width: 30px; text-align: center; }
+  .trade-money-input { font-family: inherit; font-size: 13px; font-weight: 600; width: 110px; padding: 6px 8px; border-radius: 8px; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); outline: none; text-align: right; }
+  .trade-money-input:focus { border-color: #4fd1ff; box-shadow: 0 0 0 2px rgba(79,209,255,0.25); }
+  .trade-money-input:disabled { opacity: 0.5; }
   .admin-tools { width: 100%; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
   .admin-tools .buy { padding: 10px; font-size: 13px; box-shadow: 0 6px 18px rgba(184,184,255,0.28); }
   .admin-row { display: flex; gap: 8px; }
@@ -452,6 +455,7 @@
   #eventTag.soon { color: #8affd8; background: rgba(138,255,216,0.12); border: 1px solid rgba(138,255,216,0.4); }
   @keyframes eventBlink { 50% { opacity: 0.55; } }
   #wheelResult { min-height: 32px; font-size: 15px; }
+  .wheel-spin-canvas { display: block; width: 180px; height: 180px; margin: 0 auto 12px; }
   ul.list { list-style: none; margin: 0; padding: 0; width: 100%; max-height: 340px; overflow-y: auto; scrollbar-width: thin; }
   ul.list li { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; gap: 10px; border-radius: 8px; animation: rowIn 0.25s ease; }
   ul.list li:hover { background: rgba(124,92,255,0.12); }
@@ -893,9 +897,10 @@
         <div class="resource-bar"><span class="icon">$</span><span class="label">Money</span><span class="value" id="wMoney">$0</span></div>
         <button class="x" data-close="wheelModal" type="button">&times;</button>
       </div>
+      <canvas id="wheelSpinCanvas" class="wheel-spin-canvas"></canvas>
       <div class="empty-note" id="wheelInfo" style="padding:8px 4px 14px">The wheel is resting. It awakens for a short while at the center of the world, roughly every hour.</div>
       <div id="wheelResult" style="width:100%"></div>
-      <button class="buy" id="wheelSpin" type="button">SPIN $50,000</button>
+      <button class="buy" id="wheelSpin" type="button">SPIN FREE</button>
     </div>
   </div>
 
@@ -1059,7 +1064,7 @@ const VAULT_POS = [
 const WORLD_W = 2800, WORLD_H = 1700, WALL = 24, SPAWN = { x: 1400, y: 850 };
 const EL = { x: SPAWN.x, y: SPAWN.y, r: 60 };
 const CAM_ZOOM = 0.9;
-const EW_SPIN_COST = 50000;
+const EW_SPIN_COST = 0;
 
 /* =============================================================
  * HELPERS / STATE
@@ -1623,7 +1628,7 @@ function renderTrade() {
   const moneyRow = document.createElement('div');
   moneyRow.className = 'offer-row';
   moneyRow.innerHTML = '<span class="item-left"><span class="item-name">Cash</span><span style="font-size:12px;color:#8b93bd">you hold $' + fmt(state.money) + '</span></span>' +
-    '<span class="item-right"><input type="number" min="0" step="1" inputmode="numeric" value="' + (tradeDraft.money || 0) + '" data-money></span>';
+    '<span class="item-right"><input type="number" min="0" step="1" inputmode="numeric" value="' + (tradeDraft.money || 0) + '" data-money class="trade-money-input"></span>';
   const mi = moneyRow.querySelector('[data-money]');
   mi.addEventListener('input', () => {
     const raw = mi.value;
@@ -1778,6 +1783,80 @@ function onWheelMsg(msg) {
   const name = itemDisplayName(makeKey(msg.item.name, msg.item.mutation ? (MUT_BY_ID[msg.item.mutation] || null) : null));
   addChat('sys', '', msg.name + ' spun the wheel \u2014 ' + name + (msg.jackpot ? ' (ELECTRIC!)' : ''));
 }
+const WHEEL_SLICE = (Math.PI * 2) / 8;
+let wheelSpin = { angle: 0, spinning: false, raf: 0 };
+let wheelSpinCtxObj = null;
+function wheelSpinCtx() { if (!wheelSpinCtxObj) { wheelSpinCtxObj = document.getElementById('wheelSpinCanvas').getContext('2d'); } return wheelSpinCtxObj; }
+function drawWheelSpinFrame(ctx, angle, spinning) {
+  const S = 180;
+  ctx.clearRect(0, 0, S, S);
+  const g = ctx.createRadialGradient(90, 90, 18, 90, 90, 110);
+  g.addColorStop(0, 'rgba(138,255,216,0.30)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(90, 90, 90, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.translate(90, 90);
+  ctx.rotate(angle);
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, 84, (i * WHEEL_SLICE), ((i + 1) * WHEEL_SLICE));
+    ctx.closePath();
+    ctx.fillStyle = (i % 2) ? '#5a7bff' : '#ff4fd8';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#0b0f1e';
+  ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = spinning ? '#8affd8' : '#c8b8ff';
+  ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = spinning ? 'rgba(138,255,216,0.9)' : 'rgba(150,120,255,0.7)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(90, 90, 92, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = spinning ? '#8affd8' : '#c8b8ff';
+  ctx.beginPath();
+  ctx.moveTo(90, 8);
+  ctx.lineTo(83, 36);
+  ctx.lineTo(97, 36);
+  ctx.closePath();
+  ctx.fill();
+}
+function startWheelSpin(cb) {
+  if (wheelSpin.spinning) return;
+  const c = document.getElementById('wheelSpinCanvas');
+  if (!c) { if (cb) { cb(); } return; }
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const S = 180;
+  c.width = S * dpr;
+  c.height = S * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+  const t0 = performance.now();
+  const duration = 1800;
+  const from = wheelSpin.angle;
+  const to = from + Math.PI * 14 + Math.random() * Math.PI * 2;
+  const tick = function (ts) {
+    const t = Math.min(1, (ts - t0) / duration);
+    const e = 1 - Math.pow(1 - t, 3);
+    wheelSpin.angle = from + (to - from) * e;
+    drawWheelSpinFrame(ctx, wheelSpin.angle, true);
+    if (t < 1) { wheelSpin.raf = requestAnimationFrame(tick); } else {
+      cancelAnimationFrame(wheelSpin.raf);
+      wheelSpin.spinning = false;
+      wheelSpin.angle = Math.floor(wheelSpin.angle / WHEEL_SLICE) * WHEEL_SLICE;
+      drawWheelSpinFrame(ctx, wheelSpin.angle, false);
+      if (cb) { cb(); }
+    }
+  };
+  wheelSpin.spinning = true;
+  wheelSpin.raf = requestAnimationFrame(tick);
+}
+
 async function openWheel() {
   if (!inGame) return;
   closeAllModals();
@@ -1785,24 +1864,33 @@ async function openWheel() {
   $('wheelResult').innerHTML = '';
   renderWheelModal();
   await refreshEvent();
+  if (eventActive()) startWheelSpin();
 }
 function renderWheelModal() {
   if (!state) return;
   $('wMoney').textContent = '$' + fmt(state.money);
   const info = $('wheelInfo');
   const spin = $('wheelSpin');
+  const canvas = $('wheelSpinCanvas');
+  const nextIn = (ev && ev.startsAt) ? Math.max(0, Math.ceil((ev.startsAt - Date.now()) / 1000)) : 0;
   if (!ev || !ev.active) {
-    info.textContent = 'The wheel is resting. It awakens for 90 seconds roughly every hour at the center of the world \u2014 keep an eye on the HUD timer.';
+    info.innerHTML = 'The wheel is resting. It awakens for 90 seconds roughly every hour at the center of the world \u2014 next event in <b>' + nextIn + 's</b>.';
     spin.disabled = true; spin.textContent = 'NOT LIVE';
+    if (canvas) canvas.style.display = 'none';
     return;
   }
+  if (canvas) canvas.style.display = 'block';
   const end = Math.max(0, ev.endsAt - Date.now());
   info.innerHTML = 'Live for <b>' + Math.ceil(end / 1000) + 's</b> \u00b7 <b>' + ev.remaining + '</b> items left on the wheel \u00b7 your spins: <b>' + ev.spinsLeft + '</b>/' + ev.maxSpins;
   const broke = state.money < ev.cost;
   spin.disabled = ev.spinsLeft <= 0 || ev.remaining <= 0 || broke;
-  spin.textContent = broke ? 'NEED $' + fmt(ev.cost) : ('SPIN $' + fmt(ev.cost) + (ev.spinsLeft <= 0 ? ' \u2014 MAX SPINS' : ''));
+  spin.textContent = broke ? 'NEED $' + fmt(ev.cost) : ((ev.cost > 0 ? 'SPIN $' + fmt(ev.cost) : 'SPIN FREE') + (ev.spinsLeft <= 0 ? ' \u2014 MAX SPINS' : ''));
 }
-$('wheelSpin').addEventListener('click', async () => {
+$('wheelSpin').addEventListener('click', () => {
+  if (wheelSpin.spinning) return;
+  startWheelSpin(() => runWheelSpin());
+});
+async function runWheelSpin() {
   try {
     const r = await api('/event/spin', { method: 'POST' });
     state = r.state; renderVault();
@@ -1812,7 +1900,7 @@ $('wheelSpin').addEventListener('click', async () => {
     sfxBuy();
     if (r.newAch && r.newAch.length) showNewAch(r.newAch);
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
-});
+}
 
 /* =============================================================
  * DASHBOARD
@@ -2750,11 +2838,12 @@ function drawWheel(now) {
   if (active) {
     ctx.fillStyle = '#8affd8';
     ctx.shadowColor = 'rgba(138,255,216,0.9)'; ctx.shadowBlur = 14;
-    ctx.fillText('ELECTRIC \u00b7 LIVE', 0, R + 24);
+    ctx.fillText('ELECTRIC \u00b7 LIVE \u00b7 ' + Math.max(0, Math.ceil((ev ? ev.endsAt - now : 0) / 1000)) + 's', 0, R + 24);
   } else {
     ctx.fillStyle = 'rgba(200,184,255,0.85)';
     ctx.shadowColor = 'rgba(124,92,255,0.7)'; ctx.shadowBlur = 10;
-    ctx.fillText('AWAITING ELECTRIC', 0, R + 24);
+    const nextIn = (ev && ev.startsAt) ? Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) : 0;
+    ctx.fillText('NEXT EVENT IN ' + nextIn + 's', 0, R + 24);
   }
   ctx.shadowBlur = 0;
   ctx.restore();

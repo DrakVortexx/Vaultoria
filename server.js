@@ -243,7 +243,7 @@ const EL = { x: 1400, y: 850, r: 60 };
 const EW_FREQ_MS = 60 * 60 * 1000;
 const EW_DURATION_MS = 90 * 1000;
 const EW_WARN_MS = 60 * 1000; // heads-up before an event starts
-const EW_SPIN_COST = 50000;
+const EW_SPIN_COST = 0;
 const EW_CAP = 1000;              // items the wheel can give per event
 const EW_MAX_SPINS_PER_PLAYER = 10;
 const EW_JACKPOT_MUTATION = 'electric'; // the event-only ×4 mutation
@@ -1621,11 +1621,11 @@ app.post('/api/event/spin', dbReady, auth, async (req, res) => {
       return res.status(400).json({ error: 'You need $' + EW_SPIN_COST.toLocaleString() + ' to spin' });
     }
 
-    const rollLevel = Math.min(Number(st.level || 1) + 30, MAX_LEVEL);
+    const rollLevel = Math.min(Number(st.level || 1) + 60, MAX_LEVEL);
     const ri = pickRarity(rollLevel);
     const poolArr = ITEMS_BY_RARITY[RARITIES[ri].key];
     const item = poolArr[Math.floor(Math.random() * poolArr.length)];
-    const jackpot = Math.random() < 1 / 6;
+    const jackpot = Math.random() < 0.34;
     const mut = jackpot ? wheelJackpot() : rollMutation();
     const key = makeKey(item, mut);
 
