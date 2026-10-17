@@ -1872,7 +1872,7 @@ function renderWheelModal() {
   const info = $('wheelInfo');
   const spin = $('wheelSpin');
   const canvas = $('wheelSpinCanvas');
-  const nextIn = (ev && ev.startsAt) ? Math.max(0, Math.ceil((ev.startsAt - Date.now()) / 1000)) : 0;
+  const nextIn = (ev && ev.startsAt) ? Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) : 0;
   if (!ev || !ev.active) {
     info.innerHTML = 'The wheel is resting. It awakens for 90 seconds roughly every hour at the center of the world \u2014 next event in <b>' + nextIn + 's</b>.';
     spin.disabled = true; spin.textContent = 'NOT LIVE';
