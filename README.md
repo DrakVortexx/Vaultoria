@@ -153,11 +153,11 @@ The game can be deployed to any Node.js hosting platform that supports:
 The admin panel is accessible to users with admin privileges (username: `knowkey` by default).
 
 Features:
-- View all users and their online status
-- Kick, mute, and ban users
-- Give/remove items and mutations
-- Set user money and levels
-- Reset user progress
+- View all users with level, money, and online status
+- Search users and run per-user actions
+- Give an item (with optional mutation) to every online player or to all players
+- Kick, mute, and ban users, with selectable durations (5 minutes up to permanent)
+- Give/remove items and mutations, set money and levels, clear items, reset progress
 - Send global announcements
 - Restart the game
 

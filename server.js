@@ -347,6 +347,8 @@ const lastGen = new Map(); // userId -> timestamp of last generate
 const lastChat = new Map(); // userId -> timestamp of last chat message
 const banCache = new Map();  // userId -> { until (epoch ms), at }
 const muteCache = new Map(); // userId -> { until (epoch ms), at }
+// Sentinel expiry used for "permanent" bans/mutes issued by admins.
+const PERMANENT_UNTIL = new Date('9999-12-31T23:59:59Z').getTime();
 
 // Rate limiting: endpoint -> (userId -> { count, resetAt })
 const rateLimits = new Map();
@@ -2172,6 +2174,7 @@ app.post('/api/admin/give-item', dbReady, auth, isAdmin, async (req, res) => {
     await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1', [id, JSON.stringify(counts)]);
     await client.query('COMMIT');
     client.release();
+    notifyUser(id, { type: 'adminGift', text: 'You received ' + quantity + 'x ' + item + (mutObj ? ' (' + mutObj.id + ')' : '') });
     res.json({ ok: true });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
@@ -2279,6 +2282,7 @@ app.post('/api/admin/give-all', dbReady, auth, isAdmin, async (req, res) => {
   const item = String((req.body && req.body.item) || '').trim();
   const mutation = req.body && req.body.mutation ? String(req.body.mutation).trim().toLowerCase() : null;
   const quantity = clampInt(req.body && req.body.quantity, 1, 1000000, 1);
+  const scope = String((req.body && req.body.scope) || 'all').toLowerCase() === 'online' ? 'online' : 'all';
   if (!item) return res.status(400).json({ error: 'Item required' });
   let mutObj = null;
   if (mutation) {
@@ -2292,8 +2296,11 @@ app.post('/api/admin/give-all', dbReady, auth, isAdmin, async (req, res) => {
   try {
     await client.query('BEGIN');
     const { rows } = await client.query('SELECT user_id, counts FROM player_state');
+    const targets = scope === 'online'
+      ? rows.filter(row => onlineUserIds().has(row.user_id))
+      : rows;
     let updated = 0;
-    for (const row of rows) {
+    for (const row of targets) {
       const counts = Object.assign({}, row.counts || {});
       counts[key] = Number(counts[key] || 0) + quantity;
       await client.query('UPDATE player_state SET counts = $2, updated_at = NOW() WHERE user_id = $1', [row.user_id, JSON.stringify(counts)]);
@@ -2301,7 +2308,11 @@ app.post('/api/admin/give-all', dbReady, auth, isAdmin, async (req, res) => {
     }
     await client.query('COMMIT');
     client.release();
-    res.json({ ok: true, updated });
+    const label = mutation ? item + ' (' + mutation + ')' : item;
+    for (const row of targets) {
+      notifyUser(row.user_id, { type: 'adminGift', text: 'You received ' + quantity + 'x ' + label });
+    }
+    res.json({ ok: true, updated, scope });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     client.release();
@@ -2314,6 +2325,7 @@ app.post('/api/admin/give-all', dbReady, auth, isAdmin, async (req, res) => {
 app.post('/api/admin/ban', dbReady, auth, isAdmin, async (req, res) => {
   const username = String((req.body && req.body.username) || '').trim();
   const minutes = clampInt(req.body && req.body.minutes, 1, 525600, 1440);
+  const permanent = !!(req.body && req.body.permanent);
   if (!username) return res.status(400).json({ error: 'Username required' });
   const { rows } = await pool.query('SELECT id, username, banned_until FROM users WHERE lower(username) = lower($1)', [username]);
   if (!rows[0]) return res.status(404).json({ error: 'User not found' });
@@ -2324,7 +2336,7 @@ app.post('/api/admin/ban', dbReady, auth, isAdmin, async (req, res) => {
   if (active) {
     await pool.query('UPDATE users SET banned_until = NULL WHERE id = $1', [uid]);
   } else {
-    until = Date.now() + minutes * 60000;
+    until = permanent ? PERMANENT_UNTIL : Date.now() + minutes * 60000;
     await pool.query('UPDATE users SET banned_until = $2 WHERE id = $1', [uid, new Date(until)]);
     removeFromWorld(uid);
     wss.clients.forEach(c => {
@@ -2332,13 +2344,14 @@ app.post('/api/admin/ban', dbReady, auth, isAdmin, async (req, res) => {
     });
   }
   banCache.set(uid, { until, at: Date.now() });
-  res.json({ ok: true, banned: !active, until });
+  res.json({ ok: true, banned: !active, until, permanent: !active && permanent });
 });
 
 // Mute / unmute toggle.
 app.post('/api/admin/mute', dbReady, auth, isAdmin, async (req, res) => {
   const username = String((req.body && req.body.username) || '').trim();
   const minutes = clampInt(req.body && req.body.minutes, 1, 525600, 10);
+  const permanent = !!(req.body && req.body.permanent);
   if (!username) return res.status(400).json({ error: 'Username required' });
   const { rows } = await pool.query('SELECT id, muted_until FROM users WHERE lower(username) = lower($1)', [username]);
   if (!rows[0]) return res.status(404).json({ error: 'User not found' });
@@ -2348,11 +2361,11 @@ app.post('/api/admin/mute', dbReady, auth, isAdmin, async (req, res) => {
   if (active) {
     await pool.query('UPDATE users SET muted_until = NULL WHERE id = $1', [uid]);
   } else {
-    until = Date.now() + minutes * 60000;
+    until = permanent ? PERMANENT_UNTIL : Date.now() + minutes * 60000;
     await pool.query('UPDATE users SET muted_until = $2 WHERE id = $1', [uid, new Date(until)]);
   }
   muteCache.set(uid, { until, at: Date.now() });
-  res.json({ ok: true, muted: !active, until });
+  res.json({ ok: true, muted: !active, until, permanent: !active && permanent });
 });
 
 // Send a global announcement to every connected player's screen.
@@ -2522,6 +2535,21 @@ function broadcast(serverId, obj, exceptId) {
 function broadcastAll(obj) {
   const data = JSON.stringify(obj);
   wss.clients.forEach(c => { if (c.readyState === 1) c.send(data); });
+}
+
+// Send a message to every socket owned by a single user.
+function notifyUser(uid, obj) {
+  const data = JSON.stringify(obj);
+  wss.clients.forEach(c => {
+    if (c.userId === uid && c.readyState === 1) { try { c.send(data); } catch (e) {} }
+  });
+}
+
+// Ids of users with at least one live socket.
+function onlineUserIds() {
+  const ids = new Set();
+  wss.clients.forEach(c => { if (c.userId && c.readyState === 1) ids.add(c.userId); });
+  return ids;
 }
 
 // Throttle live boss HP updates so a busy server doesn't flood clients.
