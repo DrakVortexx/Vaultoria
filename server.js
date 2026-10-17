@@ -80,6 +80,20 @@ const SELL_MULT = 1.25;
 const MAX_LEVEL = 100;
 const GEN_TIME = 3000;
 const GEN_GRACE = 250;
+// Pity: consecutive non-Epic+ / non-Legendary+ rolls ramp the odds toward a
+// guaranteed drop. Soft pity begins the ramp; hard pity forces the tier.
+const PITY_EPIC_SOFT = 15;
+const PITY_EPIC_HARD = 30;
+const PITY_LEGEND_SOFT = 45;
+const PITY_LEGEND_HARD = 75;
+// Rarity indices: 3 = Epic, 4 = Legendary, 8 = Eternal, 9 = Omniversal.
+const PITY_EPIC_TIER = 3;
+const PITY_LEGEND_TIER = 4;
+const RARE_DROP_TIER = 8;
+function pityRamp(n, soft, hard) {
+  if (n <= soft) return 0;
+  return Math.min(1, (n - soft) / (hard - soft));
+}
 
 function luckMult(level) { return 1 + (Number(level) - 1) * LUCK_PER_LEVEL; }
 function genCost(level) {
@@ -89,7 +103,7 @@ function genCost(level) {
   const baseCost = currentLevel < 8 ? 300 : 15000;
   return Math.floor(n * n * baseCost);
 }
-function pickRarity(level) {
+function pickRarity(level, pity, pityLeg) {
   const luck = luckMult(level);
   const lv = Number(level);
   const t = Math.max(0, Math.min(1, lv / 100));
@@ -100,14 +114,22 @@ function pickRarity(level) {
   const legendaryScale = 1 + t * 10; // 2.0 at lvl 10 for first legendary
   // Divine+ only available after level 35
   const divineGate = lv >= 35 ? 1 : 0;
+  // Soft pity: as the dry streak grows, Epic+ and Legendary+ get more likely
+  // so the hard guarantee rarely has to fire.
+  const epicBoost = 1 + pityRamp(Number(pity) || 0, PITY_EPIC_SOFT, PITY_EPIC_HARD) * 6;
+  const legBoost = 1 + pityRamp(Number(pityLeg) || 0, PITY_LEGEND_SOFT, PITY_LEGEND_HARD) * 8;
   const ws = RARITIES.map((r, i) => {
-    if (i === 0) return r.weight * commonScale;
-    if (i === 1) return r.weight * uncommonScale;
-    if (i === 5) return r.weight * luck * mythicScale;
-    if (i === 4) return r.weight * luck * legendaryScale; // legendary
-    if (i >= 6) return r.weight * luck * divineGate; // divine+ only after level 35
-    if (i >= 2) return r.weight * luck * (1 + t * 2);
-    return r.weight;
+    let w;
+    if (i === 0) w = r.weight * commonScale;
+    else if (i === 1) w = r.weight * uncommonScale;
+    else if (i === 5) w = r.weight * luck * mythicScale;
+    else if (i === 4) w = r.weight * luck * legendaryScale; // legendary
+    else if (i >= 6) w = r.weight * luck * divineGate; // divine+ only after level 35
+    else if (i >= 2) w = r.weight * luck * (1 + t * 2);
+    else w = r.weight;
+    if (i >= PITY_EPIC_TIER) w *= epicBoost;
+    if (i >= PITY_LEGEND_TIER) w *= legBoost;
+    return w;
   });
   let roll = Math.random() * ws.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ws.length; i++) { roll -= ws[i]; if (roll <= 0) return i; }
@@ -311,7 +333,7 @@ const ACH = [
   { id: 'trader', reward: 2500,     check: v => (v.trades || 0) >= 1 }
 ];
 
-function defaultStats() { return { ig: 0, earned: 0, seen: [], best: -1, trades: 0 }; }
+function defaultStats() { return { ig: 0, earned: 0, seen: [], best: -1, trades: 0, pity: 0, pityLeg: 0, warWins: 0, warLosses: 0, warEarned: 0 }; }
 function statsOf(row) {
   const s = Object.assign(defaultStats(), row && row.stats ? row.stats : {});
   if (!Array.isArray(s.seen)) s.seen = [];
@@ -611,12 +633,17 @@ async function stateForUpdate(client, userId) {
 
 function publicState(row) {
   const counts = row.counts || {};
+  const st = row.stats || defaultStats();
   return {
     money: Number(row.money || 0),
     level: Number(row.level || 1),
     counts,
     stats: row.stats || defaultStats(),
     achievements: row.achievements || [],
+    pity: {
+      epic: Number(st.pity || 0), epicHard: PITY_EPIC_HARD,
+      leg: Number(st.pityLeg || 0), legHard: PITY_LEGEND_HARD
+    },
     tutorialDone: !!row.tutorial_done,
     px: Number(row.px || 0),
     py: Number(row.py || 0),
@@ -854,7 +881,17 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
       return res.status(400).json({ error: 'Vault full \u2014 sell items to make room' });
     }
     const level = Number(st.level || 1);
-    const ri = pickRarity(level);
+    const stats = statsOf(st);
+    const pityBefore = Number(stats.pity || 0);
+    const pityLegBefore = Number(stats.pityLeg || 0);
+    let ri = pickRarity(level, pityBefore, pityLegBefore);
+    // Hard pity: if a streak hits the cap, force at least the promised tier.
+    let guaranteed = null;
+    if (pityLegBefore >= PITY_LEGEND_HARD && ri < PITY_LEGEND_TIER) { ri = PITY_LEGEND_TIER; guaranteed = 'legendary'; }
+    else if (pityBefore >= PITY_EPIC_HARD && ri < PITY_EPIC_TIER) { ri = PITY_EPIC_TIER; guaranteed = 'epic'; }
+    // Advance pity counters: hit the tier resets its streak, otherwise it grows.
+    stats.pityLeg = ri >= PITY_LEGEND_TIER ? 0 : pityLegBefore + 1;
+    stats.pity = ri >= PITY_EPIC_TIER ? 0 : pityBefore + 1;
     const itemPool = ITEMS_BY_RARITY[RARITIES[ri].key];
     const item = itemPool[Math.floor(Math.random() * itemPool.length)];
     const mut = rollMutation();
@@ -863,7 +900,6 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
 
     const counts = Object.assign({}, st.counts || {});
     counts[key] = Number(counts[key] || 0) + 1;
-    const stats = statsOf(st);
     stats.ig = (stats.ig || 0) + 1;
     if (stats.seen.indexOf(item) === -1) stats.seen.push(item);
     if (stats.best == null) stats.best = -1;
@@ -887,11 +923,30 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
     maybeBossBroadcast(bossRes.summary);
     if (bossRes.defeated) broadcastAll({ type: 'bossDefeated', boss: bossRes.defeated });
 
+    // Eternal / Omniversal are server-wide celebrations, not a quiet roll.
+    const rareDrop = ri >= RARE_DROP_TIER ? (ri >= RARE_DROP_TIER + 1 ? 'omniversal' : 'eternal') : null;
+    if (rareDrop) {
+      broadcastAll({
+        type: 'rareDrop',
+        name: req.user.username,
+        item,
+        rarity: RARITIES[ri].key,
+        mutation: mut ? mut.id : null,
+        tier: rareDrop
+      });
+    }
+
     res.json({
       ok: true, item, rarity: RARITIES[ri].key, mutation: mut ? mut.id : null,
       state: publicState(fresh), newAch,
       daily: { prog: daily.prog, claimed: daily.claimed },
-      boss: bossRes.summary, bossDefeated: bossRes.defeated
+      boss: bossRes.summary, bossDefeated: bossRes.defeated,
+      pity: {
+        epic: stats.pity, epicHard: PITY_EPIC_HARD,
+        leg: stats.pityLeg, legHard: PITY_LEGEND_HARD,
+        guaranteed
+      },
+      rareDrop
     });
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
@@ -1572,6 +1627,288 @@ setInterval(() => {
     if (s.state !== 'open') tradeSessions.delete(id);
   }
 }, 15000);
+
+/* ---------------------------------------------------------------
+ * WARZONE — global cross-world stake duels.
+ * A keeper walks into the Warzone (WZ) and joins a single global
+ * queue. When two keepers are queued they are matched into a duel,
+ * wager the SAME amount of money, lock + confirm, and a best-of-3
+ * fair clash decides who takes the stake. No newbie or shield
+ * protection applies here — joining is fully consensual.
+ * ------------------------------------------------------------- */
+const WZ = { x: EL.x + 180, y: EL.y - 50, r: 110 };
+const WAR_SESSION_TTL_MS = 120000; // a wager that sits idle this long is void
+const WAR_COOLDOWN_MS = 15000;     // breather between duels
+const WAR_MIN_STAKE = 1;
+const warQueue = new Map();   // userId -> { userId, username, joinedAt }
+const warSessions = new Map(); // id -> session
+const lastDuel = new Map();   // userId -> timestamp of last resolved duel
+let nextWarSessionId = 1;
+
+function distToWarzone(x, y) {
+  const dx = Number(x || 0) - WZ.x, dy = Number(y || 0) - WZ.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+function inWarzone(userId) {
+  const pos = playerPos(userId);
+  if (!pos) return false;
+  return distToWarzone(pos.x, pos.y) <= WZ.r;
+}
+function warRole(s, userId) {
+  if (s.a.userId === Number(userId)) return 'a';
+  if (s.b.userId === Number(userId)) return 'b';
+  return null;
+}
+function warQueuePublic() {
+  return { count: warQueue.size, players: [...warQueue.values()].map(q => q.username) };
+}
+function broadcastWarQueue() { broadcastAll({ type: 'warQueue', queue: warQueuePublic() }); }
+// Public snapshot of a duel, resolved relative to the requesting keeper.
+function warPublic(s, userId) {
+  const role = warRole(s, userId);
+  const o = role === 'a' ? 'b' : 'a';
+  const side = r => ({ username: s[r].username, stake: Number(s[r].stake || 0), locked: !!s[r].locked, ready: !!s[r].ready });
+  return {
+    id: s.id,
+    state: s.state,
+    stake: Number(s.a.stake || 0),
+    you: role ? side(role) : null,
+    other: side(o),
+    rounds: (s.rounds || []).map(r => ({ you: r[role], opp: r[o], youWin: r.winner === role })),
+    won: s.winner ? (s.winner === role) : null
+  };
+}
+
+app.post('/api/war/queue', dbReady, auth, rateLimit('war_queue', 15, 60000), (req, res) => {
+  try {
+    const uid = Number(req.user.id);
+    if (!worldOfUser(uid)) return res.status(400).json({ error: 'Join a world first' });
+    if (!inWarzone(uid)) return res.status(400).json({ error: 'Stand in the Warzone to join the queue' });
+    const cd = (lastDuel.get(uid) || 0) + WAR_COOLDOWN_MS;
+    if (Date.now() < cd) return res.status(429).json({ error: 'Catch your breath \u2014 wait ' + Math.ceil((cd - Date.now()) / 1000) + 's' });
+    // Already in a live duel? Return it instead of queuing again.
+    for (const s of warSessions.values()) {
+      if (s.state === 'wager' && warRole(s, uid)) return res.json({ ok: true, session: warPublic(s, uid) });
+    }
+    if (!warQueue.has(uid)) warQueue.set(uid, { userId: uid, username: req.user.username, joinedAt: Date.now() });
+    const opp = [...warQueue.values()].filter(q => q.userId !== uid).sort((a, b) => a.joinedAt - b.joinedAt)[0];
+    if (opp) {
+      warQueue.delete(uid);
+      warQueue.delete(opp.userId);
+      const sid = nextWarSessionId++;
+      const mk = (userId, username) => ({ userId, username, stake: 0, locked: false, ready: false });
+      const s = { id: sid, a: mk(opp.userId, opp.username), b: mk(uid, req.user.username), createdAt: Date.now(), state: 'wager', rounds: [], winner: null };
+      warSessions.set(sid, s);
+      pushTo(s.a.userId, { type: 'warMatched', sessionId: sid });
+      pushTo(s.b.userId, { type: 'warMatched', sessionId: sid });
+      broadcastWarQueue();
+      return res.json({ ok: true, session: warPublic(s, uid) });
+    }
+    broadcastWarQueue();
+    res.json({ ok: true, queued: true, queue: warQueuePublic() });
+  } catch (e) {
+    console.error('[war-queue]', e.message);
+    res.status(500).json({ error: 'Could not join the queue' });
+  }
+});
+
+app.post('/api/war/leave', dbReady, auth, (req, res) => {
+  const uid = Number(req.user.id);
+  warQueue.delete(uid);
+  for (const [id, s] of warSessions) {
+    if (s.state !== 'wager') continue;
+    const role = warRole(s, uid);
+    if (!role) continue;
+    s.state = 'cancelled';
+    pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'warCancelled', reason: req.user.username + ' left the arena' });
+    warSessions.delete(id);
+  }
+  broadcastWarQueue();
+  res.json({ ok: true, queued: false });
+});
+
+app.get('/api/war/state', dbReady, auth, (req, res) => {
+  const uid = Number(req.user.id);
+  for (const s of warSessions.values()) {
+    if (warRole(s, uid)) return res.json({ ok: true, session: warPublic(s, uid) });
+  }
+  res.json({ ok: true, queued: warQueue.has(uid), queue: warQueuePublic() });
+});
+
+app.post('/api/war/:id/stake', dbReady, auth, async (req, res) => {
+  const s = warSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'wager') return res.status(404).json({ error: 'No active duel' });
+  const role = warRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not your duel' });
+  if (s[role].locked) return res.status(400).json({ error: 'Wager locked \u2014 unlock to change it' });
+  try {
+    const money = Math.max(0, Math.floor(Number((req.body || {}).money) || 0));
+    const st = await stateFor(pool, req.user.id);
+    if (money > Number(st.money || 0)) return res.status(400).json({ error: 'You do not have that much money' });
+    s[role].stake = money;
+    s[role].ready = false;
+    pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'warUpdate', sessionId: s.id });
+    res.json({ ok: true, session: warPublic(s, req.user.id) });
+  } catch (e) {
+    console.error('[war-stake]', e.message);
+    res.status(500).json({ error: 'Could not set your wager' });
+  }
+});
+
+app.post('/api/war/:id/lock', dbReady, auth, (req, res) => {
+  const s = warSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'wager') return res.status(404).json({ error: 'No active duel' });
+  const role = warRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not your duel' });
+  if (Number(s[role].stake || 0) < WAR_MIN_STAKE) return res.status(400).json({ error: 'Set a wager first' });
+  s[role].locked = true;
+  pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'warUpdate', sessionId: s.id });
+  res.json({ ok: true, session: warPublic(s, req.user.id) });
+});
+
+app.post('/api/war/:id/unlock', dbReady, auth, (req, res) => {
+  const s = warSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'wager') return res.status(404).json({ error: 'No active duel' });
+  const role = warRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not your duel' });
+  s[role].locked = false;
+  s[role].ready = false;
+  pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'warUpdate', sessionId: s.id });
+  res.json({ ok: true, session: warPublic(s, req.user.id) });
+});
+
+app.post('/api/war/:id/cancel', dbReady, auth, (req, res) => {
+  const s = warSessions.get(parseInt(req.params.id, 10));
+  if (s && s.state === 'wager') {
+    const role = warRole(s, req.user.id);
+    if (role) {
+      s.state = 'cancelled';
+      pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'warCancelled', reason: 'Your opponent cancelled the duel' });
+      warSessions.delete(s.id);
+      broadcastWarQueue();
+    }
+  }
+  res.json({ ok: true });
+});
+
+app.post('/api/war/:id/confirm', dbReady, auth, async (req, res) => {
+  const s = warSessions.get(parseInt(req.params.id, 10));
+  if (!s || s.state !== 'wager') return res.status(404).json({ error: 'No active duel' });
+  const role = warRole(s, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not your duel' });
+  if (!s[role].locked) return res.status(400).json({ error: 'Lock your wager first' });
+  const stake = Number(s.a.stake || 0);
+  if (stake < WAR_MIN_STAKE || Number(s.b.stake || 0) < WAR_MIN_STAKE) return res.status(400).json({ error: 'Both keepers must wager an amount' });
+  if (stake !== Number(s.b.stake || 0)) return res.status(400).json({ error: 'Wagers must be equal before the duel can start' });
+  s[role].ready = true;
+  const canFight = s.a.ready && s.b.ready && s.a.locked && s.b.locked;
+  if (!canFight) {
+    pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'warUpdate', sessionId: s.id });
+    return res.json({ ok: true, waiting: true, session: warPublic(s, req.user.id) });
+  }
+  // Claim the duel synchronously so two simultaneous confirms cannot
+  // resolve the same wager twice.
+  if (s.state !== 'wager') return res.status(400).json({ error: 'Duel is already resolving' });
+  s.state = 'resolving';
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const A = await stateForUpdate(client, s.a.userId);
+    const B = await stateForUpdate(client, s.b.userId);
+    if (Number(A.money || 0) < stake || Number(B.money || 0) < stake) {
+      const err = new Error('insufficient');
+      err.code = 'insufficient';
+      throw err;
+    }
+    // Best-of-3 fair clash: higher roll wins a round, first to two wins.
+    const rounds = [];
+    let aWins = 0, bWins = 0;
+    while (rounds.length < 3 && aWins < 2 && bWins < 2) {
+      const ra = Math.random();
+      let rb = Math.random();
+      while (rb === ra) rb = Math.random();
+      const w = ra > rb ? 'a' : 'b';
+      if (w === 'a') aWins++; else bWins++;
+      rounds.push({ a: ra, b: rb, winner: w });
+    }
+    const winnerRole = aWins > bWins ? 'a' : 'b';
+    const loserRole = winnerRole === 'a' ? 'b' : 'a';
+    const W = winnerRole === 'a' ? A : B;
+    const L = loserRole === 'a' ? A : B;
+    const wStats = statsOf(W); const lStats = statsOf(L);
+    wStats.warWins = (wStats.warWins || 0) + 1;
+    wStats.warEarned = (wStats.warEarned || 0) + stake;
+    lStats.warLosses = (lStats.warLosses || 0) + 1;
+    await client.query('UPDATE player_state SET money = $2, stats = $3, updated_at = NOW() WHERE user_id = $1',
+      [W.user_id, Number(W.money || 0) + stake, JSON.stringify(wStats)]);
+    await client.query('UPDATE player_state SET money = $2, stats = $3, updated_at = NOW() WHERE user_id = $1',
+      [L.user_id, Number(L.money || 0) - stake, JSON.stringify(lStats)]);
+    await client.query('COMMIT');
+
+    s.state = 'done';
+    s.rounds = rounds;
+    s.winner = winnerRole;
+    const wId = s[winnerRole].userId, lId = s[loserRole].userId;
+    lastDuel.set(wId, Date.now());
+    lastDuel.set(lId, Date.now());
+    const frW = await stateFor(pool, wId);
+    const frL = await stateFor(pool, lId);
+    pushTo(wId, {
+      type: 'warResult', sessionId: s.id, won: true, stake,
+      rounds: rounds.map(r => ({ you: r[winnerRole], opp: r[loserRole], youWin: true })),
+      state: publicState(frW), otherName: s[loserRole].username
+    });
+    pushTo(lId, {
+      type: 'warResult', sessionId: s.id, won: false, stake,
+      rounds: rounds.map(r => ({ you: r[loserRole], opp: r[winnerRole], youWin: false })),
+      state: publicState(frL), otherName: s[winnerRole].username
+    });
+    broadcastAll({ type: 'warBanner', text: s[winnerRole].username + ' defeated ' + s[loserRole].username + ' in the WARZONE for $' + stake.toLocaleString() });
+    warSessions.delete(s.id);
+    broadcastWarQueue();
+    res.json({ ok: true, done: true, session: warPublic(s, req.user.id) });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (e && e.code === 'insufficient') {
+      s.state = 'cancelled';
+      pushTo(s.a.userId, { type: 'warCancelled', reason: 'A keeper could no longer cover the wager' });
+      pushTo(s.b.userId, { type: 'warCancelled', reason: 'A keeper could no longer cover the wager' });
+      warSessions.delete(s.id);
+      return res.status(400).json({ error: 'Duel voided \u2014 a wager could no longer be covered' });
+    }
+    console.error('[war-confirm]', e.message);
+    // Roll the duel back to the wager phase so they can retry cleanly.
+    s.state = 'wager';
+    s.a.ready = false; s.b.ready = false;
+    pushTo(s.a.userId, { type: 'warUpdate', sessionId: s.id });
+    pushTo(s.b.userId, { type: 'warUpdate', sessionId: s.id });
+    res.status(500).json({ error: 'Could not resolve the duel' });
+  } finally {
+    client.release();
+  }
+});
+
+// Sweep: drop queued/matched keepers who left the zone or went offline.
+setInterval(() => {
+  const now = Date.now();
+  let qChanged = false;
+  for (const [uid] of warQueue) {
+    if (!socketOfUserGlobal(uid) || !worldOfUser(uid) || !inWarzone(uid)) { warQueue.delete(uid); qChanged = true; }
+  }
+  for (const [id, s] of warSessions) {
+    if (s.state !== 'wager') { warSessions.delete(id); continue; }
+    const aOut = !socketOfUserGlobal(s.a.userId) || !inWarzone(s.a.userId);
+    const bOut = !socketOfUserGlobal(s.b.userId) || !inWarzone(s.b.userId);
+    if (now - s.createdAt > WAR_SESSION_TTL_MS || aOut || bOut) {
+      s.state = 'cancelled';
+      pushTo(s.a.userId, { type: 'warCancelled', reason: 'Duel voided \u2014 a keeper left the Warzone' });
+      pushTo(s.b.userId, { type: 'warCancelled', reason: 'Duel voided \u2014 a keeper left the Warzone' });
+      warSessions.delete(id);
+    }
+  }
+  if (qChanged) broadcastWarQueue();
+}, 3000);
 
 /* ---------------------------------------------------------------
  * Electric Event endpoints + scheduler.
@@ -2728,6 +3065,20 @@ wss.on('connection', (ws, req) => {
             pushTo(otherId, { type: 'tradeCancelled', reason: 'Your trade partner disconnected' });
           }
         }
+      }
+
+      // Warzone: always leave the queue; void any duel if this was their last link.
+      warQueue.delete(user.id);
+      if (!replacement) {
+        for (const [id, s] of warSessions) {
+          if (s.state !== 'wager') continue;
+          const role = warRole(s, user.id);
+          if (!role) continue;
+          s.state = 'cancelled';
+          pushTo(s[role === 'a' ? 'b' : 'a'].userId, { type: 'warCancelled', reason: 'Your opponent disconnected' });
+          warSessions.delete(id);
+        }
+        broadcastWarQueue();
       }
     });
   };

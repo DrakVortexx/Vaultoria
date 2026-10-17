@@ -407,6 +407,20 @@
   #last { margin-top: 16px; min-height: 34px; font-size: 20px; font-weight: 800; color: #4fd1ff; opacity: 0; transform: scale(0.8); text-shadow: 0 0 24px rgba(79,209,255,0.8); }
   #last.show { animation: reveal 0.5s cubic-bezier(0.2,1.5,0.4,1) forwards; }
   @keyframes reveal { to { opacity: 1; transform: scale(1); } }
+  .generator-wrap.reveal .core { animation: revealPulse 0.6s ease; }
+  @keyframes revealPulse {
+    0% { transform: scale(0.9); box-shadow: inset 0 0 60px var(--rc, #4fd1ff), 0 0 70px var(--rc, #4fd1ff); }
+    60% { transform: scale(1.09); }
+    100% { transform: scale(1); }
+  }
+  .pity-wrap { width: min(320px, 80vw); margin-bottom: 16px; }
+  .pity-label { font-size: 11px; letter-spacing: 1px; color: #9aa2cc; margin-bottom: 5px; text-align: center; }
+  .pity-label b { color: #4fd1ff; font-weight: 800; }
+  .pity-bar { width: 100%; height: 8px; border-radius: 20px; background: rgba(255,255,255,0.07); overflow: hidden; }
+  .pity-fill { height: 100%; width: 0%; border-radius: 20px; background: linear-gradient(90deg, #4fd1ff, #b98bff, #ffb648); transition: width 0.45s ease; }
+  .pity-wrap.near .pity-label { color: #ffb648; text-shadow: 0 0 12px rgba(255,182,72,0.8); animation: pityPulse 0.9s ease-in-out infinite; }
+  .pity-wrap.near .pity-fill { background: linear-gradient(90deg, #ffb648, #ff5c8a); }
+  @keyframes pityPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
   /* upgrades */
   .upgrade-card { width: min(460px, 92vw); border-radius: 18px; padding: 4px; background: linear-gradient(135deg, rgba(124,92,255,0.6), rgba(177,77,255,0.4)); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
@@ -450,6 +464,26 @@
   .trade-money-input { font-family: inherit; font-size: 13px; font-weight: 600; width: 110px; padding: 6px 8px; border-radius: 8px; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); outline: none; text-align: right; }
   .trade-money-input:focus { border-color: #4fd1ff; box-shadow: 0 0 0 2px rgba(79,209,255,0.25); }
   .trade-money-input:disabled { opacity: 0.5; }
+  .warzone-wrap { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center; }
+  .warzone-status { font-size: 15px; font-weight: 800; color: #ff5c8a; letter-spacing: 0.5px; }
+  .warzone-line { font-size: 12.5px; color: #8b93bd; max-width: 420px; }
+  .warzone-panel { width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .warzone-count { font-size: 13px; color: #9aa2cc; }
+  .warzone-count b { color: #ff5c8a; }
+  .warzone-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .wz-player { font-size: 12px; font-weight: 700; color: #ffb0c8; background: rgba(255,92,138,0.12); border: 1px solid rgba(255,92,138,0.35); padding: 3px 10px; border-radius: 20px; }
+  .warzone-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(420px, 90%); font-size: 14px; color: #cfd4f0; }
+  .warzone-row b { color: #ff5c8a; font-weight: 800; }
+  .warzone-row input { font-family: inherit; font-size: 14px; font-weight: 600; width: 150px; padding: 8px 10px; border-radius: 8px; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); outline: none; text-align: right; }
+  .warzone-row input:focus { border-color: #ff5c8a; box-shadow: 0 0 0 2px rgba(255,92,138,0.25); }
+  .warzone-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; }
+  .warzone-actions .buy { flex: 0 0 auto; width: auto; padding: 10px 18px; }
+  .warzone-states { font-size: 12px; color: #9aa2cc; }
+  .warzone-rounds { display: flex; flex-direction: column; gap: 6px; width: min(420px, 90%); }
+  .wz-round { font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 8px; }
+  .wz-round.win { color: #b6ffcc; background: rgba(123,220,120,0.14); border: 1px solid rgba(123,220,120,0.4); }
+  .wz-round.lose { color: #ffc0cf; background: rgba(255,92,138,0.12); border: 1px solid rgba(255,92,138,0.35); }
+  .warzone-note { font-size: 11px; color: #6b73a0; }
   .admin-tools { width: 100%; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
   .admin-tools .buy { padding: 10px; font-size: 13px; box-shadow: 0 6px 18px rgba(184,184,255,0.28); }
   .admin-row { display: flex; gap: 8px; }
@@ -765,6 +799,10 @@
         </div>
         <div class="gen-level-tag">Generator Level <b id="genLevel">1</b></div>
         <div class="gen-luck">Legendary+ luck: <b id="luckDisplay">0%</b></div>
+        <div class="pity-wrap" id="pityWrap">
+          <div class="pity-label">Guaranteed Epic+ in <b id="pityNum">30</b> rolls</div>
+          <div class="pity-bar"><div class="pity-fill" id="pityFill"></div></div>
+        </div>
         <button id="gen" type="button">GENERATE ITEM</button>
         <button id="shieldBtn" class="shield-btn" type="button">Activate Shield</button>
         <div id="last"></div>
@@ -896,6 +934,42 @@
           <button id="tradeCancel" class="mini-btn ghost" type="button">CANCEL</button>
         </div>
         <div class="trade-status" id="tradeStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warzone modal -->
+  <div id="warzoneModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">WARZONE · Stake Duels</div>
+        <button class="x" data-close="warzoneModal" type="button">&times;</button>
+      </div>
+      <div class="warzone-wrap">
+        <div class="warzone-status" id="wzStatus">Connecting...</div>
+        <div class="warzone-line">Join the global queue. When matched, wager equal money and fight best-of-3.</div>
+        <div class="warzone-panel" id="wzQueue">
+          <button class="buy" id="wzJoin" type="button">JOIN QUEUE</button>
+          <button class="mini-btn ghost" id="wzLeave" type="button">LEAVE QUEUE</button>
+          <div class="warzone-count">In queue: <b id="wzCount">0</b></div>
+          <div class="warzone-list" id="wzPlayers"></div>
+        </div>
+        <div class="warzone-panel hidden" id="wzDuel">
+          <div class="warzone-row"><span>Opponent</span><b id="wzOpp">-</b></div>
+          <div class="warzone-row"><span>Your stake</span><input id="wzStake" type="number" min="0" step="1" placeholder="e.g. 1000"></div>
+          <div class="warzone-actions">
+            <button class="mini-btn" id="wzSetStake" type="button">SET WAGER</button>
+            <button class="mini-btn" id="wzLock" type="button">LOCK WAGER</button>
+            <button class="mini-btn ghost" id="wzUnlock" type="button">UNLOCK</button>
+            <button class="buy" id="wzConfirm" type="button">CONFIRM DUEL</button>
+            <button class="mini-btn ghost" id="wzCancel" type="button">CANCEL</button>
+          </div>
+          <div class="warzone-states">
+            <span id="wzYouL">You: Unlocked</span> · <span id="wzOppL">Opp: Unlocked</span> · <span id="wzReady">Waiting for both to confirm</span>
+          </div>
+          <div class="warzone-rounds" id="wzRounds"></div>
+        </div>
+        <div class="warzone-note">You must stand in the Warzone area (near the red beacons) to queue.</div>
       </div>
     </div>
   </div>
@@ -1341,6 +1415,12 @@ function sfxGen(r) { const b = [220,330,440,550,660,880][Math.min(r,5)]; tone(b,
 function sfxSell() { tone(880,0.05,'square',0.06); tone(1318,0.1,'square',0.05,0.06); tone(1760,0.12,'square',0.04,0.12); }
 function sfxBuy() { tone(500,0.1,'triangle',0.1); tone(740,0.12,'triangle',0.1,0.08); tone(1000,0.2,'triangle',0.1,0.16); }
 function sfxToast() { tone(660,0.12,'sine',0.12); tone(990,0.2,'sine',0.1,0.1); }
+function sfxPity() { tone(523,0.12,'triangle',0.12); tone(659,0.14,'triangle',0.12,0.1); tone(784,0.16,'triangle',0.12,0.2); tone(1046,0.3,'sine',0.12,0.3); }
+function sfxRare() {
+  const seq = [523,659,784,1046,1318,1568,2093];
+  seq.forEach((f,i) => tone(f, 0.5, 'sine', 0.14, i*0.09));
+  [392,494,587].forEach((f,i) => tone(f, 1.4, 'triangle', 0.08, i*0.05));
+}
 function sfxDoor() { tone(180,0.25,'sawtooth',0.06,0,90); tone(240,0.18,'sine',0.05,0.05); }
 function sfxStep() { tone(90,0.06,'triangle',0.02); }
 
@@ -1350,10 +1430,11 @@ function float(x, y, text, color) {
   el.style.left = (x - 6) + 'px'; el.style.top = y + 'px'; el.style.color = color || '#7bdc78';
   document.body.appendChild(el); setTimeout(() => el.remove(), 1200);
 }
-function burst(x, y, rar) {
+function burst(x, y, rar, count) {
   const layer = $('confettiLayer');
   const colors = [rar.color, '#fff', '#4fd1ff', '#ffb648'];
-  for (let i = 0; i < 44; i++) {
+  const n = count || 44;
+  for (let i = 0; i < n; i++) {
     const c = document.createElement('div'); c.className = 'confetti';
     c.style.left = x + 'px'; c.style.top = y + 'px'; c.style.background = colors[i % colors.length];
     c.style.setProperty('--dx', (Math.random() * 2 - 1) * 170 + 'px');
@@ -1384,6 +1465,39 @@ function shakeScreen() {
   if (!g) return;
   g.classList.remove('shake'); void g.offsetWidth; g.classList.add('shake');
   setTimeout(() => g.classList.remove('shake'), 340);
+}
+// Pity meter: shows how many rolls remain until a guaranteed Epic+.
+function updatePityUI(p) {
+  if (!p) return;
+  const fill = $('pityFill'); const num = $('pityNum'); const wrap = $('pityWrap');
+  if (!fill || !num || !wrap) return;
+  const hard = p.epicHard || 30;
+  const cur = Math.min(p.epic || 0, hard);
+  fill.style.width = Math.max(0, Math.min(100, (cur / hard) * 100)) + '%';
+  num.textContent = Math.max(0, hard - (p.epic || 0));
+  wrap.classList.toggle('near', (p.epic || 0) >= hard - 5);
+}
+// Full-screen celebration for the game's two rarest drops.
+function rareDropLocalFX(tier) {
+  const omni = tier === 'omniversal';
+  const col = omni ? '#8affd8' : '#ff4fd8';
+  sfxRare();
+  screenFlash(col); shakeScreen();
+  toast(omni ? 'OMNIVERSAL!!!' : 'ETERNAL FIND!', omni ? 'The rarest drop in Vaultoria!' : 'An Eternal item appears!', null, col);
+  burst(window.innerWidth / 2, window.innerHeight * 0.4, omni ? RARITIES[9] : RARITIES[8], 260);
+  setTimeout(() => { screenFlash(col); burst(window.innerWidth * 0.3, window.innerHeight * 0.5, RARITIES[8], 120); }, 320);
+  setTimeout(() => { screenFlash(col); burst(window.innerWidth * 0.7, window.innerHeight * 0.5, RARITIES[9], 120); }, 640);
+}
+// Another keeper anywhere in the world pulled an Eternal/Omniversal.
+function onRareDropMsg(msg) {
+  const omni = msg.tier === 'omniversal';
+  const col = omni ? '#8affd8' : '#ff4fd8';
+  const rar = omni ? RARITIES[9] : RARITIES[8];
+  sfxRare();
+  screenFlash(col);
+  announce((msg.mutation ? msg.mutation.toUpperCase() + ' ' : '') + (omni ? 'OMNIVERSAL' : 'ETERNAL') + 'DROP \u2014 ' + msg.name + ' found ' + msg.item + '!');
+  toast(omni ? 'OMNIVERSAL DROP!' : 'ETERNAL DROP!', msg.name + ' just pulled ' + msg.item + '!', null, col);
+  burst(window.innerWidth / 2, window.innerHeight * 0.3, rar, 200);
 }
 function toast(title, desc, reward, color) {
   const box = $('toasts');
@@ -1650,6 +1764,155 @@ async function pollTrade() {
   }
 }
 setInterval(pollTrade, 1000);
+
+/* =============================================================
+ * WARZONE — global stake duels (client)
+ * ============================================================= */
+let warSession = null;          // current duel snapshot from the server
+let warQueued = false;          // are we sitting in the global queue?
+let warQueueInfo = { count: 0, players: [] };
+let warBusy = false;
+let warResultShown = false;     // keep the result on screen until reopened
+
+function openWarzone() {
+  if (!inGame) return;
+  closeAllModals();
+  warResultShown = false;
+  $('warzoneModal').classList.remove('hidden');
+  renderWarzone();
+  refreshWar();
+}
+async function refreshWar() {
+  try {
+    const r = await api('/war/state');
+    warSession = r.session || null;
+    if (r.session) warQueued = false;
+    else if (typeof r.queued === 'boolean') warQueued = r.queued;
+    if (r.queue) warQueueInfo = r.queue;
+    renderWarzone();
+  } catch (e) {}
+}
+function warMoneyText(v) { return '$' + fmt(v || 0); }
+function renderWarzone() {
+  if (warResultShown) return;
+  const s = warSession;
+  const queuePanel = $('wzQueue');
+  const duelPanel = $('wzDuel');
+  if (s && s.state === 'wager') {
+    queuePanel.classList.add('hidden');
+    duelPanel.classList.remove('hidden');
+    const you = s.you || {};
+    const other = s.other || {};
+    $('wzOpp').textContent = other.username || '-';
+    if (document.activeElement !== $('wzStake')) $('wzStake').value = (you.stake || '') === 0 ? '' : you.stake;
+    $('wzYouL').textContent = 'You: ' + (you.locked ? 'Locked' : 'Unlocked') + (you.ready ? ' / Confirmed' : '') + (you.stake ? ' (' + warMoneyText(you.stake) + ')' : '');
+    $('wzOppL').textContent = 'Opp: ' + (other.locked ? 'Locked' : 'Unlocked') + (other.ready ? ' / Confirmed' : '') + (other.stake ? ' (' + warMoneyText(other.stake) + ')' : '');
+    const equal = Number(you.stake || 0) > 0 && Number(you.stake) === Number(other.stake);
+    const bothLocked = you.locked && other.locked && equal;
+    $('wzStatus').textContent = bothLocked
+      ? (you.ready && other.ready ? 'Both confirmed \u2014 the clash begins...' : 'Wagers locked and equal \u2014 confirm to fight!')
+      : (equal ? 'Lock your wager when ready.' : 'Both keepers must wager the same amount.');
+    $('wzSetStake').disabled = !!you.locked;
+    $('wzStake').disabled = !!you.locked;
+    $('wzLock').disabled = !!you.locked || !(Number(you.stake || 0) > 0);
+    $('wzUnlock').disabled = !you.locked;
+    $('wzConfirm').disabled = !bothLocked || warBusy;
+    renderWarRounds(s.rounds || []);
+  } else {
+    duelPanel.classList.add('hidden');
+    queuePanel.classList.remove('hidden');
+    $('wzStatus').textContent = warQueued ? 'Searching the globe for an opponent...' : 'Not in the queue.';
+    $('wzCount').textContent = warQueueInfo.count || 0;
+    const host = $('wzPlayers');
+    host.innerHTML = '';
+    (warQueueInfo.players || []).forEach(n => {
+      const d = document.createElement('span');
+      d.className = 'wz-player';
+      d.textContent = n;
+      host.appendChild(d);
+    });
+    $('wzJoin').disabled = warQueued || warBusy;
+    $('wzLeave').disabled = !warQueued;
+  }
+}
+function renderWarRounds(rounds) {
+  const host = $('wzRounds');
+  if (!rounds.length) { host.innerHTML = ''; return; }
+  host.innerHTML = rounds.map((r, i) =>
+    '<div class="wz-round ' + (r.youWin ? 'win' : 'lose') + '">Round ' + (i + 1) + ': You ' +
+    Math.round((r.you || 0) * 100) + ' vs ' + Math.round((r.opp || 0) * 100) +
+    (r.youWin ? ' \u2014 WIN' : ' \u2014 LOSS') + '</div>').join('');
+}
+async function warAction(suffix, body) {
+  if (warBusy) return;
+  warBusy = true;
+  try {
+    const id = warSession && warSession.id;
+    const path = '/war/' + (id ? id + '/' + suffix : suffix);
+    const r = await api(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+    if (r && r.session && !r.done) warSession = r.session;
+    if (r && r.done) { /* result arrives over WS */ }
+    if (r && typeof r.queued === 'boolean') warQueued = r.queued;
+    if (r && r.queue) warQueueInfo = r.queue;
+  } catch (err) {
+    toast('WARZONE', err.message, null, '#ff6b8a');
+  } finally {
+    warBusy = false;
+    renderWarzone();
+  }
+}
+$('wzJoin').addEventListener('click', () => warAction('queue'));
+$('wzLeave').addEventListener('click', () => warAction('leave'));
+$('wzSetStake').addEventListener('click', () => warAction('stake', { money: Math.floor(Number($('wzStake').value) || 0) }));
+$('wzLock').addEventListener('click', () => warAction('lock'));
+$('wzUnlock').addEventListener('click', () => warAction('unlock'));
+$('wzConfirm').addEventListener('click', () => warAction('confirm'));
+$('wzCancel').addEventListener('click', () => { warSession = null; warAction('cancel'); });
+
+function onWarQueue(msg) {
+  warQueueInfo = msg.queue || { count: 0, players: [] };
+  if (!$('warzoneModal').classList.contains('hidden')) renderWarzone();
+}
+function onWarMatched(msg) {
+  toast('DUEL FOUND', 'A challenger steps into the Warzone!', null, '#ff5c8a');
+  sfxToast();
+  warQueued = false;
+  warResultShown = false;
+  if ($('warzoneModal').classList.contains('hidden')) openWarzone();
+  else refreshWar();
+}
+function onWarUpdate(msg) {
+  if (!$('warzoneModal').classList.contains('hidden')) refreshWar();
+}
+function onWarCancelled(msg) {
+  warSession = null;
+  toast('DUEL VOIDED', msg.reason || 'The duel ended', null, '#8b93bd');
+  if (!$('warzoneModal').classList.contains('hidden')) renderWarzone();
+}
+function onWarResult(msg) {
+  if (msg.state) { state = msg.state; renderVault(); }
+  warSession = null; warQueued = false;
+  warResultShown = true;
+  const rounds = msg.rounds || [];
+  if (!$('warzoneModal').classList.contains('hidden')) {
+    $('wzQueue').classList.add('hidden');
+    $('wzDuel').classList.remove('hidden');
+    $('wzOpp').textContent = msg.otherName || '-';
+    $('wzStatus').textContent = msg.won
+      ? ('VICTORY \u2014 you won ' + warMoneyText(msg.stake) + '!')
+      : ('DEFEAT \u2014 you lost ' + warMoneyText(msg.stake));
+    renderWarRounds(rounds);
+  }
+  if (msg.won) {
+    toast('VICTORY', 'You took ' + warMoneyText(msg.stake) + ' from ' + (msg.otherName || 'your rival') + '!', null, '#7bdc78');
+    sfxBuy(); screenFlash('#7bdc78'); shakeScreen();
+    burst(window.innerWidth / 2, window.innerHeight * 0.4, RARITIES[4], 140);
+  } else {
+    toast('DEFEAT', 'You lost ' + warMoneyText(msg.stake) + ' to ' + (msg.otherName || 'your rival') + '.', null, '#ff6b8a');
+    screenFlash('#ff6b8a');
+  }
+}
+setInterval(() => { if (!$('warzoneModal').classList.contains('hidden')) refreshWar(); }, 1500);
 function renderTrade() {
   if (!activeTrade || !activeTrade.you) return;
   const you = activeTrade.you;
@@ -1786,9 +2049,9 @@ $('tradeCancel').addEventListener('click', async () => {
 /* =============================================================
  * ELECTRIC EVENT & THE CENTER WHEEL
  * ============================================================= */
-function nearWheel() {
+function nearWarzone() {
   const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
-  return Math.hypot(cx - EL.x, cy - EL.y) < EL.r + 30;
+  return Math.hypot(cx - (EL.x + 180), cy - (EL.y - 50)) < 110 + 28;
 }
 function eventActive() { return !!(ev && ev.active); }
 async function refreshEvent() {
@@ -2219,6 +2482,13 @@ function connectWS() {
     else if (msg.type === 'tradeUpdate') pollTrade();
     else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);
     else if (msg.type === 'wheel') onWheelMsg(msg);
+    else if (msg.type === 'rareDrop') onRareDropMsg(msg);
+    else if (msg.type === 'warQueue') onWarQueue(msg);
+    else if (msg.type === 'warMatched') onWarMatched(msg);
+    else if (msg.type === 'warUpdate') onWarUpdate(msg);
+    else if (msg.type === 'warResult') onWarResult(msg);
+    else if (msg.type === 'warCancelled') onWarCancelled(msg);
+    else if (msg.type === 'warBanner') announce(msg.text);
     else if (msg.type === 'restart') onRestart();
     else if (msg.type === 'reload') location.reload();
     else if (msg.type === 'announce') announce(msg.text);
@@ -2377,8 +2647,9 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 function triggerInteract() {
   if (!inGame || anyModalOpen()) return;
   ac();
-  if (eventActive() && nearWheel()) openWheel();
-  else toggleVault();
+  if (eventActive() && nearWheel()) { openWheel(); return; }
+  if (nearWarzone()) { openWarzone(); return; }
+  toggleVault();
 }
 
 // Touch controls (joystick to walk, E to interact) for phones/tablets.
@@ -2735,6 +3006,20 @@ function drawWorld(now) {
     drawCharacter(o.x, o.y, color, o.facing, o.moving, o.walk);
     drawNameTag(o.x + 20, o.y - 6, o.username, color);
   }
+  if (inGame && nearWarzone()) {
+    const prompt = 'E — FIGHT IN WARZONE';
+    const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+    ctx.save();
+    ctx.font = "800 13px 'Segoe UI', sans-serif";
+    const tw = ctx.measureText(prompt).width;
+    ctx.fillStyle = 'rgba(8,16,24,0.85)';
+    ctx.strokeStyle = 'rgba(255,92,138,0.55)';
+    ctx.beginPath(); ctx.rect(cx - tw / 2 - 8, cy - player.h - 56, tw + 16, 28); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff5c8a';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(prompt, cx, cy - player.h - 42);
+    ctx.restore();
+  }
   if (inGame) {
     const myColor = state && state.customColor ? 'hsl(' + state.customColor + ', 65%, 58%)' : '#7c5cff';
     drawCharacter(player.x, player.y, myColor, player.facing, player.moving, player.walk);
@@ -2814,7 +3099,7 @@ function drawWarzone(now) {
   ctx.font = "700 9px 'Segoe UI', sans-serif";
   ctx.fillStyle = 'rgba(255,92,138,0.7)';
   ctx.shadowBlur = 0;
-  ctx.fillText('COMING SOON', 0, 65);
+  ctx.fillText('DUEL FOR MONEY · E', 0, 65);
 
   ctx.restore();
 }
@@ -3093,7 +3378,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'wheelModal', 'bossModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'warzoneModal', 'wheelModal', 'bossModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -3141,6 +3426,7 @@ function renderVault() {
   $('genLevel').textContent = state.level;
   $('luckDisplay').textContent = legendaryLuck() + '%';
   $('badgeLevel').textContent = state.level;
+  if (state.pity) updatePityUI(state.pity);
   // $('itemMult').textContent = 'x' + luckMult().toFixed(2);
 
   const gb = $('genBuy');
@@ -3220,12 +3506,25 @@ async function finishGen() {
     el.textContent = (mut ? mut.name.toUpperCase() + ' ' : '') + rar.name + ': ' + r.item;
     el.style.color = color; el.style.textShadow = '0 0 24px ' + color;
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    // Reveal beat: pulse the generator core in the rarity's color.
+    const gen = $('generator');
+    gen.style.setProperty('--rc', color);
+    gen.classList.remove('reveal'); void gen.offsetWidth; gen.classList.add('reveal');
+    setTimeout(() => gen.classList.remove('reveal'), 640);
     sfxGen(idx);
     float(window.innerWidth / 2, window.innerHeight * 0.42, (mut ? mut.name.toUpperCase() + ' ' : '') + rar.name + '!', color);
-    if (idx >= 3 || mut) burst(window.innerWidth / 2, window.innerHeight * 0.4, rar);
-    if (idx >= 3) shock(color);
+    // Every roll gets feedback now; intensity scales with rarity and mutation.
+    const particles = [10, 16, 24, 40, 60, 80, 100, 120, 150, 200][Math.min(9, idx)] + (mut ? 24 : 0);
+    burst(window.innerWidth / 2, window.innerHeight * 0.4, rar, particles);
+    if (idx >= 3 || mut) shock(color);
     if (idx >= 4 || (mut && mut.mult >= 5)) { screenFlash(color); shakeScreen(); }
     if (idx >= 4 || (mut && mut.mult >= 5)) toast((mut ? mut.name.toUpperCase() : rar.name.toUpperCase()) + ' ITEM!', r.item, null, color);
+    if (r.pity) updatePityUI(r.pity);
+    if (r.pity && r.pity.guaranteed) {
+      toast('PITY TRIGGERED!', (r.pity.guaranteed === 'legendary' ? 'Guaranteed Legendary+' : 'Guaranteed Epic+'), null, '#ffb648');
+      sfxPity(); screenFlash(color);
+    }
+    if (r.rareDrop) rareDropLocalFX(r.rareDrop);
 
     if (r.newAch && r.newAch.length) showNewAch(r.newAch);
     if (r.daily) dailyData = Object.assign({}, dailyData, r.daily);
