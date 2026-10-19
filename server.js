@@ -22,6 +22,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const { WebSocketServer } = require('ws');
+const luck = require('./luck');
+const genTime = require('./genTime');
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'vaultoria-dev-secret-change-me';
@@ -72,16 +74,11 @@ const ITEM_BASE = {
 };
 const ITEM_RARITY = {};
 RARITIES.forEach((r, i) => (ITEMS_BY_RARITY[r.key] || []).forEach(it => { ITEM_RARITY[it] = i; }));
-const LUCK_PER_LEVEL = 0.02;
-// Tuning: rare-and-above tiers roll a bit more often, and all items sell
-// for a modest premium over their base value.
-const RARE_PLUS_BOOST = 1.3;
+// All luck/rarity math lives in luck.js (single source of truth).
 const SELL_MULT = 1.25;
-const MAX_LEVEL = 100;
-const GEN_TIME = 3000;
+const MAX_LEVEL = luck.MAX_LEVEL;
 const GEN_GRACE = 250;
 
-function luckMult(level) { return 1 + (Number(level) - 1) * LUCK_PER_LEVEL; }
 function genCost(level) {
   const currentLevel = Number(level);
   const n = currentLevel + 1;
@@ -89,31 +86,6 @@ function genCost(level) {
   const baseCost = currentLevel < 8 ? 300 : 15000;
   return Math.floor(n * n * baseCost);
 }
-function pickRarity(level) {
-  const luck = luckMult(level);
-  const lv = Number(level);
-  const t = Math.max(0, Math.min(1, lv / 100));
-  const commonScale = Math.max(0.001, Math.pow(1 - t, 8));
-  const uncommonScale = Math.max(0.005, Math.pow(1 - t, 5));
-  // Mythic starts at level 15, scales to 21x at level 100
-  const mythicScale = lv < 15 ? 0 : 1 + ((lv - 15) / 85) * 20;
-  const legendaryScale = 1 + t * 10; // 2.0 at lvl 10 for first legendary
-  // Divine+ only available after level 35
-  const divineGate = lv >= 35 ? 1 : 0;
-  const ws = RARITIES.map((r, i) => {
-    if (i === 0) return r.weight * commonScale;
-    if (i === 1) return r.weight * uncommonScale;
-    if (i === 5) return r.weight * luck * mythicScale;
-    if (i === 4) return r.weight * luck * legendaryScale; // legendary
-    if (i >= 6) return r.weight * luck * divineGate; // divine+ only after level 35
-    if (i >= 2) return r.weight * luck * (1 + t * 2);
-    return r.weight;
-  });
-  let roll = Math.random() * ws.reduce((a, b) => a + b, 0);
-  for (let i = 0; i < ws.length; i++) { roll -= ws[i]; if (roll <= 0) return i; }
-  return RARITIES.length - 1;
-}
-
 /* ---------------------------------------------------------------
  * Item mutations
  * A generated item can roll a mutation. Mutated items live in the
@@ -614,6 +586,8 @@ function publicState(row) {
   return {
     money: Number(row.money || 0),
     level: Number(row.level || 1),
+    luckBonus: luck.levelLuckBonus(row.level),
+    genTime: genTime.genTimeMs(row.rebirths),
     counts,
     stats: row.stats || defaultStats(),
     achievements: row.achievements || [],
@@ -845,7 +819,7 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
     const st = await stateForUpdate(client, req.user.id);
     const now = Date.now();
     const last = lastGen.get(req.user.id) || 0;
-    if (now - last < GEN_TIME - GEN_GRACE) {
+    if (now - last < genTime.genTimeMs(st.rebirths) - GEN_GRACE) {
       await client.query('ROLLBACK');
       return res.status(429).json({ error: 'Generator still cooling down' });
     }
@@ -854,7 +828,7 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
       return res.status(400).json({ error: 'Vault full \u2014 sell items to make room' });
     }
     const level = Number(st.level || 1);
-    const ri = pickRarity(level);
+    const ri = luck.pickRarityIndex(level);
     const itemPool = ITEMS_BY_RARITY[RARITIES[ri].key];
     const item = itemPool[Math.floor(Math.random() * itemPool.length)];
     const mut = rollMutation();
@@ -1624,7 +1598,7 @@ app.post('/api/event/spin', dbReady, auth, async (req, res) => {
     }
 
     const rollLevel = Math.min(Number(st.level || 1) + 60, MAX_LEVEL);
-    const ri = pickRarity(rollLevel);
+    const ri = luck.pickRarityIndex(rollLevel);
     const poolArr = ITEMS_BY_RARITY[RARITIES[ri].key];
     const item = poolArr[Math.floor(Math.random() * poolArr.length)];
     const jackpot = Math.random() < 0.34;
