@@ -80,11 +80,11 @@ const MAX_LEVEL = luck.MAX_LEVEL;
 const GEN_GRACE = 250;
 
 function genCost(level) {
-  const currentLevel = Number(level);
-  const n = currentLevel + 1;
-  // Make upgrades through level 8 much cheaper; level 9+ keeps the original curve.
-  const baseCost = currentLevel < 8 ? 300 : 15000;
-  return Math.floor(n * n * baseCost);
+  const n = Number(level) + 1;
+  // Smooth exponential progression: level 1 = 300, level 100 = 10b
+  const base = 300;
+  const multiplier = 1.12;
+  return Math.floor(base * Math.pow(multiplier, n - 1));
 }
 /* ---------------------------------------------------------------
  * Item mutations
@@ -96,14 +96,11 @@ const MUT_SEP = '\u241F';
 const MUTATION_CHANCE = 0.08;
 const MUTATIONS = [
   { id: 'gold',     name: 'Gold',     mult: 2, weight: 60 },
-  { id: 'diamond',  name: 'Diamond',  mult: 3, weight: 30 },
-  { id: 'electric', name: 'Electric', mult: 4, weight: 10 }
+  { id: 'diamond',  name: 'Diamond',  mult: 3, weight: 30 }
 ];
 const MUT_BY_ID = {};
 MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
-// The electric mutation is event-only: it never rolls on generated items and
-// can only appear from the Center Wheel jackpot.
-const ROLLABLE_MUTATIONS = MUTATIONS.filter(m => m.id !== 'electric');
+const ROLLABLE_MUTATIONS = MUTATIONS;
 
 function splitKey(key) {
   const s = String(key);
@@ -152,10 +149,24 @@ const BOSS_NAMES = [
 const REBIRTHS = [
   { name: 'Awakening',  rarity: 2, count: 1, cost: 25000 },
   { name: 'Ascension',  rarity: 3, count: 2, cost: 250000 },
-  { name: 'Transcend',  rarity: 4, count: 3, cost: 2500000 },
+  { name: 'Transcend', rarity: 4, count: 3, cost: 2500000 },
   { name: 'Apotheosis', rarity: 5, count: 4, cost: 25000000 },
   { name: 'Godhood',    rarity: 6, count: 5, cost: 250000000 }
 ];
+
+const OFFLINE_REWARDS = [
+  { level: 1,  name: 'Basic Generator',   cost: 10000000,      rate: 1000,    minRebirth: 1 },
+  { level: 2,  name: 'Efficient Engine',  cost: 50000000,      rate: 5000,    minRebirth: 1 },
+  { level: 3,  name: 'Auto-Miner',        cost: 250000000,     rate: 25000,   minRebirth: 2 },
+  { level: 4,  name: 'Quantum Harvester', cost: 1000000000,    rate: 100000,  minRebirth: 2 },
+  { level: 5,  name: 'Void Collector',    cost: 5000000000,    rate: 500000,  minRebirth: 3 },
+  { level: 6,  name: 'Singularity Siphon', cost: 25000000000,   rate: 1000000, minRebirth: 3 },
+  { level: 7,  name: 'Omniverse Pump',    cost: 100000000000,  rate: 2000000, minRebirth: 4 },
+  { level: 8,  name: 'Eternal Flow',      cost: 500000000000,  rate: 3000000, minRebirth: 4 },
+  { level: 9,  name: 'Infinity Stream',   cost: 2500000000000, rate: 4000000, minRebirth: 5 },
+  { level: 10, name: 'Ultimate Generator', cost: 10000000000000, rate: 5000000, minRebirth: 5 }
+];
+const OFFLINE_MAX_HOURS = 24;
 const VAULT_BASE_CAP = 1000;
 const VAULT_CAP_PER_REBIRTH = 1000;
 const SHIELD_BASE_SECONDS = 300;
@@ -204,37 +215,7 @@ function socketOfUser(userId) {
   return null;
 }
 
-/* ---------------------------------------------------------------
- * The Electric Event & the Center Wheel.
- * Every ~1 hour the electric wheel powers up in the middle of each world:
- * game entities near the wheel with radius WHEEL_RADIUS can SPIN to
- * win a random item for a flat cash fee. The whole event lasts
- * EW_DURATION_MS and can hand out at most EW_CAP items.
- * ------------------------------------------------------------- */
-const EL = { x: 1400, y: 850, r: 60 };
-const EW_FREQ_MS = 60 * 60 * 1000;
-const EW_DURATION_MS = 90 * 1000;
-const EW_WARN_MS = 60 * 1000; // heads-up before an event starts
-const EW_SPIN_COST = 0;
-const EW_CAP = 1000;              // items the wheel can give per event
-const EW_MAX_SPINS_PER_PLAYER = 10;
-const EW_JACKPOT_MUTATION = 'electric'; // the event-only ×4 mutation
-let electricEvent = { active: false, nextAt: 0, endsAt: 0, remaining: 0, spins: 0 };
-const eventSpins = new Map(); // userId -> spins taken during the current event
 
-function distToWheel(x, y) {
-  const dx = Number(x || 0) - EL.x, dy = Number(y || 0) - EL.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-function playerPos(userId) {
-  const w = worldOfUser(userId);
-  if (!w) return null;
-  const room = presence.get(w.id);
-  const e = room && room.get(userId);
-  if (!e) return null;
-  return { x: e.x, y: e.y };
-}
-function wheelJackpot() { return MUT_BY_ID[EW_JACKPOT_MUTATION] || null; }
 
 /* ---------------------------------------------------------------
  * Login rewards + daily quests (calendar day boundaries, UTC)
@@ -1029,6 +1010,115 @@ app.post('/api/rebirth', dbReady, auth, async (req, res) => {
   }
 });
 
+/* ---------------------------------------------------------------
+ * Offline Rewards
+ * ------------------------------------------------------------- */
+app.get('/api/offline', dbReady, auth, async (req, res) => {
+  try {
+    const st = await stateFor(pool, req.user.id);
+    const rb = Number(st.rebirths || 0);
+    const ol = Number(st.offline_level || 0);
+    const available = OFFLINE_REWARDS.filter(r => r.minRebirth <= rb);
+    const current = available.find(r => r.level === ol) || null;
+    const next = available.find(r => r.level === ol + 1) || null;
+    res.json({
+      current,
+      next,
+      available,
+      offlineLevel: ol,
+      rebirths: rb
+    });
+  } catch (e) {
+    console.error('[offline]', e.message);
+    res.status(500).json({ error: 'Could not load offline rewards' });
+  }
+});
+
+app.post('/api/offline/upgrade', dbReady, auth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, req.user.id);
+    const rb = Number(st.rebirths || 0);
+    const ol = Number(st.offline_level || 0);
+    const next = OFFLINE_REWARDS.find(r => r.level === ol + 1 && r.minRebirth <= rb);
+    if (!next) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No upgrade available. Need more rebirths.' });
+    }
+    const money = Number(st.money || 0);
+    if (money < next.cost) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'You need $' + fmtNumber(next.cost) + ' for this upgrade' });
+    }
+    await client.query(
+      'UPDATE player_state SET offline_level = $2, money = money - $3, updated_at = NOW() WHERE user_id = $1',
+      [req.user.id, next.level, next.cost]
+    );
+    await client.query('COMMIT');
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, level: next.level, state: publicState(fresh) });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[offline upgrade]', e.message);
+    res.status(500).json({ error: 'Could not upgrade offline rewards' });
+  } finally {
+    client.release();
+  }
+});
+
+app.post('/api/offline/claim', dbReady, auth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const st = await stateForUpdate(client, req.user.id);
+    const ol = Number(st.offline_level || 0);
+    if (ol === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No offline rewards unlocked' });
+    }
+    const reward = OFFLINE_REWARDS.find(r => r.level === ol);
+    if (!reward) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid offline level' });
+    }
+    const lastOffline = st.last_offline ? new Date(st.last_offline).getTime() : 0;
+    const now = Date.now();
+    const offlineSeconds = Math.max(0, Math.floor((now - lastOffline) / 1000));
+    if (offlineSeconds < 60) {
+      await client.query('ROLLBACK');
+      return res.status(429).json({ error: 'Must be offline for at least 1 minute to claim' });
+    }
+    const offlineHours = Math.min(offlineSeconds / 3600, OFFLINE_MAX_HOURS);
+    const earnings = Math.floor(reward.rate * offlineHours);
+    if (earnings <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No earnings yet' });
+    }
+    await client.query(
+      'UPDATE player_state SET money = money + $2, last_offline = $3, updated_at = NOW() WHERE user_id = $1',
+      [req.user.id, earnings, new Date(now)]
+    );
+    await client.query('COMMIT');
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, earnings, hours: offlineHours, state: publicState(fresh) });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[offline claim]', e.message);
+    res.status(500).json({ error: 'Could not claim offline rewards' });
+  } finally {
+    client.release();
+  }
+});
+
+function fmtNumber(n) {
+  if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
 app.post('/api/shield', dbReady, auth, async (req, res) => {
   try {
     const st = await stateFor(pool, req.user.id);
@@ -1550,129 +1640,7 @@ setInterval(() => {
 /* ---------------------------------------------------------------
  * Electric Event endpoints + scheduler.
  * ------------------------------------------------------------- */
-function eventPublic(req) {
-  const spins = req && req.user ? (eventSpins.get(req.user.id) || 0) : 0;
-  return {
-    active: electricEvent.active,
-    startsAt: electricEvent.active ? 0 : electricEvent.nextAt,
-    endsAt: electricEvent.active ? electricEvent.endsAt : 0,
-    remaining: electricEvent.remaining,
-    spins: electricEvent.spins,
-    cost: EW_SPIN_COST,
-    maxSpins: EW_MAX_SPINS_PER_PLAYER,
-    spinsLeft: electricEvent.active ? Math.max(0, EW_MAX_SPINS_PER_PLAYER - spins) : 0,
-    wheel: EL
-  };
-}
 
-app.get('/api/event', dbReady, auth, (req, res) => {
-  res.json({ ok: true, event: eventPublic(req) });
-});
-
-app.post('/api/event/spin', dbReady, auth, async (req, res) => {
-  if (!electricEvent.active) {
-    return res.status(409).json({ error: 'The Electric Event is not live right now' });
-  }
-  if (electricEvent.remaining <= 0) {
-    electricEvent.active = false;
-    broadcastAll({ type: 'electric', on: false });
-    return res.status(409).json({ error: 'The wheel has been cleaned out' });
-  }
-  if ((eventSpins.get(req.user.id) || 0) >= EW_MAX_SPINS_PER_PLAYER) {
-    return res.status(429).json({ error: 'You already spun the wheel this event' });
-  }
-  const pos = playerPos(req.user.id);
-  if (!pos) return res.status(409).json({ error: 'Join a world to reach the wheel' });
-  if (distToWheel(pos.x, pos.y) > EL.r) {
-    return res.status(409).json({ error: 'Too far from the wheel \u2014 walk to the center of the world' });
-  }
-
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const st = await stateForUpdate(client, req.user.id);
-    const money = Number(st.money || 0);
-    if (money < EW_SPIN_COST) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'You need $' + EW_SPIN_COST.toLocaleString() + ' to spin' });
-    }
-
-    const rollLevel = Math.min(Number(st.level || 1) + 60, MAX_LEVEL);
-    const ri = luck.pickRarityIndex(rollLevel);
-    const poolArr = ITEMS_BY_RARITY[RARITIES[ri].key];
-    const item = poolArr[Math.floor(Math.random() * poolArr.length)];
-    const jackpot = Math.random() < 0.34;
-    const mut = jackpot ? wheelJackpot() : rollMutation();
-    const key = makeKey(item, mut);
-
-    const counts = Object.assign({}, st.counts || {});
-    counts[key] = Number(counts[key] || 0) + 1;
-    const stats = statsOf(st);
-    stats.wheel = (stats.wheel || 0) + 1;
-    const achievements = Array.isArray(st.achievements) ? st.achievements.slice() : [];
-    const newAch = await persistProgress(client, req.user.id, st, counts, stats, achievements, money - EW_SPIN_COST, null);
-    await client.query('COMMIT');
-
-    eventSpins.set(req.user.id, (eventSpins.get(req.user.id) || 0) + 1);
-    electricEvent.spins += 1;
-    electricEvent.remaining = Math.max(0, electricEvent.remaining - 1);
-    if (electricEvent.remaining <= 0) {
-      electricEvent.active = false;
-      broadcastAll({ type: 'electric', on: false });
-    }
-    const w = worldOfUser(req.user.id);
-    if (w) {
-      broadcast(w.id, {
-        type: 'wheel',
-        id: req.user.id,
-        name: req.user.username,
-        item: { name: item, mutation: mut ? mut.id : null },
-        jackpot
-      });
-    }
-
-    const fresh = await stateFor(pool, req.user.id);
-    res.json({
-      ok: true,
-      item, rarity: RARITIES[ri].key, mutation: mut ? mut.id : null, jackpot,
-      cost: EW_SPIN_COST,
-      state: publicState(fresh),
-      newAch,
-      event: eventPublic(req)
-    });
-  } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
-    console.error('[spin]', e.message);
-    res.status(500).json({ error: 'The wheel is stuck' });
-  } finally {
-    client.release();
-  }
-});
-
-// Wheel scheduler: awakens the wheel on a ~hourly cadence.
-setInterval(() => {
-  const now = Date.now();
-  if (!electricEvent.active) {
-    if (electricEvent.nextAt === 0) electricEvent.nextAt = now + EW_FREQ_MS;
-    if (!electricEvent._warned && electricEvent.nextAt - now <= EW_WARN_MS) {
-      electricEvent._warned = true;
-      broadcastAll({ type: 'electricNotice', startsAt: electricEvent.nextAt });
-    }
-    if (now >= electricEvent.nextAt) {
-      electricEvent.active = true;
-      electricEvent.endsAt = now + EW_DURATION_MS;
-      electricEvent.remaining = EW_CAP;
-      electricEvent.spins = 0;
-      electricEvent.nextAt = now + EW_FREQ_MS;
-      electricEvent._warned = false;
-      eventSpins.clear();
-      broadcastAll({ type: 'electric', on: true, endsAt: electricEvent.endsAt, remaining: electricEvent.remaining });
-    }
-  } else if (now >= electricEvent.endsAt) {
-    electricEvent.active = false;
-    broadcastAll({ type: 'electric', on: false });
-  }
-}, 1000);
 
 /* ---------------------------------------------------------------
  * Worlds (in-memory, never written to the database)

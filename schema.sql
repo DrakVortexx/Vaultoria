@@ -17,20 +17,6 @@ CREATE TABLE IF NOT EXISTS player_state (
   money         BIGINT      NOT NULL DEFAULT 0,
   level         INTEGER     NOT NULL DEFAULT 1,
   counts        JSONB       NOT NULL DEFAULT '{}'::jsonb,
-  stats         JSONB       NOT NULL DEFAULT '{"ig":0,"earned":0,"seen":[],"best":-1}'::jsonb,
-  achievements  JSONB       NOT NULL DEFAULT '[]'::jsonb,
-  tutorial_done BOOLEAN     NOT NULL DEFAULT FALSE,
-  px            REAL        NOT NULL DEFAULT 0,
-  py            REAL        NOT NULL DEFAULT 0,
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- One row of persistent game progress per player.
-CREATE TABLE IF NOT EXISTS player_state (
-  user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  money         BIGINT      NOT NULL DEFAULT 0,
-  level         INTEGER     NOT NULL DEFAULT 1,
-  counts        JSONB       NOT NULL DEFAULT '{}'::jsonb,
   stats         JSONB       NOT NULL DEFAULT '{"ig":0,"earned":0,"seen":[],"best":-1,"trades":0}'::jsonb,
   achievements  JSONB       NOT NULL DEFAULT '[]'::jsonb,
   tutorial_done BOOLEAN     NOT NULL DEFAULT FALSE,
@@ -115,6 +101,10 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS shield_until  TIMESTAMPTZ;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS trade_privacy TEXT        NOT NULL DEFAULT 'everyone';
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_wheel    BIGINT      NOT NULL DEFAULT 0;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS breaches      INTEGER     NOT NULL DEFAULT 0;
+
+-- Offline rewards
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS offline_level INTEGER     NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_offline  TIMESTAMPTZ;
 
 -- Character customization
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_color  TEXT        NOT NULL DEFAULT '47';

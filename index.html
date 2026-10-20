@@ -504,10 +504,6 @@
   .mini-btn.warn { background: linear-gradient(135deg, #ff5c8a, #ff8c42); }
   .mod-ban { color: #ff5c8a; font-weight: 800; font-size: 10px; letter-spacing: 1px; padding: 2px 8px; border-radius: 6px; background: rgba(255,92,138,0.15); border: 1px solid rgba(255,92,138,0.3); }
   .mod-mute { color: #ffb648; font-weight: 800; font-size: 10px; letter-spacing: 1px; padding: 2px 8px; border-radius: 6px; background: rgba(255,182,72,0.15); border: 1px solid rgba(255,182,72,0.3); }
-  #eventTag { font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; pointer-events: none; }
-  #eventTag.live { color: #081018; background: #8affd8; animation: eventBlink 1.2s ease-in-out infinite; }
-  #eventTag.soon { color: #8affd8; background: rgba(138,255,216,0.12); border: 1px solid rgba(138,255,216,0.4); }
-  @keyframes eventBlink { 50% { opacity: 0.55; } }
   #wheelResult { min-height: 32px; font-size: 15px; }
   .wheel-spin-canvas { display: block; width: 180px; height: 180px; margin: 0 auto 12px; }
   ul.list { list-style: none; margin: 0; padding: 0; width: 100%; max-height: 340px; overflow-y: auto; scrollbar-width: thin; }
@@ -679,7 +675,14 @@
         <button id="logoutBtn" class="btn ghost" type="button">Log Out</button>
       </div>
     </div>
-    <div class="dash-grid">
+    <div style="display: flex; gap: 24px; width: min(960px, 92vw); margin: 56px auto 32px;">
+      <div style="width: 200px; flex-shrink: 0;">
+        <div style="background: linear-gradient(145deg, rgba(15,18,38,0.92), rgba(11,13,29,0.88)); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px;">
+          <h3 style="margin: 0 0 16px; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc;">Quick Friends</h3>
+          <div id="dashFriends"><div class="spinner">Loading...</div></div>
+        </div>
+      </div>
+      <div class="dash-grid" style="margin: 0; flex: 1;">
       <button class="dash-card play-card" id="playBtn" type="button">
         <div class="dc-icon">&#9654;</div>
         <div class="dc-title">Play</div>
@@ -691,9 +694,9 @@
         <div class="dc-desc">Browse open worlds or create your own. 8 keepers per world.</div>
       </button>
       <button class="dash-card" id="friendsBtn" type="button">
-        <div class="dc-icon">&#10022;</div>
-        <div class="dc-title">Friends</div>
-        <div class="dc-desc">Add other keepers and see who is online.</div>
+        <div class="dc-icon">&#128101;</div>
+        <div class="dc-title">Players</div>
+        <div class="dc-desc">Search for players, add them as friends, and join their worlds.</div>
       </button>
       <button class="dash-card" id="settingsBtn" type="button">
         <div class="dc-icon">&#9881;</div>
@@ -704,11 +707,6 @@
         <div class="dc-icon">&#127911;</div>
         <div class="dc-title">Customize</div>
         <div class="dc-desc">Customize your character appearance with colors and effects.</div>
-      </button>
-      <button class="dash-card" id="adsBtn" type="button">
-        <div class="dc-icon">&#128178;</div>
-        <div class="dc-title">Watch Ads</div>
-        <div class="dc-desc">Watch ads to earn rewards and help support the game.</div>
       </button>
       <details class="dash-card rules-card">
         <summary>
@@ -731,6 +729,7 @@
 
         </ul>
       </details>
+      </div>
     </div>
     <div id="dashPanel" class="dash-panel hidden"></div>
   </div>
@@ -759,7 +758,6 @@
         <span id="hudServer">World</span>
         <span class="dot"></span>
         <span id="hudOnline">1 / 8 online</span>
-        <span id="eventTag" class="hidden"></span>
       </div>
       <div class="hud-right">
         <button class="hud-btn primary" id="vaultBtn" type="button">Vault</button>
@@ -803,6 +801,7 @@
         <button class="tab" data-tab="quests" type="button">Quests</button>
         <button class="tab" data-tab="achievements" type="button">Achievements</button>
         <button class="tab" data-tab="rebirth" type="button">Rebirth</button>
+        <button class="tab" data-tab="offline" type="button">Offline Rewards</button>
       </div>
 
       <div id="panel-generator" class="panel active">
@@ -865,6 +864,15 @@
           <span class="inv-worth" id="rebirthInfo"></span>
         </div>
         <ul class="list" id="rebirthList"><li class="empty">Rise and reclaim...</li></ul>
+      </div>
+
+      <div id="panel-offline" class="panel">
+        <div class="inv-head">
+          <h2>Offline Rewards</h2>
+          <span class="inv-worth" id="offlineInfo"></span>
+        </div>
+        <div class="empty-note" style="padding:8px 4px 14px">Generate passive income while offline. Requires rebirths to unlock.</div>
+        <ul class="list" id="offlineList"><li class="empty">Unlock by reaching rebirths...</li></ul>
       </div>
     </div>
   </div>
@@ -947,21 +955,6 @@
         </div>
         <div class="trade-status" id="tradeStatus"></div>
       </div>
-    </div>
-  </div>
-
-  <!-- Electric Wheel modal -->
-  <div id="wheelModal" class="modal hidden">
-    <div class="modal-card">
-      <div class="modal-head">
-        <div class="modal-title">The Electric Wheel</div>
-        <div class="resource-bar"><span class="icon">$</span><span class="label">Money</span><span class="value" id="wMoney">$0</span></div>
-        <button class="x" data-close="wheelModal" type="button">&times;</button>
-      </div>
-      <canvas id="wheelSpinCanvas" class="wheel-spin-canvas"></canvas>
-      <div class="empty-note" id="wheelInfo" style="padding:8px 4px 14px">The wheel is resting. It awakens for a short while at the center of the world, roughly every hour.</div>
-      <div id="wheelResult" style="width:100%"></div>
-      <button class="buy" id="wheelSpin" type="button">SPIN FREE</button>
     </div>
   </div>
 
@@ -1153,15 +1146,26 @@ const MAX_LEVEL = 100;
 const SUF = ["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","UDc","DDc","TDc","QaDc","QiDc","SxDc"];
 const SERVER_CAPACITY = 8;
 
+const OFFLINE_REWARDS = [
+  { level: 1,  name: 'Basic Generator',   cost: 10000000,      rate: 1000,    minRebirth: 1 },
+  { level: 2,  name: 'Efficient Engine',  cost: 50000000,      rate: 5000,    minRebirth: 1 },
+  { level: 3,  name: 'Auto-Miner',        cost: 250000000,     rate: 25000,   minRebirth: 2 },
+  { level: 4,  name: 'Quantum Harvester', cost: 1000000000,    rate: 100000,  minRebirth: 2 },
+  { level: 5,  name: 'Void Collector',    cost: 5000000000,    rate: 500000,  minRebirth: 3 },
+  { level: 6,  name: 'Singularity Siphon', cost: 25000000000,   rate: 1000000, minRebirth: 3 },
+  { level: 7,  name: 'Omniverse Pump',    cost: 100000000000,  rate: 2000000, minRebirth: 4 },
+  { level: 8,  name: 'Eternal Flow',      cost: 500000000000,  rate: 3000000, minRebirth: 4 },
+  { level: 9,  name: 'Infinity Stream',   cost: 2500000000000, rate: 4000000, minRebirth: 5 },
+  { level: 10, name: 'Ultimate Generator', cost: 10000000000000, rate: 5000000, minRebirth: 5 }
+];
+
 const SLOT_COLORS = ['#4fd1ff','#b14dff','#ff5c8a','#ffb648','#7bdc78','#ff8c42','#5c8cff','#ff4fd8'];
 const VAULT_POS = [
   { x: 380,  y: 300 },  { x: 1050, y: 300 },  { x: 1720, y: 300 },  { x: 2390, y: 300 },
   { x: 380,  y: 1400 }, { x: 1050, y: 1400 }, { x: 1720, y: 1400 }, { x: 2390, y: 1400 }
 ];
 const WORLD_W = 2800, WORLD_H = 1700, WALL = 24, SPAWN = { x: 1400, y: 850 };
-const EL = { x: SPAWN.x, y: SPAWN.y, r: 60 };
 const CAM_ZOOM = 0.9;
-const EW_SPIN_COST = 0;
 
 /* =============================================================
  * HELPERS / STATE
@@ -1188,9 +1192,10 @@ function fmt(n) {
 const SELL_MULT = 1.25;
 const genCost = () => {
   const n = state.level + 1;
-  // Match the server: discounts apply through level 8; level 9+ keeps the original curve.
-  const baseCost = state.level < 8 ? 300 : 15000;
-  return Math.floor(n * n * baseCost);
+  // Smooth exponential progression: level 1 = 300, level 100 = 10b
+  const base = 300;
+  const multiplier = 1.12;
+  return Math.floor(base * Math.pow(multiplier, n - 1));
 };
 /* Generator rolls are server-authoritative; odds come from server-side luck.js. */
 function rarityFor(name) {
@@ -1203,8 +1208,7 @@ function itemBase(name) { return ITEM_BASE[name] || 0; }
 const MUT_SEP = '\u241F';
 const MUTATIONS = [
   { id: 'gold',     name: 'Gold',     mult: 2, color: '#ffd24a' },
-  { id: 'diamond',  name: 'Diamond',  mult: 3, color: '#7be0ff' },
-  { id: 'electric', name: 'Electric', mult: 4, color: '#c77bff' }
+  { id: 'diamond',  name: 'Diamond',  mult: 3, color: '#7be0ff' }
 ];
 const MUT_BY_ID = {};
 MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
@@ -1779,169 +1783,6 @@ $('tradeCancel').addEventListener('click', async () => {
 /* =============================================================
  * ELECTRIC EVENT & THE CENTER WHEEL
  * ============================================================= */
-function nearWheel() {
-  const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
-  return Math.hypot(cx - EL.x, cy - EL.y) < EL.r + 30;
-}
-function eventActive() { return !!(ev && ev.active); }
-async function refreshEvent() {
-  try {
-    const r = await api('/event');
-    ev = r.event;
-    renderEventTag();
-    if (!$('wheelModal').classList.contains('hidden')) renderWheelModal();
-  } catch (e) {}
-}
-function renderEventTag() {
-  const tag = $('eventTag');
-  if (!tag) return;
-  const now = Date.now();
-  if (ev && (ev.active || (ev.startsAt && ev.startsAt - now < 120000))) {
-    tag.classList.remove('hidden');
-    if (ev.active) {
-      tag.textContent = 'ELECTRIC ' + Math.max(0, Math.ceil((ev.endsAt - now) / 1000)) + 's';
-      tag.classList.add('live'); tag.classList.remove('soon');
-    } else {
-      tag.textContent = 'ELECTRIC IN ' + Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) + 's';
-      tag.classList.add('soon'); tag.classList.remove('live');
-    }
-  } else { tag.classList.add('hidden'); }
-}
-function onElectricMsg(msg) {
-  if (msg.type === 'electricNotice') {
-    const sec = Math.max(0, Math.ceil((msg.startsAt - Date.now()) / 1000));
-    toast('ELECTRIC EVENT', 'The Electric Wheel awakens at the center of the world in ' + sec + 's', null, '#8affd8');
-    sfxToast();
-  } else if (msg.on) {
-    toast('ELECTRIC EVENT', 'The wheel is live \u2014 hurry to the center of the world!', null, '#8affd8');
-    sfxToast();
-  } else {
-    toast('ELECTRIC EVENT', 'The Electric Wheel powers down...', null, '#8b93bd');
-  }
-  refreshEvent();
-}
-function onWheelMsg(msg) {
-  const name = itemDisplayName(makeKey(msg.item.name, msg.item.mutation ? (MUT_BY_ID[msg.item.mutation] || null) : null));
-  addChat('sys', '', msg.name + ' spun the wheel \u2014 ' + name + (msg.jackpot ? ' (ELECTRIC!)' : ''));
-}
-const WHEEL_SLICE = (Math.PI * 2) / 8;
-let wheelSpin = { angle: 0, spinning: false, raf: 0 };
-let wheelSpinCtxObj = null;
-function wheelSpinCtx() { if (!wheelSpinCtxObj) { wheelSpinCtxObj = document.getElementById('wheelSpinCanvas').getContext('2d'); } return wheelSpinCtxObj; }
-function drawWheelSpinFrame(ctx, angle, spinning) {
-  const S = 180;
-  ctx.clearRect(0, 0, S, S);
-  const g = ctx.createRadialGradient(90, 90, 18, 90, 90, 110);
-  g.addColorStop(0, 'rgba(138,255,216,0.30)');
-  g.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(90, 90, 90, 0, Math.PI * 2); ctx.fill();
-  ctx.save();
-  ctx.translate(90, 90);
-  ctx.rotate(angle);
-  for (let i = 0; i < 8; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, 84, (i * WHEEL_SLICE), ((i + 1) * WHEEL_SLICE));
-    ctx.closePath();
-    ctx.fillStyle = (i % 2) ? '#5a7bff' : '#ff4fd8';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-  ctx.fillStyle = '#0b0f1e';
-  ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = spinning ? '#8affd8' : '#c8b8ff';
-  ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-  ctx.strokeStyle = spinning ? 'rgba(138,255,216,0.9)' : 'rgba(150,120,255,0.7)';
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(90, 90, 92, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = spinning ? '#8affd8' : '#c8b8ff';
-  ctx.beginPath();
-  ctx.moveTo(90, 8);
-  ctx.lineTo(83, 36);
-  ctx.lineTo(97, 36);
-  ctx.closePath();
-  ctx.fill();
-}
-function startWheelSpin(cb) {
-  if (wheelSpin.spinning) return;
-  const c = document.getElementById('wheelSpinCanvas');
-  if (!c) { if (cb) { cb(); } return; }
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const S = 180;
-  c.width = S * dpr;
-  c.height = S * dpr;
-  const ctx = c.getContext('2d');
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(dpr, dpr);
-  const t0 = performance.now();
-  const duration = 1800;
-  const from = wheelSpin.angle;
-  const to = from + Math.PI * 14 + Math.random() * Math.PI * 2;
-  const tick = function (ts) {
-    const t = Math.min(1, (ts - t0) / duration);
-    const e = 1 - Math.pow(1 - t, 3);
-    wheelSpin.angle = from + (to - from) * e;
-    drawWheelSpinFrame(ctx, wheelSpin.angle, true);
-    if (t < 1) { wheelSpin.raf = requestAnimationFrame(tick); } else {
-      cancelAnimationFrame(wheelSpin.raf);
-      wheelSpin.spinning = false;
-      wheelSpin.angle = Math.floor(wheelSpin.angle / WHEEL_SLICE) * WHEEL_SLICE;
-      drawWheelSpinFrame(ctx, wheelSpin.angle, false);
-      if (cb) { cb(); }
-    }
-  };
-  wheelSpin.spinning = true;
-  wheelSpin.raf = requestAnimationFrame(tick);
-}
-
-async function openWheel() {
-  if (!inGame) return;
-  closeAllModals();
-  $('wheelModal').classList.remove('hidden');
-  $('wheelResult').innerHTML = '';
-  renderWheelModal();
-  await refreshEvent();
-  if (eventActive()) startWheelSpin();
-}
-function renderWheelModal() {
-  if (!state) return;
-  $('wMoney').textContent = '$' + fmt(state.money);
-  const info = $('wheelInfo');
-  const spin = $('wheelSpin');
-  const canvas = $('wheelSpinCanvas');
-  const nextIn = (ev && ev.startsAt) ? Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) : 0;
-  if (!ev || !ev.active) {
-    info.innerHTML = 'The wheel is resting. It awakens for 90 seconds roughly every hour at the center of the world \u2014 next event in <b>' + nextIn + 's</b>.';
-    spin.disabled = true; spin.textContent = 'NOT LIVE';
-    if (canvas) canvas.style.display = 'none';
-    return;
-  }
-  if (canvas) canvas.style.display = 'block';
-  const end = Math.max(0, ev.endsAt - Date.now());
-  info.innerHTML = 'Live for <b>' + Math.ceil(end / 1000) + 's</b> \u00b7 <b>' + ev.remaining + '</b> items left on the wheel \u00b7 your spins: <b>' + ev.spinsLeft + '</b>/' + ev.maxSpins;
-  const broke = state.money < ev.cost;
-  spin.disabled = ev.spinsLeft <= 0 || ev.remaining <= 0 || broke;
-  spin.textContent = broke ? 'NEED $' + fmt(ev.cost) : ((ev.cost > 0 ? 'SPIN $' + fmt(ev.cost) : 'SPIN FREE') + (ev.spinsLeft <= 0 ? ' \u2014 MAX SPINS' : ''));
-}
-$('wheelSpin').addEventListener('click', () => {
-  if (wheelSpin.spinning) return;
-  startWheelSpin(() => runWheelSpin());
-});
-async function runWheelSpin() {
-  try {
-    const r = await api('/event/spin', { method: 'POST' });
-    state = r.state; renderVault();
-    ev = r.event; renderWheelModal(); renderEventTag();
-    const name = itemDisplayName(makeKey(r.item, r.mutation ? (MUT_BY_ID[r.mutation] || null) : null));
-    $('wheelResult').innerHTML = '<div class="empty-note" style="padding:10px 0;text-align:center"><div style="font-weight:800;color:#8affd8;font-size:16px">' + name + (r.jackpot ? ' \u2014 ELECTRIC!' : '') + '</div><div style="font-size:12px;color:#8b93bd">-\$' + fmt(r.cost) + '</div></div>';
-    sfxBuy();
-    if (r.newAch && r.newAch.length) showNewAch(r.newAch);
-  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
-}
 
 /* =============================================================
  * DASHBOARD
@@ -1951,6 +1792,7 @@ function renderDash() {
   $('dashWho').textContent = 'Signed in as ' + me.username;
   $('dashMoney').textContent = '$' + fmt(state.money);
   $('dashLevel').textContent = 'Lv ' + state.level;
+  renderDashFriends();
 }
 function openDashPanel(which) {
   const p = $('dashPanel');
@@ -1960,14 +1802,12 @@ function openDashPanel(which) {
   else if (which === 'friends') renderFriendsPanel();
   else if (which === 'settings') renderSettingsPanel();
   else if (which === 'customize') renderCustomizePanel();
-  else if (which === 'ads') renderAdsPanel();
 }
 $('playBtn').addEventListener('click', play);
 $('serversBtn').addEventListener('click', () => openDashPanel('servers'));
 $('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
 $('settingsBtn').addEventListener('click', () => openDashPanel('settings'));
 $('customizeBtn').addEventListener('click', () => openDashPanel('customize'));
-$('adsBtn').addEventListener('click', () => openDashPanel('ads'));
 
 function renderSettingsPanel() {
   const p = $('dashPanel');
@@ -2068,55 +1908,6 @@ function renderCustomizePanel() {
   renderOption('glow', glows, 'glowGrid', state.customGlow || 'none');
 }
 
-function renderAdsPanel() {
-  const p = $('dashPanel');
-  p.classList.remove('hidden');
-  p.innerHTML =
-    '<h3 style="margin:0 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">WATCH ADS</h3>' +
-    '<p style="font-size:13px;color:#8b93bd;margin:0 0 20px">Watch ads to earn rewards and help support the game!</p>' +
-    '<div id="adRewards" style="display:flex;flex-direction:column;gap:12px"></div>';
-
-  const rewards = [
-    { id: 'money', name: '$5,000 Money', reward: 5000 },
-    { id: 'double', name: 'Double Generator Speed (10 min)', duration: 600 },
-  ];
-
-  const container = $('adRewards');
-  rewards.forEach(r => {
-    const btn = document.createElement('button');
-    btn.className = 'btn big';
-    btn.style.width = '100%';
-    btn.textContent = 'Watch Ad - ' + r.name;
-    btn.addEventListener('click', () => showAd(r));
-    container.appendChild(btn);
-  });
-}
-
-function showAd(reward) {
-  // Adsterra integration placeholder
-  // You'll need to sign up at adsterra.com and get your publisher ID
-  const adScript = document.createElement('script');
-  adScript.src = '//pl23048247.profitablegatecpm.com/55/5f/88/555f8896572f5c0e361f8e0e0f8f7e0/invoke.js';
-  adScript.async = true;
-  document.body.appendChild(adScript);
-
-  // Simulate ad completion for now
-  setTimeout(() => {
-    grantAdReward(reward);
-  }, 30000); // 30 seconds for demo
-}
-
-async function grantAdReward(reward) {
-  try {
-    const r = await api('/ad-reward', { method: 'POST', body: JSON.stringify({ type: reward.id, value: reward.reward }) });
-    state = r.state;
-    toast('REWARD EARNED', reward.name + ' granted!', null, '#7bdc78');
-    renderAdsPanel();
-  } catch (err) {
-    toast('OOPS', err.message, null, '#ff6b8a');
-  }
-}
-
 async function play() {
   try {
     const p = $('dashPanel');
@@ -2166,43 +1957,117 @@ async function renderServersPanel() {
 async function renderFriendsPanel() {
   const p = $('dashPanel');
   try {
-    const data = await api('/friends');
-    let html = '<h3>Friends</h3>' +
-      '<div class="inline-form"><input id="friendName" maxlength="20" placeholder="Add by username"><button class="btn" id="addFriendBtn" type="button">Send Request</button></div>';
-    if (data.incoming.length) {
-      html += '<h3 style="margin-top:18px">Requests to you</h3>';
-      for (const f of data.incoming) {
+    const [friendsData, onlineData] = await Promise.all([
+      api('/friends'),
+      api('/online')
+    ]);
+    let html = '<h3>Players</h3>' +
+      '<div class="inline-form"><input id="playerSearch" maxlength="20" placeholder="Search players..."><button class="btn" id="searchPlayerBtn" type="button">Search</button></div>' +
+      '<div id="searchResults"></div>';
+
+    html += '<h3 style="margin-top:18px">Friend Requests</h3>';
+    if (friendsData.incoming.length) {
+      for (const f of friendsData.incoming) {
         html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div><div class="meta">wants to be friends</div></div>' +
           '<span><button class="btn green" data-accept="' + f.id + '" type="button">Accept</button> <button class="btn ghost" data-remove="' + f.id + '" type="button">Decline</button></span></div>';
       }
+    } else {
+      html += '<div class="empty-note">No pending requests.</div>';
     }
-    if (data.outgoing.length) {
-      html += '<h3 style="margin-top:18px">Sent</h3>';
-      for (const f of data.outgoing) {
+
+    if (friendsData.outgoing.length) {
+      html += '<h3 style="margin-top:18px">Sent Requests</h3>';
+      for (const f of friendsData.outgoing) {
         html += '<div class="row"><div class="name">' + esc(f.username) + '</div><span class="pill off">pending</span></div>';
       }
     }
+
     html += '<h3 style="margin-top:18px">Your Friends</h3>';
-    if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
-    for (const f of data.friends) {
+    if (!friendsData.friends.length) html += '<div class="empty-note">No friends yet. Search and add players above.</div>';
+    for (const f of friendsData.friends) {
       html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div>' +
         '<div class="meta"><span class="status-dot ' + (f.online ? 'on' : 'off') + '"></span>' + (f.online ? 'Online now' : 'Offline') + '</div></div>' +
         '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + f.id + '" type="button">Remove</button></span></div>';
     }
+
+    html += '<h3 style="margin-top:18px">Online Players</h3>';
+    for (const player of onlineData.online) {
+      html += '<div class="row"><div class="name">' + esc(player.username) + '</div>' +
+        '<span><button class="btn green" data-add="' + player.id + '" data-username="' + esc(player.username) + '" type="button">Add Friend</button></span></div>';
+    }
+
     p.innerHTML = html;
-    p.querySelector('#addFriendBtn').addEventListener('click', async () => {
-      const username = (p.querySelector('#friendName').value || '').trim();
-      try { await api('/friends/request', { method: 'POST', body: JSON.stringify({ username }) }); toast('REQUEST SENT', username, null, '#4fd1ff'); renderFriendsPanel(); }
-      catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+
+    p.querySelector('#searchPlayerBtn').addEventListener('click', async () => {
+      const username = (p.querySelector('#playerSearch').value || '').trim();
+      if (!username) return;
+      try {
+        const r = await api('/friends/request', { method: 'POST', body: JSON.stringify({ username }) });
+        toast('REQUEST SENT', username, null, '#4fd1ff');
+        renderFriendsPanel();
+      } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
     });
+
     p.querySelectorAll('[data-accept]').forEach(b => b.addEventListener('click', async () => {
       try { await api('/friends/' + b.dataset.accept + '/accept', { method: 'POST' }); renderFriendsPanel(); } catch (e) {}
     }));
     p.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', async () => {
       try { await api('/friends/' + b.dataset.remove, { method: 'DELETE' }); renderFriendsPanel(); } catch (e) {}
     }));
+    p.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', async () => {
+      try {
+        await api('/friends/request', { method: 'POST', body: JSON.stringify({ username: b.dataset.username }) });
+        toast('REQUEST SENT', b.dataset.username, null, '#4fd1ff');
+        renderFriendsPanel();
+      } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+    }));
   } catch (err) {
     p.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
+  }
+}
+async function renderDashFriends() {
+  const p = $('dashFriends');
+  if (!p) return;
+  try {
+    const data = await api('/friends');
+    let html = '';
+    if (data.incoming.length) {
+      html += '<div style="margin-bottom:12px"><div style="font-size:11px;color:#8b93bd;margin-bottom:4px">Requests</div>';
+      for (const f of data.incoming.slice(0, 3)) {
+        html += '<div class="row" style="padding:6px 4px"><div class="name" style="font-size:13px">' + esc(f.username) + '</div>' +
+          '<button class="mini-btn green" data-accept="' + f.id + '" type="button">Accept</button></div>';
+      }
+      html += '</div>';
+    }
+    if (data.friends.length) {
+      html += '<div><div style="font-size:11px;color:#8b93bd;margin-bottom:4px">Friends</div>';
+      for (const f of data.friends.slice(0, 5)) {
+        html += '<div class="row" style="padding:6px 4px"><div class="name" style="font-size:13px">' + esc(f.username) + '</div>' +
+          '<span class="status-dot ' + (f.online ? 'on' : 'off') + '" style="font-size:6px;width:6px;height:6px;margin-right:4px"></span>' +
+          (f.online ? '<button class="mini-btn" data-join="' + f.id + '" type="button">Join</button>' : '<span style="font-size:11px;color:#5a6188">Offline</span>') +
+          '</div>';
+      }
+      html += '</div>';
+    }
+    if (!html) html = '<div class="empty-note" style="font-size:12px">No friends yet</div>';
+    p.innerHTML = html;
+
+    p.querySelectorAll('[data-accept]').forEach(b => b.addEventListener('click', async () => {
+      try { await api('/friends/' + b.dataset.accept + '/accept', { method: 'POST' }); renderDashFriends(); } catch (e) {}
+    }));
+    p.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', async () => {
+      try {
+        const onlineData = await api('/online');
+        const target = onlineData.online.find(o => o.id == b.dataset.join);
+        if (target) {
+          toast('JOINING', 'Looking for ' + target.username + "'s world...", null, '#4fd1ff');
+          // Find which server they're in (would need server tracking, for now just show toast)
+          toast('INFO', 'Check the Servers tab to find their world', null, '#ffb648');
+        }
+      } catch (e) {}
+    }));
+  } catch (err) {
+    p.innerHTML = '<div class="empty-note" style="font-size:12px">' + esc(err.message) + '</div>';
   }
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -2261,8 +2126,6 @@ function connectWS() {
     else if (msg.type === 'tradeCancelled') onTradeCancelled(msg);
     else if (msg.type === 'tradeDeclined') onTradeDeclined(msg);
     else if (msg.type === 'tradeUpdate') pollTrade();
-    else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);
-    else if (msg.type === 'wheel') onWheelMsg(msg);
     else if (msg.type === 'restart') onRestart();
     else if (msg.type === 'reload') location.reload();
     else if (msg.type === 'announce') announce(msg.text);
@@ -2421,8 +2284,7 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 function triggerInteract() {
   if (!inGame || anyModalOpen()) return;
   ac();
-  if (eventActive() && nearWheel()) openWheel();
-  else toggleVault();
+  toggleVault();
 }
 
 // Touch controls (joystick to walk, E to interact) for phones/tablets.
@@ -3137,7 +2999,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'wheelModal', 'bossModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'bossModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -3168,6 +3030,7 @@ document.querySelectorAll('.tab[data-tab]').forEach(tab => tab.addEventListener(
   $('panel-' + tab.dataset.tab).classList.add('active');
   if (tab.dataset.tab === 'quests') renderQuests();
   if (tab.dataset.tab === 'rebirth') renderRebirth();
+  if (tab.dataset.tab === 'offline') renderOffline();
 }));
 
 function renderVault() {
@@ -3403,6 +3266,69 @@ async function doRebirth() {
     burst(window.innerWidth / 2, window.innerHeight * 0.3, RARITIES[5]);
     if (r.newAch && r.newAch.length) showNewAch(r.newAch);
     renderVault(); refreshTutorial();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+
+async function renderOffline() {
+  const list = $('offlineList'); if (!list) return;
+  try {
+    const r = await api('/offline');
+    const ol = r.offlineLevel || 0;
+    $('offlineInfo').textContent = 'Offline Level ' + ol + ' / ' + r.available.length;
+    list.innerHTML = '';
+    r.available.forEach((item, i) => {
+      const have = item.level <= ol;
+      const next = item.level === ol + 1;
+      const affordable = state.money >= item.cost;
+      const li = document.createElement('li');
+      li.className = 'ach' + (have ? ' done' : '');
+      li.innerHTML =
+        '<div class="ach-name">' + item.name + (have ? ' \u2713' : '') + (next ? ' <span class="next-tag">NEXT</span>' : '') + '</div>' +
+        '<div class="ach-desc">Earns $' + fmt(item.rate) + ' per hour while offline</div>' +
+        '<div class="ach-desc">Cost: $' + fmt(item.cost) + ' \u00b7 Requires ' + item.minRebirth + ' rebirth' + (item.minRebirth > 1 ? 's' : '') + '</div>';
+      if (next) {
+        const btn = document.createElement('button');
+        btn.className = 'buy' + (affordable ? '' : ' disabled');
+        btn.textContent = affordable ? 'UPGRADE ($' + fmt(item.cost) + ')' : 'NEED $' + fmt(item.cost);
+        btn.disabled = !affordable;
+        btn.addEventListener('click', () => doOfflineUpgrade(item.level));
+        li.appendChild(btn);
+      }
+      list.appendChild(li);
+    });
+
+    if (ol > 0) {
+      const claimLi = document.createElement('li');
+      claimLi.style.marginTop = '16px';
+      claimLi.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+      claimLi.style.paddingTop = '12px';
+      claimLi.innerHTML = '<div class="ach-name">Claim Offline Earnings</div>' +
+        '<div class="ach-desc">Collect money earned while you were away</div>';
+      const claimBtn = document.createElement('button');
+      claimBtn.className = 'buy';
+      claimBtn.textContent = 'CLAIM EARNINGS';
+      claimBtn.addEventListener('click', doOfflineClaim);
+      claimLi.appendChild(claimBtn);
+      list.appendChild(claimLi);
+    }
+  } catch (err) {
+    list.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
+  }
+}
+async function doOfflineUpgrade(level) {
+  try {
+    const r = await api('/offline/upgrade', { method: 'POST' });
+    state = r.state; sfxBuy();
+    toast('UPGRADED', 'Offline rewards upgraded to level ' + r.level, null, '#8affd8');
+    renderOffline();
+  } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
+}
+async function doOfflineClaim() {
+  try {
+    const r = await api('/offline/claim', { method: 'POST' });
+    state = r.state; sfxBuy();
+    toast('EARNINGS', 'Claimed $' + fmt(r.earnings) + ' from ' + r.hours.toFixed(1) + ' hours offline', null, '#7bdc78');
+    renderOffline();
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
 }
 
@@ -4143,7 +4069,7 @@ async function adminGiveItemPrompt(username) {
   if (itemSel == null) return;
   const item = itemSel.trim();
   if (!item) return toast('OOPS', 'Item name required', null, '#ff6b8a');
-  const mutId = prompt('Mutation (blank for none; valid: gold, diamond, electric)', '');
+  const mutId = prompt('Mutation (blank for none; valid: gold, diamond)', '');
   if (mutId == null) return;
   const qty = parseInt(prompt('Quantity', '1') || '1', 10);
   if (isNaN(qty) || qty <= 0 || qty > 1000000) return toast('OOPS', 'Invalid quantity', null, '#ff6b8a');
@@ -4171,7 +4097,7 @@ async function adminRemoveMutationPrompt(username) {
   if (itemSel == null) return;
   const item = itemSel.trim();
   if (!item) return toast('OOPS', 'Item name required', null, '#ff6b8a');
-  const mutId = prompt('Mutation to remove (valid: gold, diamond, electric)', '');
+  const mutId = prompt('Mutation to remove (valid: gold, diamond)', '');
   if (mutId == null) return;
   const qty = parseInt(prompt('Quantity', '1') || '1', 10);
   if (isNaN(qty) || qty <= 0 || qty > 1000000) return toast('OOPS', 'Invalid quantity', null, '#ff6b8a');
