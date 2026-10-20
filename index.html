@@ -1475,7 +1475,6 @@ async function loadMe() {
   renderDash();
   renderVault();
   showScreen('dash');
-  refreshEvent();
   if (data.login && data.login.isNew) {
     setTimeout(() => toast('DAILY REWARD \u00b7 DAY ' + data.login.day, data.login.streak + ' day streak', '$' + fmt(data.login.reward), '#ffb648'), 600);
   }
@@ -1920,7 +1919,6 @@ async function play() {
       target = created.server;
     }
     await enterServer(target.id, target.name);
-    refreshEvent();
   } catch (err) {
     toast('OOPS', err.message, null, '#ff6b8a');
   }
@@ -2092,7 +2090,6 @@ async function enterServer(sid, name) {
     refreshTutorial();
     renderVault();
     addChat('sys', 'You joined ' + currentServer.name + ' (slot ' + (mySlot + 1) + '/8).');
-    refreshEvent();
     try {
       const b = await api('/boss');
       if (b) { if (b.boss) onBoss(b.boss); setBossYou(b.you); }
