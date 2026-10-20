@@ -115,6 +115,10 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_glow   TEXT        
 ALTER TABLE users            ADD COLUMN IF NOT EXISTS banned_until  TIMESTAMPTZ;
 ALTER TABLE users            ADD COLUMN IF NOT EXISTS muted_until   TIMESTAMPTZ;
 
+-- Offline rewards
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS offline_level INTEGER     NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_offline  TIMESTAMPTZ;
+
 -- One global boss for the whole server at a time. Persisted so a long
 -- fight survives restarts/deploys (worlds themselves stay in memory).
 CREATE TABLE IF NOT EXISTS bosses (
