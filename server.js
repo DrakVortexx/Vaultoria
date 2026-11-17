@@ -425,11 +425,6 @@ function freeSlot(w) {
   return -1;
 }
 
-// Force IPv4-only DNS resolution globally
-const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first');
-const dnsPromises = dns.promises;
-
 // Log the DATABASE_URL (with password masked) for debugging
 if (DATABASE_URL) {
   const masked = DATABASE_URL.replace(/:([^@]+)@/, ':****@');
@@ -438,42 +433,13 @@ if (DATABASE_URL) {
   console.log('[vaultoria] DATABASE_URL is not set');
 }
 
-// Parse DATABASE_URL to build explicit config and force IPv4
-let pool;
-(async () => {
-  if (DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)) {
-    try {
-      const url = new URL(DATABASE_URL);
-      console.log('[vaultoria] Parsing connection string, hostname:', url.hostname);
-
-      // Resolve hostname to IPv4 address explicitly
-      const { address } = await dnsPromises.lookup(url.hostname, { family: 4 });
-      console.log('[vaultoria] Resolved IPv4 address:', address);
-
-      // Build explicit config with resolved IPv4 address
-      const pgConfig = {
-        host: address,
-        port: url.port || 5432,
-        database: url.pathname.slice(1),
-        user: url.username,
-        password: url.password,
-        ssl: { rejectUnauthorized: false }
-      };
-      pool = new Pool(pgConfig);
-      pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
-    } catch (e) {
-      console.error('[vaultoria] DNS lookup or parsing failed, falling back:', e.message);
-      pool = new Pool({
-        connectionString: DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-      });
-      pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
-    }
-  } else {
-    pool = new Pool({ connectionString: DATABASE_URL });
-    pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
-  }
-})();
+const pool = new Pool({
+  connectionString: DATABASE_URL || undefined,
+  ssl: DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)
+    ? { rejectUnauthorized: false }
+    : false
+});
+pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
 pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
 
 // Never let a single failed request take the whole game offline. Without this
