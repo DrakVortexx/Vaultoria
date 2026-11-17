@@ -1,0 +1,183 @@
+#game, .screen, #gameHud, #mobileControls, .modal, #spotlight, #transition, #confettiLayer, .flash {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+body::before {
+  top: -25%;
+  right: -25%;
+  bottom: -25%;
+  left: -25%;
+}
+.ring {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(135deg, #6d4dff, #4fd1ff, #b14dff, #ff4fb0, #6d4dff);
+  -webkit-filter: blur(2px);
+}
+.core .glyph {
+  -webkit-filter: drop-shadow(0 0 18px rgba(79,209,255,0.7));
+}
+.ring::after {
+  top: 6px;
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+}
+
+.auth-card {
+  width: 92%;
+  max-width: 420px;
+}
+.dash-grid, .dash-panel {
+  width: 92%;
+  max-width: 920px;
+}
+.boss-bar {
+  width: 80%;
+  max-width: 520px;
+}
+.modal-card {
+  width: 96%;
+  max-width: 560px;
+}
+.modal-card.wide {
+  max-width: 760px;
+}
+.upgrade-card {
+  width: 92%;
+  max-width: 460px;
+}
+#tutorial {
+  width: 84%;
+  max-width: 320px;
+}
+.toast.announce {
+  max-width: 92%;
+}
+#transition {
+  font-size: 40px;
+}
+
+.dash-grid {
+  display: block;
+}
+.dash-grid .dash-card {
+  display: inline-block;
+  vertical-align: top;
+  width: 31%;
+  min-width: 240px;
+  margin: 0 2% 20px 0;
+}
+.customize-grid {
+  display: block;
+}
+.customize-option {
+  display: inline-block;
+  vertical-align: top;
+  width: 140px;
+  margin: 0 12px 12px 0;
+}
+.admin-stats {
+  display: block;
+}
+.stat-card {
+  display: inline-block;
+  vertical-align: top;
+  width: 48%;
+  margin: 0 1% 12px;
+}
+#achList {
+  display: block;
+}
+.ach {
+  display: inline-block;
+  vertical-align: top;
+  width: 48%;
+  margin: 0 1% 10px;
+}
+
+.auth-tabs > *, .tabs > *, .hud-left > *, .hud-right > *, .hud-center > *, .dash-user > *, .resource-bar > *, .quest-head > *, .boss-hp-display > *, .boss-bar-top > *, .boss-bar-bottom > *, #tutDots > *, .item-right > *, .admin-user-actions > *, .admin-row-full > * {
+  margin-right: 10px;
+}
+.auth-tabs > *, .tabs > * {
+  margin-right: 6px;
+}
+.dash-user > *, .resource-bar > *, .boss-bar-top > * {
+  margin-right: 12px;
+}
+.admin-user-actions > * {
+  margin-right: 8px;
+}
+.inline-form > *, .row > *, .trade-actions > *, .admin-tools > *, .admin-row > *, .bazaar-search > *, .sell-row > *, .item-left > *, .inv-head > *, .upgrade-head > *, .admin-dur > * {
+  margin: 0 10px 10px 0;
+}
+.admin-row > *, .admin-tools > *, .bazaar-search > *, .sell-row > * {
+  margin-right: 8px;
+}
+.trade-grid > * {
+  margin-right: 14px;
+}
+.admin-tools-full > * {
+  margin-bottom: 12px;
+}
+.admin-sidebar > * {
+  margin-bottom: 20px;
+}
+.admin-main > * {
+  margin-bottom: 16px;
+}
+.admin-header > *, .admin-content > *, .admin-list-header > * {
+  margin-right: 20px;
+}
+#toasts > *, #chatLog > * {
+  margin-bottom: 10px;
+}
+#chatLog > * {
+  margin-bottom: 4px;
+}
+.sell-field > * {
+  margin-bottom: 3px;
+}
+.auth-tabs > :last-child, .tabs > :last-child, .hud-left > :last-child, .hud-right > :last-child, .hud-center > :last-child, .dash-user > :last-child, .resource-bar > :last-child, .quest-head > :last-child, .boss-hp-display > :last-child, .boss-bar-top > :last-child, .boss-bar-bottom > :last-child, #tutDots > :last-child, .item-right > :last-child, .admin-user-actions > :last-child, .inline-form > :last-child, .row > :last-child, .trade-actions > :last-child, .admin-tools > :last-child, .admin-row > :last-child, .bazaar-search > :last-child, .sell-row > :last-child, .item-left > :last-child, .inv-head > :last-child, .upgrade-head > :last-child, .admin-dur > :last-child, #toasts > :last-child, #chatLog > :last-child {
+  margin-right: 0;
+  margin-bottom: 0;
+}
+
+@keyframes confettiFlyLegacy {
+  from { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  to { opacity: 0; transform: translate(90px, -120px) rotate(220deg); }
+}
+.confetti {
+  animation-name: confettiFlyLegacy !important;
+}
+
+@media (max-width: 768px) {
+  .boss-bar {
+    width: 90%;
+    max-width: none;
+  }
+  .dash-grid .dash-card {
+    width: 100%;
+    min-width: 0;
+    margin-right: 0;
+  }
+  .customize-option {
+    width: 120px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+  #transition {
+    font-size: 30px;
+  }
+}
+@media (max-width: 480px) {
+  .customize-option {
+    width: 100px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+}

@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "build:legacy": "node scripts/build-legacy.js",
     "test": "node --test"
   },
   "engines": {
@@ -19,5 +20,12 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5",
     "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.1.2",
+    "@babel/preset-env": "^8.0.7",
+    "core-js-bundle": "^3.51.0",
+    "regenerator-runtime": "^0.14.1",
+    "whatwg-fetch": "^3.6.20"
   }
 }

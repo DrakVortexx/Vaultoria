@@ -2457,10 +2457,17 @@ app.get('/api/boss', dbReady, auth, async (req, res) => {
 app.use(express.static(path.join(__dirname, 'assets')));
 app.get('/healthz', (req, res) => res.json({ ok: true, db: !!DATABASE_URL }));
 const INDEX_HTML = path.join(__dirname, 'index.html');
-app.get('/', (req, res) => res.sendFile(INDEX_HTML));
+const LEGACY_INDEX_HTML = path.join(__dirname, 'index.legacy.html');
+function indexFor(req) {
+  const ua = req.headers['user-agent'] || '';
+  const match = ua.match(/Android\s+(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
+  if (match && parseInt(match[1], 10) < 5) return LEGACY_INDEX_HTML;
+  return INDEX_HTML;
+}
+app.get('/', (req, res) => res.sendFile(indexFor(req)));
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
-  res.sendFile(INDEX_HTML);
+  res.sendFile(indexFor(req));
 });
 
 /* ---------------------------------------------------------------

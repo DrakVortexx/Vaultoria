@@ -1886,7 +1886,7 @@ function renderWheelModal() {
   const info = $('wheelInfo');
   const spin = $('wheelSpin');
   const canvas = $('wheelSpinCanvas');
-  const nextIn = (ev && ev.startsAt) ? Math.max(0, Math.ceil((ev.startsAt - now) / 1000)) : 0;
+  const nextIn = (ev && ev.startsAt) ? Math.max(0, Math.ceil((ev.startsAt - Date.now()) / 1000)) : 0;
   if (!ev || !ev.active) {
     info.innerHTML = 'The wheel is resting. It awakens for 90 seconds roughly every hour at the center of the world \u2014 next event in <b>' + nextIn + 's</b>.';
     spin.disabled = true; spin.textContent = 'NOT LIVE';
@@ -2372,20 +2372,41 @@ function triggerInteract() {
     knob.style.transform = 'translate(0px,0px)';
     keys.d = keys.a = keys.s = keys.w = false;
   }
-  stick.addEventListener('pointerdown', e => {
-    if (!inGame) return;
-    active = true; pid = e.pointerId;
-    try { stick.setPointerCapture(e.pointerId); } catch (err) {}
-    ac();
-    apply(e); e.preventDefault();
-  });
-  stick.addEventListener('pointermove', e => {
-    if (!active || e.pointerId !== pid) return;
-    apply(e); e.preventDefault();
-  });
-  stick.addEventListener('pointerup', e => { if (e.pointerId === pid) reset(); });
-  stick.addEventListener('pointercancel', e => { if (e.pointerId === pid) reset(); });
-  if (eBtn) eBtn.addEventListener('pointerdown', e => { e.preventDefault(); triggerInteract(); });
+  if (window.PointerEvent) {
+    stick.addEventListener('pointerdown', e => {
+      if (!inGame) return;
+      active = true; pid = e.pointerId;
+      try { stick.setPointerCapture(e.pointerId); } catch (err) {}
+      ac();
+      apply(e); e.preventDefault();
+    });
+    stick.addEventListener('pointermove', e => {
+      if (!active || e.pointerId !== pid) return;
+      apply(e); e.preventDefault();
+    });
+    stick.addEventListener('pointerup', e => { if (e.pointerId === pid) reset(); });
+    stick.addEventListener('pointercancel', e => { if (e.pointerId === pid) reset(); });
+    if (eBtn) eBtn.addEventListener('pointerdown', e => { e.preventDefault(); triggerInteract(); });
+  } else {
+    function firstTouch(e) { return e.touches[0] || e.changedTouches[0]; }
+    stick.addEventListener('touchstart', e => {
+      if (!inGame) return;
+      const t = firstTouch(e);
+      if (!t) return;
+      active = true;
+      ac();
+      apply(t); e.preventDefault();
+    }, false);
+    stick.addEventListener('touchmove', e => {
+      if (!active) return;
+      const t = firstTouch(e);
+      if (!t) return;
+      apply(t); e.preventDefault();
+    }, false);
+    stick.addEventListener('touchend', reset, false);
+    stick.addEventListener('touchcancel', reset, false);
+    if (eBtn) eBtn.addEventListener('touchstart', e => { e.preventDefault(); triggerInteract(); }, false);
+  }
 })();
 
 function resize() {
