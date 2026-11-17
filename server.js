@@ -425,7 +425,7 @@ function freeSlot(w) {
   return -1;
 }
 
-// Force Node.js to use IPv4 for DNS resolution to avoid IPv6 issues on Render
+// Force IPv4-only DNS resolution globally
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
