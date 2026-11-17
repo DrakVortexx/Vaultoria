@@ -429,6 +429,14 @@ function freeSlot(w) {
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
+// Log the DATABASE_URL (with password masked) for debugging
+if (DATABASE_URL) {
+  const masked = DATABASE_URL.replace(/:([^@]+)@/, ':****@');
+  console.log('[vaultoria] DATABASE_URL:', masked);
+} else {
+  console.log('[vaultoria] DATABASE_URL is not set');
+}
+
 const pool = new Pool({
   connectionString: DATABASE_URL || undefined,
   ssl: DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)
