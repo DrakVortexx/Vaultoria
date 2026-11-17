@@ -425,33 +425,16 @@ function freeSlot(w) {
   return -1;
 }
 
-// Parse DATABASE_URL to force IPv4 and avoid connection issues on Render
-let pgConfig = {};
-if (DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)) {
-  try {
-    const url = new URL(DATABASE_URL);
-    pgConfig = {
-      host: url.hostname,
-      port: url.port || 5432,
-      database: url.pathname.slice(1),
-      user: url.username,
-      password: url.password,
-      ssl: { rejectUnauthorized: false },
-      // Force IPv4
-      family: 4
-    };
-  } catch (e) {
-    // If parsing fails, fall back to connection string
-    pgConfig = {
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    };
-  }
-} else {
-  pgConfig = { connectionString: DATABASE_URL };
-}
+// Force Node.js to use IPv4 for DNS resolution to avoid IPv6 issues on Render
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
 
-const pool = new Pool(pgConfig);
+const pool = new Pool({
+  connectionString: DATABASE_URL || undefined,
+  ssl: DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)
+    ? { rejectUnauthorized: false }
+    : false
+});
 pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
 
 // Never let a single failed request take the whole game offline. Without this
