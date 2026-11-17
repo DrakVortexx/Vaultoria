@@ -437,12 +437,37 @@ if (DATABASE_URL) {
   console.log('[vaultoria] DATABASE_URL is not set');
 }
 
-const pool = new Pool({
-  connectionString: DATABASE_URL || undefined,
-  ssl: DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)
-    ? { rejectUnauthorized: false }
-    : false
-});
+// Parse DATABASE_URL to build explicit config and force IPv4
+let pool;
+if (DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)) {
+  try {
+    const url = new URL(DATABASE_URL);
+    console.log('[vaultoria] Parsing connection string, hostname:', url.hostname);
+
+    // Build explicit config
+    const pgConfig = {
+      host: url.hostname,
+      port: url.port || 5432,
+      database: url.pathname.slice(1),
+      user: url.username,
+      password: url.password,
+      ssl: { rejectUnauthorized: false },
+      // Force IPv4
+      family: 4
+    };
+
+    console.log('[vaultoria] Using explicit pg config with family: 4');
+    pool = new Pool(pgConfig);
+  } catch (e) {
+    console.error('[vaultoria] Failed to parse DATABASE_URL, falling back:', e.message);
+    pool = new Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+  }
+} else {
+  pool = new Pool({ connectionString: DATABASE_URL });
+}
 pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
 
 // Never let a single failed request take the whole game offline. Without this
