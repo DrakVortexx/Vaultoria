@@ -2412,6 +2412,49 @@ app.post('/api/daily/claim', dbReady, auth, async (req, res) => {
 /* ---------------------------------------------------------------
  * World boss
  * ------------------------------------------------------------- */
+app.get('/api/boss/history', dbReady, auth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT b.id,
+              b.name,
+              TO_CHAR(b.defeated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS defeated_date,
+              COALESCE(c.damage, 0) AS damage,
+              COALESCE(c.value, 0) AS value,
+              COALESCE(t.total_damage, 0) AS total_damage,
+              COALESCE(t.pool_total, 0) AS pool_total
+         FROM bosses b
+         LEFT JOIN boss_contributions c
+           ON c.boss_id = b.id AND c.user_id = $1
+         LEFT JOIN (
+           SELECT boss_id, SUM(damage) AS total_damage, SUM(value) AS pool_total
+             FROM boss_contributions
+            GROUP BY boss_id
+         ) t ON t.boss_id = b.id
+        WHERE b.defeated_at IS NOT NULL
+        ORDER BY b.id DESC
+        LIMIT 20`,
+      [req.user.id]
+    );
+    const history = rows.map(r => {
+      const damage = Number(r.damage) || 0;
+      const totalDamage = Number(r.total_damage) || 0;
+      const poolTotal = Number(r.pool_total) || 0;
+      return {
+        id: Number(r.id),
+        name: r.name,
+        defeatedDate: r.defeated_date,
+        damage: damage,
+        value: Number(r.value) || 0,
+        poolValue: poolTotal,
+        payout: totalDamage > 0 ? Math.floor(poolTotal * BOSS_BONUS * damage / totalDamage) : 0
+      };
+    });
+    res.json({ history: history, bonus: BOSS_BONUS });
+  } catch (e) {
+    console.error('[boss history]', e.message);
+    res.status(500).json({ error: 'Could not load boss history' });
+  }
+});
 app.get('/api/boss', dbReady, auth, async (req, res) => {
   const client = await pool.connect();
   try {

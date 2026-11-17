@@ -248,6 +248,18 @@
     box-shadow: 0 8px 26px rgba(255,120,90,0.5); pointer-events: auto; touch-action: none;
   }
   #mobileEBtn:active { transform: scale(0.94); }
+  #mobileActions {
+    position: absolute; right: 16px; bottom: 204px; width: 132px; pointer-events: none;
+  }
+  .mobile-action {
+    display: inline-block; vertical-align: top; width: 63px; height: 44px; margin: 0 0 6px 6px;
+    font-family: inherit; font-weight: 800; font-size: 11px; letter-spacing: 1px; color: #fff;
+    background: rgba(11,13,29,0.88); border: 1px solid rgba(124,92,255,0.55); border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.45); pointer-events: auto; cursor: pointer;
+  }
+  .mobile-action:nth-child(odd) { margin-left: 0; }
+  .mobile-action:active { transform: scale(0.94); }
+  .mobile-action.boss { border-color: rgba(255,92,138,0.65); color: #ff9ab5; }
 
   /* ---------- modals ---------- */
   .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2,3,9,0.68); backdrop-filter: blur(4px); }
@@ -475,6 +487,9 @@
   .item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .item-count { font-weight: 700; font-size: 13px; color: #8b93bd; }
   .item-value { font-weight: 700; font-size: 13px; color: #7bdc78; min-width: 52px; text-align: right; }
+  .codex-summary { font-size: 13px; color: #9aa2cc; font-weight: 700; padding: 8px 4px 14px; text-align: center; }
+  .codex-rarity-title { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 12px 4px 6px; }
+  .codex-row .item-name { cursor: pointer; border-bottom: 1px dashed rgba(255,255,255,0.3); }
 
   /* boss modal */
   .boss-info { width: 100%; }
@@ -734,6 +749,12 @@
   <div id="mobileControls" class="hidden">
     <div id="joystick"><div id="joystickKnob"></div></div>
     <button id="mobileEBtn" type="button" aria-label="Interact">E</button>
+    <div id="mobileActions">
+      <button class="mobile-action" id="mActionsVault" type="button">VAULT</button>
+      <button class="mobile-action" id="mActionsSell" type="button">SELL ALL</button>
+      <button class="mobile-action" id="mActionsMarket" type="button">MARKET</button>
+      <button class="mobile-action boss" id="mActionsBoss" type="button">BOSS</button>
+    </div>
   </div>
 
   <!-- Vault modal -->
@@ -753,6 +774,7 @@
         <button class="tab" data-tab="inventory" type="button">Inventory</button>
         <button class="tab" data-tab="quests" type="button">Quests</button>
         <button class="tab" data-tab="achievements" type="button">Achievements</button>
+        <button class="tab" data-tab="codex" type="button">Codex</button>
         <button class="tab" data-tab="rebirth" type="button">Rebirth</button>
         <button class="tab" data-tab="offline" type="button">Offline Rewards</button>
       </div>
@@ -826,6 +848,15 @@
         </div>
         <div class="empty-note" style="padding:8px 4px 14px">Generate passive income while offline. Requires rebirths to unlock.</div>
         <ul class="list" id="offlineList"><li class="empty">Unlock by reaching rebirths...</li></ul>
+      </div>
+
+      <div id="panel-codex" class="panel">
+        <div class="inv-head">
+          <h2>Collection Codex</h2>
+          <span class="inv-worth" id="codexInfo"></span>
+        </div>
+        <div class="codex-summary" id="codexSummary"></div>
+        <ul class="list" id="codexList"><li class="empty">Loading codex...</li></ul>
       </div>
     </div>
   </div>

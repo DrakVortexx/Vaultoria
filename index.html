@@ -248,6 +248,18 @@
     box-shadow: 0 8px 26px rgba(255,120,90,0.5); pointer-events: auto; touch-action: none;
   }
   #mobileEBtn:active { transform: scale(0.94); }
+  #mobileActions {
+    position: absolute; right: 16px; bottom: 204px; width: 132px; pointer-events: none;
+  }
+  .mobile-action {
+    display: inline-block; vertical-align: top; width: 63px; height: 44px; margin: 0 0 6px 6px;
+    font-family: inherit; font-weight: 800; font-size: 11px; letter-spacing: 1px; color: #fff;
+    background: rgba(11,13,29,0.88); border: 1px solid rgba(124,92,255,0.55); border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.45); pointer-events: auto; cursor: pointer;
+  }
+  .mobile-action:nth-child(odd) { margin-left: 0; }
+  .mobile-action:active { transform: scale(0.94); }
+  .mobile-action.boss { border-color: rgba(255,92,138,0.65); color: #ff9ab5; }
 
   /* ---------- modals ---------- */
   .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2,3,9,0.68); backdrop-filter: blur(4px); }
@@ -475,6 +487,9 @@
   .item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .item-count { font-weight: 700; font-size: 13px; color: #8b93bd; }
   .item-value { font-weight: 700; font-size: 13px; color: #7bdc78; min-width: 52px; text-align: right; }
+  .codex-summary { font-size: 13px; color: #9aa2cc; font-weight: 700; padding: 8px 4px 14px; text-align: center; }
+  .codex-rarity-title { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 12px 4px 6px; }
+  .codex-row .item-name { cursor: pointer; border-bottom: 1px dashed rgba(255,255,255,0.3); }
 
   /* boss modal */
   .boss-info { width: 100%; }
@@ -733,6 +748,12 @@
   <div id="mobileControls" class="hidden">
     <div id="joystick"><div id="joystickKnob"></div></div>
     <button id="mobileEBtn" type="button" aria-label="Interact">E</button>
+    <div id="mobileActions">
+      <button class="mobile-action" id="mActionsVault" type="button">VAULT</button>
+      <button class="mobile-action" id="mActionsSell" type="button">SELL ALL</button>
+      <button class="mobile-action" id="mActionsMarket" type="button">MARKET</button>
+      <button class="mobile-action boss" id="mActionsBoss" type="button">BOSS</button>
+    </div>
   </div>
 
   <!-- Vault modal -->
@@ -752,6 +773,7 @@
         <button class="tab" data-tab="inventory" type="button">Inventory</button>
         <button class="tab" data-tab="quests" type="button">Quests</button>
         <button class="tab" data-tab="achievements" type="button">Achievements</button>
+        <button class="tab" data-tab="codex" type="button">Codex</button>
         <button class="tab" data-tab="rebirth" type="button">Rebirth</button>
         <button class="tab" data-tab="offline" type="button">Offline Rewards</button>
       </div>
@@ -825,6 +847,15 @@
         </div>
         <div class="empty-note" style="padding:8px 4px 14px">Generate passive income while offline. Requires rebirths to unlock.</div>
         <ul class="list" id="offlineList"><li class="empty">Unlock by reaching rebirths...</li></ul>
+      </div>
+
+      <div id="panel-codex" class="panel">
+        <div class="inv-head">
+          <h2>Collection Codex</h2>
+          <span class="inv-worth" id="codexInfo"></span>
+        </div>
+        <div class="codex-summary" id="codexSummary"></div>
+        <ul class="list" id="codexList"><li class="empty">Loading codex...</li></ul>
       </div>
     </div>
   </div>
@@ -1233,6 +1264,9 @@ function showItemTooltip(e, itemKey, rar, mut, baseValue, mult) {
 function hideItemTooltip() {
   tooltipEl.classList.remove('visible');
 }
+document.addEventListener('click', e => {
+  if (!e.target || e.target.getAttribute('data-codex') !== '1') hideItemTooltip();
+}, false);
 
 /* rebirth / vault capacity / shield */
 const REBIRTHS = [
@@ -3112,6 +3146,7 @@ document.querySelectorAll('.tab[data-tab]').forEach(tab => tab.addEventListener(
   if (tab.dataset.tab === 'quests') renderQuests();
   if (tab.dataset.tab === 'rebirth') renderRebirth();
   if (tab.dataset.tab === 'offline') renderOffline();
+  if (tab.dataset.tab === 'codex') renderCodex();
 }));
 
 function renderVault() {
@@ -3179,7 +3214,74 @@ function renderVault() {
   }
   renderAch();
   renderDash();
+  if ($('panel-codex') && $('panel-codex').classList.contains('active')) renderCodex();
   if (!$('bazaarModal').classList.contains('hidden')) renderSellList();
+}
+
+function renderCodex() {
+  if (!state) return;
+  const list = $('codexList');
+  if (!list) return;
+  const seen = state.stats && Array.isArray(state.stats.seen) ? state.stats.seen : [];
+  const owned = {};
+  for (const key in (state.counts || {})) {
+    const base = baseName(key);
+    owned[base] = (owned[base] || 0) + Math.max(0, Number(state.counts[key]) || 0);
+  }
+  let discoveredTotal = 0;
+  list.innerHTML = '';
+  RARITIES.forEach(rar => {
+    const names = ITEMS_BY_RARITY[rar.key] || [];
+    let found = 0;
+    const header = document.createElement('li');
+    header.className = 'codex-rarity-title';
+    header.style.color = rar.color;
+    list.appendChild(header);
+    names.forEach(name => {
+      const isKnown = seen.indexOf(name) !== -1 || owned[name] > 0;
+      if (isKnown) found++;
+      const li = document.createElement('li');
+      li.className = 'row codex-row';
+      const left = document.createElement('span');
+      left.className = 'item-left';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'item-name codex-item';
+      nameEl.setAttribute('data-codex', '1');
+      nameEl.textContent = isKnown ? name : '???';
+      nameEl.style.color = isKnown ? rar.color : '#5a6188';
+      if (isKnown) {
+        nameEl.addEventListener('click', e => {
+          e.preventDefault();
+          const base = baseName(name);
+          const mut = mutationOf(name);
+          const baseValue = ITEM_BASE[base] || 0;
+          showItemTooltip(e, name, rarityFor(base), mut, baseValue, mut ? mut.mult : 1);
+        });
+      } else {
+        nameEl.style.cursor = 'default';
+        nameEl.removeAttribute('data-codex');
+      }
+      left.appendChild(nameEl);
+      const badge = document.createElement('span');
+      badge.className = 'rarity';
+      badge.style.color = rar.color;
+      badge.textContent = isKnown ? (owned[name] > 0 ? 'OWNED' : 'SEEN') : 'UNDISCOVERED';
+      left.appendChild(badge);
+      const right = document.createElement('span');
+      right.className = 'item-right';
+      const count = document.createElement('span');
+      count.className = 'item-count';
+      count.textContent = isKnown ? ('x' + fmt(owned[name] || 0)) : '\u2014';
+      right.appendChild(count);
+      li.appendChild(left);
+      li.appendChild(right);
+      list.appendChild(li);
+    });
+    header.textContent = rar.name + '  ' + found + ' / ' + names.length;
+    discoveredTotal += found;
+  });
+  $('codexInfo').textContent = 'Discovered ' + discoveredTotal + ' / 100';
+  $('codexSummary').textContent = 'Tap a discovered item to see its value. Unknown items unlock when you generate or own them.';
 }
 
 /* generator */
@@ -3257,9 +3359,10 @@ async function sellItem(item, ev) {
     renderVault();
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
 }
-$('sellAll').addEventListener('click', async () => {
-  if (!Object.keys(state.counts || {}).length) return;
-  const box = $('sellAll').getBoundingClientRect();
+async function sellAllItems(srcEl) {
+  if (!state || !Object.keys(state.counts || {}).length) return;
+  const src = srcEl || $('sellAll');
+  const box = src.getBoundingClientRect();
   try {
     const r = await api('/sell', { method: 'POST', body: JSON.stringify({ all: true }) });
     state = r.state; salesCount++; sfxSell();
@@ -3269,7 +3372,8 @@ $('sellAll').addEventListener('click', async () => {
     if (r.daily) dailyData = Object.assign({}, dailyData, r.daily);
     renderVault();
   } catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
-});
+}
+$('sellAll').addEventListener('click', e => sellAllItems(e.currentTarget));
 $('genBuy').addEventListener('click', async () => {
   if (upgradeBusy || state.level >= MAX_LEVEL) return;
   upgradeBusy = true;
@@ -3489,6 +3593,10 @@ function openBazaar() {
   refreshTutorial();
 }
 $('marketBtn').addEventListener('click', () => { ac(); openMarket(); });
+$('mActionsVault').addEventListener('click', e => { e.preventDefault(); ac(); toggleVault(); });
+$('mActionsSell').addEventListener('click', e => { e.preventDefault(); ac(); sellAllItems(e.currentTarget); });
+$('mActionsMarket').addEventListener('click', e => { e.preventDefault(); ac(); openMarket(); });
+$('mActionsBoss').addEventListener('click', e => { e.preventDefault(); ac(); openBossModal(); });
 function openMarket() {
   if (!inGame) return;
   closeAllModals();
@@ -3953,53 +4061,97 @@ if (bossBarEl) {
   });
 }
 
+function bindBossTabs() {
+  document.querySelectorAll('[data-boss-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-boss-tab]').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#bossContent .panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const panel = $('bossPanel-' + btn.getAttribute('data-boss-tab'));
+      if (panel) panel.classList.add('active');
+    });
+  });
+}
+async function loadBossLive() {
+  const panel = $('bossPanel-live');
+  if (!panel) return;
+  panel.innerHTML = '<div class="empty-note">Loading boss information...</div>';
+  try {
+    const b = await api('/boss');
+    if (!b) { panel.innerHTML = '<div class="empty-note">No boss information available.</div>'; return; }
+    const boss = b.boss || null;
+    if (boss) onBoss(boss);
+    let html = '<div class="boss-info">';
+    html += '<div class="boss-header">';
+    html += '<h2 style="color:#ff5c8a; font-weight:800; letter-spacing:3px; text-transform:uppercase; text-shadow:0 0 30px rgba(255,92,138,0.5); margin:0 0 12px;">' + esc((boss && boss.name) || 'World Boss') + '</h2>';
+    html += '<div class="boss-hp-display" style="font-size:14px; font-weight:700; color:#c3c8e6; margin-bottom:16px;">';
+    html += 'HP: ' + fmt((boss && boss.hp) || 0) + ' / ' + fmt((boss && boss.maxHp) || (boss && boss.max_hp) || 0);
+    html += '</div></div>';
+    if (b.contributions && b.contributions.length) {
+      html += '<h3 style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#9aa2cc; margin:16px 0 12px;">Top Contributors</h3>';
+      html += '<ul class="list" style="margin:0;">';
+      for (let i = 0; i < Math.min(10, b.contributions.length); i++) {
+        const c = b.contributions[i];
+        html += '<li class="row">';
+        html += '<span class="name">#' + (i+1) + ' ' + esc(c.username || 'Unknown') + '</span>';
+        html += '<span class="meta">' + fmt(c.damage) + ' dmg (' + (c.share * 100).toFixed(1) + '%)</span>';
+        html += '</li>';
+      }
+      html += '</ul>';
+    }
+    if (b.you) {
+      html += '<div style="margin-top:16px; padding:12px; background:rgba(124,92,255,0.1); border-radius:12px; border:1px solid rgba(124,92,255,0.3);">';
+      html += '<span style="font-weight:700; color:#b98bff;">Your Damage:</span> ';
+      html += '<span style="color:#fff;">' + fmt(b.you.damage) + ' (' + (b.you.share * 100).toFixed(1) + '%)</span>';
+      html += '</div>';
+      html += '<div style="margin-top:12px; padding:12px; background:rgba(123,220,120,0.1); border-radius:12px; border:1px solid rgba(123,220,120,0.3);">';
+      html += '<span style="font-weight:700; color:#7bdc78;">Estimated Payout:</span> ';
+      html += '<span style="color:#fff;">$' + fmt(b.you.payout || 0) + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+    panel.innerHTML = html;
+  } catch (e) {
+    panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(e.message || 'Could not load boss info') + '</div>';
+  }
+}
+async function loadBossHistory() {
+  const panel = $('bossPanel-history');
+  if (!panel) return;
+  panel.innerHTML = '<div class="empty-note">Loading boss history...</div>';
+  try {
+    const h = await api('/boss/history');
+    const rows = h && h.history ? h.history : [];
+    if (!rows.length) { panel.innerHTML = '<div class="empty-note">No defeated bosses yet.</div>'; return; }
+    let html = '<div class="boss-info">';
+    html += '<h3 style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#9aa2cc; margin:4px 0 12px;">Last 20 Bosses</h3>';
+    html += '<ul class="list" style="margin:0;">';
+    rows.forEach(row => {
+      html += '<li class="row">';
+      html += '<span class="name">' + esc(row.name || 'World Boss') + '<span class="meta"> ' + esc(row.defeatedDate || '') + '</span></span>';
+      html += '<span class="meta">DMG ' + fmt(row.damage) + ' &middot; POOL $' + fmt(row.poolValue) + ' &middot; PAYOUT $' + fmt(row.payout) + '</span>';
+      html += '</li>';
+    });
+    html += '</ul></div>';
+    panel.innerHTML = html;
+  } catch (e) {
+    panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(e.message || 'Could not load boss history') + '</div>';
+  }
+}
 async function openBossModal() {
   closeAllModals();
   const content = $('bossContent');
   if (!content) return;
-  content.innerHTML = '<div class="empty-note">Loading boss information...</div>';
+  content.innerHTML =
+    '<div class="tabs">' +
+      '<button class="tab active" data-boss-tab="live" type="button">Live</button>' +
+      '<button class="tab" data-boss-tab="history" type="button">History</button>' +
+    '</div>' +
+    '<div id="bossPanel-live" class="panel active"><div class="empty-note">Loading boss information...</div></div>' +
+    '<div id="bossPanel-history" class="panel"><div class="empty-note">Loading boss history...</div></div>';
   $('bossModal').classList.remove('hidden');
-  try {
-    const b = await api('/boss');
-    if (b) {
-      const boss = b.boss || null;
-      if (boss) onBoss(boss);
-      let html = '<div class="boss-info">';
-      html += '<div class="boss-header">';
-      html += '<h2 style="color:#ff5c8a; font-weight:800; letter-spacing:3px; text-transform:uppercase; text-shadow:0 0 30px rgba(255,92,138,0.5); margin:0 0 12px;">' + (boss && boss.name || 'World Boss') + '</h2>';
-      html += '<div class="boss-hp-display" style="font-size:14px; font-weight:700; color:#c3c8e6; margin-bottom:16px;">';
-      html += 'HP: ' + fmt(boss && boss.hp || 0) + ' / ' + fmt(boss && boss.maxHp || boss && boss.max_hp || 0);
-      html += '</div></div>';
-      if (b.contributions && b.contributions.length) {
-        html += '<h3 style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#9aa2cc; margin:16px 0 12px;">Top Contributors</h3>';
-        html += '<ul class="list" style="margin:0;">';
-        for (let i = 0; i < Math.min(10, b.contributions.length); i++) {
-          const c = b.contributions[i];
-          html += '<li class="row">';
-          html += '<span class="name">#' + (i+1) + ' ' + c.username + '</span>';
-          html += '<span class="meta">' + fmt(c.damage) + ' dmg (' + (c.share * 100).toFixed(1) + '%)</span>';
-          html += '</li>';
-        }
-        html += '</ul>';
-      }
-      if (b.you) {
-        html += '<div style="margin-top:16px; padding:12px; background:rgba(124,92,255,0.1); border-radius:12px; border:1px solid rgba(124,92,255,0.3);">';
-        html += '<span style="font-weight:700; color:#b98bff;">Your Damage:</span> ';
-        html += '<span style="color:#fff;">' + fmt(b.you.damage) + ' (' + (b.you.share * 100).toFixed(1) + '%)</span>';
-        html += '</div>';
-        html += '<div style="margin-top:12px; padding:12px; background:rgba(123,220,120,0.1); border-radius:12px; border:1px solid rgba(123,220,120,0.3);">';
-        html += '<span style="font-weight:700; color:#7bdc78;">Estimated Payout:</span> ';
-        html += '<span style="color:#fff;">$' + fmt(b.you.payout || 0) + '</span>';
-        html += '</div>';
-      }
-      html += '</div>';
-      content.innerHTML = html;
-    } else {
-      content.innerHTML = '<div class="empty-note">No boss information available.</div>';
-    }
-  } catch (e) {
-    content.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + (e.message || 'Could not load boss info') + '</div>';
-  }
+  bindBossTabs();
+  await Promise.all([loadBossLive(), loadBossHistory()]);
 }
 
 $('adminBtn').addEventListener('click', openAdminModal);
