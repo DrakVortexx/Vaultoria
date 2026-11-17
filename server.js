@@ -429,7 +429,9 @@ const pool = new Pool({
   connectionString: DATABASE_URL || undefined,
   ssl: DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)
     ? { rejectUnauthorized: false }
-    : false
+    : false,
+  // Force IPv4 to avoid IPv6 connection issues on Render
+  ...(DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL) ? { family: 4 } : {})
 });
 pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
 

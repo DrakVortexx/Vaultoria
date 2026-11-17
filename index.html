@@ -3162,7 +3162,15 @@ function renderVault() {
 }
 
 /* generator */
-$('gen').addEventListener('click', () => { ac(); beginGen(); });
+$('gen').addEventListener('click', () => {
+  ac();
+  // If clicking while generating or busy, close the vault to prevent spamming
+  if (generating || genBusy) {
+    closeAllModals();
+    return;
+  }
+  beginGen();
+});
 function beginGen() {
   if (generating || genBusy || !vaultOpen) return;
   generating = true; genEnd = performance.now() + (state.genTime || 7000);
