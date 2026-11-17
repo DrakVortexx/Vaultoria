@@ -800,7 +800,11 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
     const st = await stateForUpdate(client, req.user.id);
     const now = Date.now();
     const last = lastGen.get(req.user.id) || 0;
-    if (now - last < genTime.genTimeMs(st.rebirths) - GEN_GRACE) {
+    // Enforce minimum 1.5s cooldown regardless of rebirths to prevent autoclicking
+    const minCooldown = 1500;
+    const cooldown = genTime.genTimeMs(st.rebirths);
+    const effectiveCooldown = Math.max(cooldown, minCooldown);
+    if (now - last < effectiveCooldown - GEN_GRACE) {
       await client.query('ROLLBACK');
       return res.status(429).json({ error: 'Generator still cooling down' });
     }
