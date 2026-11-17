@@ -428,6 +428,7 @@ function freeSlot(w) {
 // Force IPv4-only DNS resolution globally
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
+const dnsPromises = dns.promises;
 
 // Log the DATABASE_URL (with password masked) for debugging
 if (DATABASE_URL) {
@@ -439,35 +440,40 @@ if (DATABASE_URL) {
 
 // Parse DATABASE_URL to build explicit config and force IPv4
 let pool;
-if (DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)) {
-  try {
-    const url = new URL(DATABASE_URL);
-    console.log('[vaultoria] Parsing connection string, hostname:', url.hostname);
+(async () => {
+  if (DATABASE_URL && !/localhost|127\.0\.0\.1/.test(DATABASE_URL)) {
+    try {
+      const url = new URL(DATABASE_URL);
+      console.log('[vaultoria] Parsing connection string, hostname:', url.hostname);
 
-    // Build explicit config
-    const pgConfig = {
-      host: url.hostname,
-      port: url.port || 5432,
-      database: url.pathname.slice(1),
-      user: url.username,
-      password: url.password,
-      ssl: { rejectUnauthorized: false },
-      // Force IPv4
-      family: 4
-    };
+      // Resolve hostname to IPv4 address explicitly
+      const { address } = await dnsPromises.lookup(url.hostname, { family: 4 });
+      console.log('[vaultoria] Resolved IPv4 address:', address);
 
-    console.log('[vaultoria] Using explicit pg config with family: 4');
-    pool = new Pool(pgConfig);
-  } catch (e) {
-    console.error('[vaultoria] Failed to parse DATABASE_URL, falling back:', e.message);
-    pool = new Pool({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    });
+      // Build explicit config with resolved IPv4 address
+      const pgConfig = {
+        host: address,
+        port: url.port || 5432,
+        database: url.pathname.slice(1),
+        user: url.username,
+        password: url.password,
+        ssl: { rejectUnauthorized: false }
+      };
+      pool = new Pool(pgConfig);
+      pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
+    } catch (e) {
+      console.error('[vaultoria] DNS lookup or parsing failed, falling back:', e.message);
+      pool = new Pool({
+        connectionString: DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      });
+      pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
+    }
+  } else {
+    pool = new Pool({ connectionString: DATABASE_URL });
+    pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
   }
-} else {
-  pool = new Pool({ connectionString: DATABASE_URL });
-}
+})();
 pool.on('error', err => console.error('[vaultoria] idle pg error:', err.message));
 
 // Never let a single failed request take the whole game offline. Without this
