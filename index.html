@@ -2050,7 +2050,7 @@ async function play() {
       const created = await api('/servers', { method: 'POST', body: JSON.stringify({ name: 'Keepers World' }) });
       target = created.server;
     }
-    await enterServer(target.id, target.name);
+    await enterServer(target.id, 'World ' + target.id);
     refreshEvent();
   } catch (err) {
     toast('OOPS', err.message, null, '#ff6b8a');
@@ -2066,9 +2066,9 @@ async function renderServersPanel() {
     if (!servers.length) html += '<div class="empty-note">No open servers yet. Create one!</div>';
     for (const s of servers) {
       const full = s.members >= s.capacity;
-      html += '<div class="row"><div><div class="name">' + esc(s.name) + '</div>' +
+      html += '<div class="row"><div><div class="name">World ' + s.id + '</div>' +
         '<div class="meta">' + s.members + ' / ' + s.capacity + ' keepers</div></div>' +
-        '<button class="btn ' + (full ? 'ghost' : 'green') + '" data-join="' + s.id + '" data-name="' + esc(s.name) + '" ' + (full ? 'disabled' : '') + '>' +
+        '<button class="btn ' + (full ? 'ghost' : 'green') + '" data-join="' + s.id + '" ' + (full ? 'disabled' : '') + '>' +
         (full ? 'Full' : 'Join') + '</button></div>';
     }
     p.innerHTML = html;
@@ -2078,7 +2078,7 @@ async function renderServersPanel() {
       catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
     });
     p.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => {
-      enterServer(parseInt(b.dataset.join, 10), b.dataset.name);
+      enterServer(parseInt(b.dataset.join, 10), 'World ' + b.dataset.join);
     }));
   } catch (err) {
     p.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
@@ -2136,19 +2136,19 @@ async function enterServer(sid, name) {
   try {
     const r = await api('/servers/' + sid + '/join', { method: 'POST' });
     mySlot = r.slot;
-    currentServer = { id: sid, name: name || 'World' };
+    currentServer = { id: sid };
     state.tutorialDone = tutorialDone;
     const savedOk = state.px > WALL && state.px < WORLD_W - WALL && state.py > WALL && state.py < WORLD_H - WALL;
     if (!savedOk || !tutorialDone) { player.x = SPAWN.x; player.y = SPAWN.y; }
     else { player.x = state.px; player.y = state.py; }
     showScreen('game');
     resize();
-    transitionTo(currentServer.name);
+    transitionTo('World ' + currentServer.id);
     $('hint').textContent = 'WASD / Arrows to walk \u00b7 E to open your vault';
     connectWS();
     refreshTutorial();
     renderVault();
-    addChat('sys', 'You joined ' + currentServer.name + ' (slot ' + (mySlot + 1) + '/8).');
+    addChat('sys', 'You joined World ' + currentServer.id + ' (slot ' + (mySlot + 1) + '/8).');
     refreshEvent();
     try {
       const b = await api('/boss');
@@ -2274,7 +2274,7 @@ function renderBossUi() {
 
 function updateHudMeta() {
   const online = members.filter(m => m.online).length || (inGame ? 1 : 0);
-  $('hudServer').textContent = currentServer ? currentServer.name : 'World';
+  $('hudServer').textContent = currentServer ? 'World ' + currentServer.id : 'World';
   $('hudOnline').textContent = online + ' / ' + SERVER_CAPACITY + ' online';
   renderBossUi();
 }
@@ -3050,7 +3050,7 @@ function updateHint() {
     h.textContent = isMobile
       ? 'Joystick to walk \u00b7 E opens your vault'
       : 'WASD / Arrows to walk \u00b7 E opens your vault at your pad';
-    $('zone').textContent = currentServer ? currentServer.name : 'WORLD';
+    $('zone').textContent = currentServer ? 'World ' + currentServer.id : 'WORLD';
   }
   const vb = $('vaultBtn');
   vb.textContent = nearMyVault() ? 'Open Vault' : 'Vault';

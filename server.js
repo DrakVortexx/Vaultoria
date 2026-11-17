@@ -384,8 +384,8 @@ async function persistWorld(w) {
   if (!DATABASE_URL) return;
   try {
     await pool.query(
-      'INSERT INTO worlds (id, name) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name',
-      [w.id, w.name]
+      'INSERT INTO worlds (id) VALUES ($1) ON CONFLICT (id) DO NOTHING',
+      [w.id]
     );
   } catch (e) { console.error('[worlds save]', e.message); }
 }
@@ -417,7 +417,7 @@ function removeFromWorld(uid) {
   }
 }
 function worldPublic(w) {
-  return { id: w.id, name: w.name, members: w.members.size, capacity: SERVER_CAPACITY };
+  return { id: w.id, members: w.members.size, capacity: SERVER_CAPACITY };
 }
 function freeSlot(w) {
   const used = new Set(w.members.values());
@@ -466,12 +466,11 @@ async function initDb() {
 
   try { await purgeLegacyItems(); } catch (e) { console.error('[purge]', e.message); }
 
-  // World names persist, but no player is online after a server restart.
-  // Clear old seat records instead of restoring ghost/offline vault owners.
+  // World IDs persist, but names are server-side only. Clear old seat records.
   try {
-    const { rows } = await pool.query('SELECT id, name FROM worlds ORDER BY id');
+    const { rows } = await pool.query('SELECT id FROM worlds ORDER BY id');
     for (const r of rows) {
-      worlds.set(r.id, { id: r.id, name: r.name, members: new Map() });
+      worlds.set(r.id, { id: r.id, name: 'World ' + r.id, members: new Map() });
       if (r.id >= nextWorldId) nextWorldId = r.id + 1;
     }
     await pool.query('DELETE FROM world_members');

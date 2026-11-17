@@ -48,10 +48,9 @@ CREATE TABLE IF NOT EXISTS player_state (
 
 -- Worlds/servers are mirrored to the DB so rooms survive restarts. The
 -- live users/worlds maps in server.js are the source of truth at runtime;
--- these tables only restore them on boot.
+-- these tables only restore them on boot. Names are server-side only.
 CREATE TABLE IF NOT EXISTS worlds (
   id         INTEGER PRIMARY KEY,
-  name       TEXT        NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -112,6 +111,9 @@ CREATE TABLE IF NOT EXISTS boss_contributions (
 ALTER TABLE users            ADD COLUMN IF NOT EXISTS is_admin      BOOLEAN     NOT NULL DEFAULT FALSE;
 ALTER TABLE users            ADD COLUMN IF NOT EXISTS banned_until  TIMESTAMPTZ;
 ALTER TABLE users            ADD COLUMN IF NOT EXISTS muted_until   TIMESTAMPTZ;
+
+-- Remove world names from database (server-side only now)
+ALTER TABLE worlds            DROP COLUMN IF EXISTS name;
 
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS money         BIGINT      NOT NULL DEFAULT 0;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS level         INTEGER     NOT NULL DEFAULT 1;
