@@ -1463,16 +1463,27 @@ app.post('/api/trade/request/:id/accept', dbReady, auth, async (req, res) => {
     const [aRow, bRow] = await Promise.all([stateFor(pool, r.fromId), stateFor(pool, r.toId)]);
     const sid = nextTradeSessionId++;
     const mk = (uid, username) => ({ userId: uid, username, items: {}, money: 0, locked: false, ready: false });
-    tradeSessions.set(sid, {
+    const session = {
       id: sid,
       a: mk(Number(r.fromId), r.fromName),
       b: mk(Number(req.user.id), req.user.username),
       createdAt: Date.now(),
       state: 'open'
-    });
+    };
+    tradeSessions.set(sid, session);
     tradeRequests.delete(id);
     pushTo(r.fromId, { type: 'tradeOpened', sessionId: sid, otherName: req.user.username });
-    res.json({ sessionId: sid });
+    const role = tradeRole(session, req.user.id);
+    const o = role === 'a' ? 'b' : 'a';
+    res.json({
+      sessionId: sid,
+      trade: {
+        id: session.id,
+        state: session.state,
+        you: { username: session[role].username, items: session[role].items, money: session[role].money, locked: session[role].locked, ready: session[role].ready },
+        other: { username: session[o].username, items: session[o].items, money: session[o].money, locked: session[o].locked, ready: session[o].ready }
+      }
+    });
   } catch (e) {
     console.error('[trade-accept]', e.message);
     res.status(500).json({ error: 'Could not start trade' });
@@ -1498,8 +1509,12 @@ app.get('/api/trade/:id', dbReady, auth, (req, res) => {
   res.json({
     id: s.id,
     state: s.state,
-    you: { username: s[role].username, items: s[role].items, money: s[role].money, locked: s[role].locked, ready: s[role].ready },
-    other: { username: s[o].username, items: s[o].items, money: s[o].money, locked: s[o].locked, ready: s[o].ready }
+    trade: {
+      id: s.id,
+      state: s.state,
+      you: { username: s[role].username, items: s[role].items, money: s[role].money, locked: s[role].locked, ready: s[role].ready },
+      other: { username: s[o].username, items: s[o].items, money: s[o].money, locked: s[o].locked, ready: s[o].ready }
+    }
   });
 });
 
@@ -1532,7 +1547,16 @@ app.post('/api/trade/:id/offer', dbReady, auth, async (req, res) => {
     s[role].items = items;
     s[role].money = money;
     s[role].ready = false;
-    res.json({ ok: true });
+    const o = role === 'a' ? 'b' : 'a';
+    res.json({
+      ok: true,
+      trade: {
+        id: s.id,
+        state: s.state,
+        you: { username: s[role].username, items: s[role].items, money: s[role].money, locked: s[role].locked, ready: s[role].ready },
+        other: { username: s[o].username, items: s[o].items, money: s[o].money, locked: s[o].locked, ready: s[o].ready }
+      }
+    });
   } catch (e) {
     console.error('[trade-offer]', e.message);
     res.status(500).json({ error: 'Could not update offer' });
@@ -1545,7 +1569,16 @@ app.post('/api/trade/:id/lock', dbReady, auth, (req, res) => {
   const role = tradeRole(s, req.user.id);
   if (!role) return res.status(403).json({ error: 'Not part of this trade' });
   s[role].locked = true;
-  res.json({ ok: true });
+  const o = role === 'a' ? 'b' : 'a';
+  res.json({
+    ok: true,
+    trade: {
+      id: s.id,
+      state: s.state,
+      you: { username: s[role].username, items: s[role].items, money: s[role].money, locked: s[role].locked, ready: s[role].ready },
+      other: { username: s[o].username, items: s[o].items, money: s[o].money, locked: s[o].locked, ready: s[o].ready }
+    }
+  });
 });
 app.post('/api/trade/:id/unlock', dbReady, auth, (req, res) => {
   const s = tradeSessions.get(parseInt(req.params.id, 10));
@@ -1554,7 +1587,16 @@ app.post('/api/trade/:id/unlock', dbReady, auth, (req, res) => {
   if (!role) return res.status(403).json({ error: 'Not part of this trade' });
   s[role].locked = false;
   s[role].ready = false;
-  res.json({ ok: true });
+  const o = role === 'a' ? 'b' : 'a';
+  res.json({
+    ok: true,
+    trade: {
+      id: s.id,
+      state: s.state,
+      you: { username: s[role].username, items: s[role].items, money: s[role].money, locked: s[role].locked, ready: s[role].ready },
+      other: { username: s[o].username, items: s[o].items, money: s[o].money, locked: s[o].locked, ready: s[o].ready }
+    }
+  });
 });
 app.post('/api/trade/:id/cancel', dbReady, auth, (req, res) => {
   const s = tradeSessions.get(parseInt(req.params.id, 10));

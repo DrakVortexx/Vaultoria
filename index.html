@@ -1533,8 +1533,9 @@ async function onBreached(msg) {
  * TRADE WEBSOCKET HANDLERS
  * ============================================================= */
 function onTradeRequest(msg) {
-  if (pendingTradeReqs.find(x => x.id === msg.id)) return;
-  pendingTradeReqs.push({ id: msg.id, fromName: msg.fromName });
+  const reqId = msg.requestId || msg.id;
+  if (pendingTradeReqs.find(x => x.id === reqId)) return;
+  pendingTradeReqs.push({ id: reqId, fromName: msg.fromName });
   if (!$('tradeModal').classList.contains('hidden') && !activeTrade) renderPendingReqs();
   toast('TRADE REQUEST', msg.fromName + ' wants to trade with you', null, '#4fd1ff');
 }
@@ -3732,7 +3733,18 @@ async function loadOnline() {
     for (const u of r.online) {
       if (u.id === me.id) continue;
       const li = document.createElement('li');
-      li.innerHTML = '<span class="name">' + esc(u.username) + '</span>';
+      li.innerHTML = '<span class="name">' + esc(u.username) + '</span>' +
+        '<button class="mini-btn" data-trade-user="' + u.id + '" data-trade-name="' + esc(u.username) + '">Request Trade</button>';
+      li.querySelector('[data-trade-user]').addEventListener('click', async (e) => {
+        const userId = parseInt(e.target.dataset.tradeUser, 10);
+        const username = e.target.dataset.tradeName;
+        try {
+          await api('/trade/request', { method: 'POST', body: JSON.stringify({ toUserId: userId }) });
+          toast('REQUEST SENT', 'Waiting for ' + username + ' to accept', null, '#4fd1ff');
+        } catch (err) {
+          toast('OOPS', err.message, null, '#ff6b8a');
+        }
+      });
       list.appendChild(li);
     }
   } catch (e) {
@@ -3754,8 +3766,7 @@ function renderPendingReqs() {
       '<button class="mini-btn ghost" data-decline="' + req.id + '">Decline</button>';
     p.querySelector('[data-accept]').addEventListener('click', async () => {
       try {
-        const r = await api('/trade/' + req.id + '/accept', { method: 'POST' });
-        state = r.state;
+        const r = await api('/trade/request/' + req.id + '/accept', { method: 'POST' });
         activeTrade = r.trade;
         pendingTradeReqs = pendingTradeReqs.filter(x => x.id !== req.id);
         $('tradeStart').classList.add('hidden');
@@ -3765,7 +3776,7 @@ function renderPendingReqs() {
     });
     p.querySelector('[data-decline]').addEventListener('click', async () => {
       try {
-        await api('/trade/' + req.id + '/decline', { method: 'POST' });
+        await api('/trade/request/' + req.id + '/decline', { method: 'POST' });
         pendingTradeReqs = pendingTradeReqs.filter(x => x.id !== req.id);
         renderPendingReqs();
       } catch (e) {}
