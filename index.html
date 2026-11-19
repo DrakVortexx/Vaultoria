@@ -3667,9 +3667,9 @@ async function loadOnline() {
     const r = await api('/online');
     const list = $('onlineList');
     if (!list) return;
-    if (!r || !r.users) { list.innerHTML = '<li class="empty">No online keepers</li>'; return; }
+    if (!r || !r.online) { list.innerHTML = '<li class="empty">No online keepers</li>'; return; }
     list.innerHTML = '';
-    for (const u of r.users) {
+    for (const u of r.online) {
       if (u.id === me.id) continue;
       const li = document.createElement('li');
       li.innerHTML = '<span class="name">' + esc(u.username) + '</span>';
