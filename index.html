@@ -571,6 +571,12 @@
   .trade-actions { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; margin-top: 12px; align-items: center; }
   .trade-actions .buy { flex: 0 0 auto; width: auto; padding: 10px 18px; }
   .trade-status { width: 100%; text-align: center; font-size: 13px; color: #8b93bd; margin-top: 8px; }
+  .trade-money-input { font-family: inherit; font-size: 13px; font-weight: 600; width: 110px; padding: 6px 8px; border-radius: 8px; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); outline: none; text-align: right; }
+  .trade-money-input:focus { border-color: #4fd1ff; box-shadow: 0 0 0 2px rgba(79,209,255,0.25); }
+  .trade-money-input:disabled { opacity: 0.5; }
+  .offer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .offer-row .item-left { flex: 1; }
+  .offer-row .item-value { min-width: 30px; text-align: center; }
 
   /* quests */
   .quest { background: #0b0d1d; border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; }
@@ -1070,7 +1076,18 @@
       </div>
       <div id="tradeBuilder" class="hidden">
         <div class="trade-grid">
-          <div class="trade-col"><h2 class="inv-head" style="border:none">YOUR OFFER</h2><div id="tradeMine"></div></div>
+          <div class="trade-col">
+            <h2 class="inv-head" style="border:none">YOUR OFFER</h2>
+            <div id="tradeMine"></div>
+            <div id="tradeDraft" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08)">
+              <div class="bazaar-search" style="margin-bottom:8px">
+                <input id="tradeMoneyInput" class="trade-money-input" type="number" min="0" placeholder="Money to offer">
+              </div>
+              <div style="margin-bottom:8px"><span style="font-size:12px;color:#8b93bd">Select items from your inventory:</span></div>
+              <ul class="list" id="tradeInventory" style="max-height:200px"></ul>
+              <button id="tradeUpdateOffer" class="buy" type="button" style="margin-top:8px">UPDATE OFFER</button>
+            </div>
+          </div>
           <div class="trade-col"><h2 class="inv-head" style="border:none">THEIR OFFER <span id="tradeOtherName"></span></h2><div id="tradeTheirs"></div></div>
         </div>
         <div class="trade-actions">
@@ -3662,6 +3679,49 @@ function openTrade() {
   loadOnline();
 }
 
+function renderTradeInventory() {
+  const list = $('tradeInventory');
+  if (!list) return;
+  list.innerHTML = '';
+  const counts = state.counts || {};
+  const entries = Object.entries(counts).sort((a, b) => itemValueKey(b[0]) - itemValueKey(a[0]));
+  if (entries.length === 0) {
+    list.innerHTML = '<li class="empty">No items in inventory</li>';
+    return;
+  }
+  for (const [it, count] of entries) {
+    const rar = rarityFor(baseName(it));
+    const inDraft = (tradeDraft.items[it] || 0);
+    const li = document.createElement('li');
+    li.className = 'offer-row';
+    li.innerHTML =
+      '<span class="item-left"><span class="item-name">' + itemDisplayName(it) + '</span>' + mutBadge(it) +
+      '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' +
+      '<span class="item-value">x' + count + '</span>' +
+      '<div style="display:flex;align-items:center;gap:4px">' +
+        '<button class="mini-btn" data-add="' + it + '" style="padding:4px 8px;font-size:11px">+</button>' +
+        '<span style="font-size:12px;font-weight:700;min-width:20px;text-align:center">' + inDraft + '</span>' +
+        '<button class="mini-btn ghost" data-remove="' + it + '" style="padding:4px 8px;font-size:11px">-</button>' +
+      '</div>';
+    li.querySelector('[data-add]').addEventListener('click', () => {
+      if (inDraft < count) {
+        tradeDraft.items[it] = inDraft + 1;
+        tradeDraftDirty = true;
+        renderTradeInventory();
+      }
+    });
+    li.querySelector('[data-remove]').addEventListener('click', () => {
+      if (inDraft > 0) {
+        tradeDraft.items[it] = inDraft - 1;
+        if (tradeDraft.items[it] === 0) delete tradeDraft.items[it];
+        tradeDraftDirty = true;
+        renderTradeInventory();
+      }
+    });
+    list.appendChild(li);
+  }
+}
+
 async function loadOnline() {
   try {
     const r = await api('/online');
@@ -3731,6 +3791,7 @@ function renderTrade() {
   const other = activeTrade.other || {};
   const mine = $('tradeMine');
   const theirs = $('tradeTheirs');
+  const draft = $('tradeDraft');
   if (!mine || !theirs) return;
 
   let html = '';
@@ -3761,6 +3822,8 @@ function renderTrade() {
 
   const lockBtn = $('tradeLock');
   const confirmBtn = $('tradeConfirm');
+  const moneyInput = $('tradeMoneyInput');
+  const updateBtn = $('tradeUpdateOffer');
   if (lockBtn) {
     lockBtn.textContent = you.locked ? 'UNLOCK OFFER' : 'LOCK OFFER';
     lockBtn.disabled = false;
@@ -3768,7 +3831,43 @@ function renderTrade() {
   if (confirmBtn) {
     confirmBtn.disabled = !(you.locked && other.locked);
   }
+
+  if (draft) {
+    if (you.locked) {
+      draft.classList.add('hidden');
+    } else {
+      draft.classList.remove('hidden');
+      if (moneyInput) {
+        moneyInput.value = you.money || 0;
+        moneyInput.disabled = false;
+      }
+      if (updateBtn) {
+        updateBtn.disabled = false;
+      }
+      tradeDraft = { items: Object.assign({}, you.items || {}), money: you.money || 0 };
+      renderTradeInventory();
+    }
+  }
 }
+
+$('tradeUpdateOffer').addEventListener('click', async () => {
+  if (!activeTrade) return;
+  try {
+    const moneyInput = $('tradeMoneyInput');
+    const money = Math.max(0, Math.floor(Number(moneyInput ? moneyInput.value : 0) || 0));
+    const r = await api('/trade/' + activeTrade.id + '/offer', {
+      method: 'POST',
+      body: JSON.stringify({
+        items: tradeDraft.items,
+        money: money
+      })
+    });
+    activeTrade = r.trade;
+    tradeDraftDirty = false;
+    renderTrade();
+    toast('OFFER UPDATED', 'Your offer has been sent', null, '#4fd1ff');
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
 
 $('tradeLock').addEventListener('click', async () => {
   if (!activeTrade) return;
