@@ -1680,8 +1680,9 @@ function renderTrade() {
   const mi = moneyRow.querySelector('[data-money]');
   mi.addEventListener('input', () => {
     const raw = mi.value;
-    if (raw === '') { tradeDraft.money = 0; return; }
+    if (raw === '') { tradeDraft.money = 0; editOffer(); return; }
     tradeDraft.money = Math.max(0, Math.floor(Number(raw) || 0));
+    editOffer();
   });
   mi.addEventListener('blur', () => {
     let v = Math.max(0, Math.floor(Number(mi.value) || 0));
