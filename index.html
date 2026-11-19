@@ -564,6 +564,14 @@
   .bazaar-search input:focus, .bazaar-search select:focus { border-color: #6d4dff; }
   .bazaar-search select option { background: #0b0d1d; color: #fff; }
 
+  /* trade modal */
+  .trade-grid { display: flex; gap: 14px; width: 100%; }
+  .trade-col { flex: 1; min-width: 0; }
+  .trade-col ul.list { max-height: 250px; }
+  .trade-actions { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; margin-top: 12px; align-items: center; }
+  .trade-actions .buy { flex: 0 0 auto; width: auto; padding: 10px 18px; }
+  .trade-status { width: 100%; text-align: center; font-size: 13px; color: #8b93bd; margin-top: 8px; }
+
   /* quests */
   .quest { background: #0b0d1d; border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; }
   .quest.done { border-color: rgba(123,220,120,0.5); }
@@ -720,6 +728,7 @@
         <button class="hud-btn" id="marketBtn" type="button">Market</button>
         <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
         <button class="hud-btn" id="leadBtn" type="button">Leaders</button>
+        <button class="hud-btn" id="tradeBtn" type="button">Trade</button>
         <button class="hud-btn" id="leaveBtn" type="button">Leave</button>
       </div>
     </div>
@@ -1038,6 +1047,38 @@
       </div>
       <div id="bossContent">
         <div class="empty-note">Loading boss information...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trade modal -->
+  <div id="tradeModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <div class="modal-title">Trade</div>
+        <div class="resource-bar"><span class="icon">$</span><span class="label">Money</span><span class="value" id="tMoney">$0</span></div>
+        <button class="x" data-close="tradeModal" type="button">&times;</button>
+      </div>
+      <div id="tradeStart">
+        <div class="empty-note" style="padding:8px 4px 14px">Trade items and cash with any keeper online. Your trade privacy is set in Settings.</div>
+        <div class="bazaar-search">
+          <input id="tradeUser" type="text" maxlength="20" autocomplete="off" placeholder="Username to trade with...">
+          <button id="tradeSend" class="mini-btn" type="button">REQUEST TRADE</button>
+        </div>
+        <div id="tradeRequests"></div>
+        <ul class="list" id="onlineList"><li class="empty">Loading online keepers...</li></ul>
+      </div>
+      <div id="tradeBuilder" class="hidden">
+        <div class="trade-grid">
+          <div class="trade-col"><h2 class="inv-head" style="border:none">YOUR OFFER</h2><div id="tradeMine"></div></div>
+          <div class="trade-col"><h2 class="inv-head" style="border:none">THEIR OFFER <span id="tradeOtherName"></span></h2><div id="tradeTheirs"></div></div>
+        </div>
+        <div class="trade-actions">
+          <button id="tradeLock" class="buy" type="button">LOCK OFFER</button>
+          <button id="tradeConfirm" class="buy" type="button">CONFIRM TRADE</button>
+          <button id="tradeCancel" class="mini-btn ghost" type="button">CANCEL</button>
+        </div>
+        <div class="trade-status" id="tradeStatus"></div>
       </div>
     </div>
   </div>
@@ -1472,6 +1513,66 @@ async function onBreached(msg) {
 }
 
 /* =============================================================
+ * TRADE WEBSOCKET HANDLERS
+ * ============================================================= */
+function onTradeRequest(msg) {
+  if (pendingTradeReqs.find(x => x.id === msg.id)) return;
+  pendingTradeReqs.push({ id: msg.id, fromName: msg.fromName });
+  if (!$('tradeModal').classList.contains('hidden') && !activeTrade) renderPendingReqs();
+  toast('TRADE REQUEST', msg.fromName + ' wants to trade with you', null, '#4fd1ff');
+}
+
+function onTradeOpened(msg) {
+  activeTrade = msg.trade;
+  if (!$('tradeModal').classList.contains('hidden')) {
+    $('tradeStart').classList.add('hidden');
+    $('tradeBuilder').classList.remove('hidden');
+    renderTrade();
+  }
+}
+
+function onTradeDone(msg) {
+  state = msg.state;
+  activeTrade = null;
+  toast('TRADE COMPLETE', 'Your trade was successful', null, '#7bdc78');
+  if (!$('tradeModal').classList.contains('hidden')) {
+    $('tradeStart').classList.remove('hidden');
+    $('tradeBuilder').classList.add('hidden');
+    renderPendingReqs();
+    loadOnline();
+  }
+  renderVault();
+}
+
+function onTradeCancelled(msg) {
+  activeTrade = null;
+  toast('TRADE CANCELLED', 'The trade was cancelled', null, '#8b93bd');
+  if (!$('tradeModal').classList.contains('hidden')) {
+    $('tradeStart').classList.remove('hidden');
+    $('tradeBuilder').classList.add('hidden');
+    renderPendingReqs();
+    loadOnline();
+  }
+}
+
+function onTradeDeclined(msg) {
+  toast('DECLINED', msg.fromName + ' declined your trade request', null, '#8b93bd');
+  pendingTradeReqs = pendingTradeReqs.filter(x => x.id !== msg.id);
+  if (!$('tradeModal').classList.contains('hidden') && !activeTrade) renderPendingReqs();
+}
+
+async function pollTrade() {
+  if (!activeTrade) return;
+  try {
+    const r = await api('/trade/' + activeTrade.id);
+    if (r.trade) {
+      activeTrade = r.trade;
+      if (!$('tradeModal').classList.contains('hidden')) renderTrade();
+    }
+  } catch (e) {}
+}
+
+/* =============================================================
  * ELECTRIC EVENT & THE CENTER WHEEL
  * ============================================================= */
 function nearWheel() {
@@ -1887,6 +1988,12 @@ function connectWS() {
     else if (msg.type === 'boss') onBoss(msg.boss);
     else if (msg.type === 'bossDefeated') onBossDefeated(msg.boss);
     else if (msg.type === 'breached') onBreached(msg);
+    else if (msg.type === 'tradeRequest') onTradeRequest(msg);
+    else if (msg.type === 'tradeOpened') onTradeOpened(msg);
+    else if (msg.type === 'tradeDone') onTradeDone(msg);
+    else if (msg.type === 'tradeCancelled') onTradeCancelled(msg);
+    else if (msg.type === 'tradeDeclined') onTradeDeclined(msg);
+    else if (msg.type === 'tradeUpdate') pollTrade();
     else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);
     else if (msg.type === 'wheel') onWheelMsg(msg);
     else if (msg.type === 'restart') onRestart();
@@ -2784,7 +2891,7 @@ function updateHint() {
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'wheelModal', 'bossModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'wheelModal', 'bossModal', 'tradeModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -3252,6 +3359,7 @@ function renderAch() {
  * BAZAAR
  * ============================================================= */
 $('bazaarBtn').addEventListener('click', () => { ac(); openBazaar(); });
+$('tradeBtn').addEventListener('click', () => { ac(); openTrade(); });
 function openBazaar() {
   if (!inGame) return;
   closeAllModals();
@@ -3528,6 +3636,179 @@ $('bazaarSearch').addEventListener('input', () => {
 $('leaderSearch').addEventListener('input', applyLeaderSearch);
 $('bazaarRarity').addEventListener('change', () => { bazaarRarity = $('bazaarRarity').value; loadBazaar(); });
 $('bazaarMutation').addEventListener('change', () => { bazaarMutation = $('bazaarMutation').value; loadBazaar(); });
+
+/* =============================================================
+ * TRADE
+ * ============================================================= */
+let pendingTradeReqs = [];
+let activeTrade = null;
+let tradeDraft = { items: {}, money: 0 };
+let tradeDraftDirty = false;
+
+function openTrade() {
+  if (!inGame) return;
+  closeAllModals();
+  $('tradeModal').classList.remove('hidden');
+  $('tMoney').textContent = '$' + fmt(state.money);
+  if (activeTrade) {
+    $('tradeStart').classList.add('hidden');
+    $('tradeBuilder').classList.remove('hidden');
+    renderTrade();
+    return;
+  }
+  $('tradeStart').classList.remove('hidden');
+  $('tradeBuilder').classList.add('hidden');
+  renderPendingReqs();
+  loadOnline();
+}
+
+async function loadOnline() {
+  try {
+    const r = await api('/online');
+    const list = $('onlineList');
+    if (!list) return;
+    if (!r || !r.users) { list.innerHTML = '<li class="empty">No online keepers</li>'; return; }
+    list.innerHTML = '';
+    for (const u of r.users) {
+      if (u.id === me.id) continue;
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="name">' + esc(u.username) + '</span>';
+      list.appendChild(li);
+    }
+  } catch (e) {
+    const list = $('onlineList');
+    if (list) list.innerHTML = '<li class="empty">Could not load online keepers</li>';
+  }
+}
+
+function renderPendingReqs() {
+  const div = $('tradeRequests');
+  if (!div) return;
+  div.innerHTML = '';
+  if (!pendingTradeReqs.length) return;
+  for (const req of pendingTradeReqs) {
+    const p = document.createElement('div');
+    p.className = 'row';
+    p.innerHTML = '<span class="name">' + esc(req.fromName) + '</span>' +
+      '<button class="mini-btn" data-accept="' + req.id + '">Accept</button>' +
+      '<button class="mini-btn ghost" data-decline="' + req.id + '">Decline</button>';
+    p.querySelector('[data-accept]').addEventListener('click', async () => {
+      try {
+        const r = await api('/trade/' + req.id + '/accept', { method: 'POST' });
+        state = r.state;
+        activeTrade = r.trade;
+        pendingTradeReqs = pendingTradeReqs.filter(x => x.id !== req.id);
+        $('tradeStart').classList.add('hidden');
+        $('tradeBuilder').classList.remove('hidden');
+        renderTrade();
+      } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+    });
+    p.querySelector('[data-decline]').addEventListener('click', async () => {
+      try {
+        await api('/trade/' + req.id + '/decline', { method: 'POST' });
+        pendingTradeReqs = pendingTradeReqs.filter(x => x.id !== req.id);
+        renderPendingReqs();
+      } catch (e) {}
+    });
+    div.appendChild(p);
+  }
+}
+
+$('tradeSend').addEventListener('click', async () => {
+  const inp = $('tradeUser');
+  const username = (inp.value || '').trim();
+  if (!username) return;
+  try {
+    const r = await api('/trade/request', { method: 'POST', body: JSON.stringify({ username }) });
+    toast('REQUEST SENT', 'Trade request sent to ' + username, null, '#4fd1ff');
+    inp.value = '';
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
+
+function renderTrade() {
+  if (!activeTrade || !activeTrade.you) return;
+  const you = activeTrade.you;
+  const other = activeTrade.other || {};
+  const mine = $('tradeMine');
+  const theirs = $('tradeTheirs');
+  if (!mine || !theirs) return;
+
+  let html = '';
+  for (const [key, qty] of Object.entries(you.items || {})) {
+    const rar = rarityFor(baseName(key));
+    html += '<li class="row"><span class="item-left"><span class="item-name">' + itemDisplayName(key) + '</span>' + mutBadge(key) + '</span><span class="item-count">x' + qty + '</span></li>';
+  }
+  if (you.money > 0) html += '<li class="row"><span class="name">Money</span><span class="item-count">$' + fmt(you.money) + '</span></li>';
+  mine.innerHTML = html || '<li class="empty">Nothing offered</li>';
+
+  html = '';
+  for (const [key, qty] of Object.entries(other.items || {})) {
+    const rar = rarityFor(baseName(key));
+    html += '<li class="row"><span class="item-left"><span class="item-name">' + itemDisplayName(key) + '</span>' + mutBadge(key) + '</span><span class="item-count">x' + qty + '</span></li>';
+  }
+  if (other.money > 0) html += '<li class="row"><span class="name">Money</span><span class="item-count">$' + fmt(other.money) + '</span></li>';
+  theirs.innerHTML = html || '<li class="empty">Nothing offered</li>';
+
+  const status = $('tradeStatus');
+  if (status) {
+    let s = '';
+    if (you.locked && other.locked) s = 'Both offers locked \u2014 confirm to complete';
+    else if (you.locked) s = 'Your offer is locked. Waiting for them...';
+    else if (other.locked) s = 'Their offer is locked. Lock yours to continue.';
+    else s = 'Add items or money, then lock your offer.';
+    status.textContent = s;
+  }
+
+  const lockBtn = $('tradeLock');
+  const confirmBtn = $('tradeConfirm');
+  if (lockBtn) {
+    lockBtn.textContent = you.locked ? 'UNLOCK OFFER' : 'LOCK OFFER';
+    lockBtn.disabled = false;
+  }
+  if (confirmBtn) {
+    confirmBtn.disabled = !(you.locked && other.locked);
+  }
+}
+
+$('tradeLock').addEventListener('click', async () => {
+  if (!activeTrade) return;
+  try {
+    const locked = !!(activeTrade.you || {}).locked;
+    const r = await api('/trade/' + activeTrade.id + (locked ? '/unlock' : '/lock'), {
+      method: 'POST',
+      body: JSON.stringify({
+        items: (activeTrade.you || {}).items || {},
+        money: (activeTrade.you || {}).money || 0
+      })
+    });
+    activeTrade = r.trade;
+    renderTrade();
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
+
+$('tradeConfirm').addEventListener('click', async () => {
+  if (!activeTrade) return;
+  try {
+    const r = await api('/trade/' + activeTrade.id + '/confirm', { method: 'POST' });
+    state = r.state;
+    activeTrade = null;
+    toast('TRADE COMPLETE', 'Your trade was successful', null, '#7bdc78');
+    closeAllModals();
+    renderVault();
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
+
+$('tradeCancel').addEventListener('click', async () => {
+  if (!activeTrade) return;
+  try {
+    await api('/trade/' + activeTrade.id + '/cancel', { method: 'POST' });
+    activeTrade = null;
+    $('tradeStart').classList.remove('hidden');
+    $('tradeBuilder').classList.add('hidden');
+    renderPendingReqs();
+    loadOnline();
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
 
 /* =============================================================
  * DAILY QUESTS
