@@ -45,7 +45,8 @@ const RARITIES = [
   { key: 'divine',     name: 'Divine',     color: '#fff3c0', weight: 1500 },
   { key: 'celestial',  name: 'Celestial',  color: '#5a7bff', weight: 800 },
   { key: 'eternal',    name: 'Eternal',    color: '#ff4fd8', weight: 400 },
-  { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 200 }
+  { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 200 },
+  { key: 'christmas',  name: 'Christmas',  color: '#ff6b6b', weight: 0 }
 ];
 const ITEMS_BY_RARITY = {
   common: ["Iron Scrap","Cracked Stone","Copper Wire","Coal Chunk","Rusty Bolt","Glass Shard","Faded Circuit","Dust Crystal","Scrap Metal","Empty Power Cell"],
@@ -57,7 +58,8 @@ const ITEMS_BY_RARITY = {
   divine: ["Heavenstone","Genesis Core","Seraphic Engine","Miracle Fragment","Dawn Singularity","Divine Circuit","Worldroot Crystal","Sacred Chrono Gear","Creation Battery","Halo of Eternity"],
   celestial: ["Nebula Heart","Galaxy Engine","Starborn Relic","Cosmic Prism","Astral Crown","Blackstar Core","Universe Fragment","Event Horizon Lens","Multiverse Battery","Celestial Throne"],
   eternal: ["Infinity Heart","Eternal Singularity","Timebreak Relic","Unending Engine","Immortal Prism","Endlessness Core","Absolute Chrono Gear","Evernight Crystal","Eternal Crown","Last Light of Time"],
-  omniversal: ["Omniversal Seed","Reality's Last Spark","Infinite Paradox","The First Singularity","Multiverse Heart","Absolute Infinity","The Unwritten World","Omniscient Core","The Final Constant","The Omniversal"]
+  omniversal: ["Omniversal Seed","Reality's Last Spark","Infinite Paradox","The First Singularity","Multiverse Heart","Absolute Infinity","The Unwritten World","Omniscient Core","The Final Constant","The Omniversal"],
+  christmas: ["Candy Cane Shard","Frosted Circuit","Jingle Bell Alloy","Gingerbread Core","Snowglobe Prism","Tinsel Power Cell","Reindeer Flux Drive","North Star Fragment","Santa's Sigil","Christmas Miracle"]
 };
 // Per-item base value in currency. Sell value = base * mutation multiplier.
 const ITEM_BASE = {
@@ -70,7 +72,8 @@ const ITEM_BASE = {
   "Heavenstone": 1000000, "Genesis Core": 1250000, "Seraphic Engine": 1500000, "Miracle Fragment": 1800000, "Dawn Singularity": 2200000, "Divine Circuit": 2700000, "Worldroot Crystal": 3200000, "Sacred Chrono Gear": 4000000, "Creation Battery": 5000000, "Halo of Eternity": 7500000,
   "Nebula Heart": 10000000, "Galaxy Engine": 12500000, "Starborn Relic": 15000000, "Cosmic Prism": 20000000, "Astral Crown": 25000000, "Blackstar Core": 35000000, "Universe Fragment": 50000000, "Event Horizon Lens": 65000000, "Multiverse Battery": 85000000, "Celestial Throne": 100000000,
   "Infinity Heart": 150000000, "Eternal Singularity": 200000000, "Timebreak Relic": 250000000, "Unending Engine": 300000000, "Immortal Prism": 400000000, "Endlessness Core": 500000000, "Absolute Chrono Gear": 650000000, "Evernight Crystal": 800000000, "Eternal Crown": 1000000000, "Last Light of Time": 1500000000,
-  "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000
+  "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000,
+  "Candy Cane Shard": 25, "Frosted Circuit": 60, "Jingle Bell Alloy": 150, "Gingerbread Core": 400, "Snowglobe Prism": 1000, "Tinsel Power Cell": 3000, "Reindeer Flux Drive": 10000, "North Star Fragment": 50000, "Santa's Sigil": 250000, "Christmas Miracle": 1000000
 };
 const ITEM_RARITY = {};
 RARITIES.forEach((r, i) => (ITEMS_BY_RARITY[r.key] || []).forEach(it => { ITEM_RARITY[it] = i; }));
@@ -78,6 +81,11 @@ RARITIES.forEach((r, i) => (ITEMS_BY_RARITY[r.key] || []).forEach(it => { ITEM_R
 const SELL_MULT = 1.25;
 const MAX_LEVEL = luck.MAX_LEVEL;
 const GEN_GRACE = 250;
+const CHRISTMAS_DROP_CHANCE = 0.08;
+const CHRISTMAS_RARITY_INDEX = RARITIES.findIndex(r => r.key === 'christmas');
+function isChristmasEvent(date = new Date()) {
+  return date.getUTCMonth() === 11 && date.getUTCDate() >= 1 && date.getUTCDate() <= 25;
+}
 
 function genCost(level) {
   const n = Number(level) + 1;
@@ -821,7 +829,10 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
       return res.status(400).json({ error: 'Vault full \u2014 sell items to make room' });
     }
     const level = Number(st.level || 1);
-    const ri = luck.pickRarityIndex(level);
+    const festive = isChristmasEvent();
+    const ri = festive && Math.random() < CHRISTMAS_DROP_CHANCE
+      ? CHRISTMAS_RARITY_INDEX
+      : luck.pickRarityIndex(level);
     const itemPool = ITEMS_BY_RARITY[RARITIES[ri].key];
     const item = itemPool[Math.floor(Math.random() * itemPool.length)];
     const mut = rollMutation();
@@ -834,10 +845,11 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
     stats.ig = (stats.ig || 0) + 1;
     if (stats.seen.indexOf(item) === -1) stats.seen.push(item);
     if (stats.best == null) stats.best = -1;
-    if (ri > stats.best) stats.best = ri;
+    if (ri < CHRISTMAS_RARITY_INDEX && ri > stats.best) stats.best = ri;
 
     // Every generated item also hits the world boss and feeds its pool.
-    const bossRes = await contributeToBoss(client, req.user.id, ri + 1, value);
+    const bossTier = Math.min(ri + 1, CHRISTMAS_RARITY_INDEX);
+    const bossRes = await contributeToBoss(client, req.user.id, bossTier, value);
 
     const daily = dailyOf(st);
     daily.prog.gen = (daily.prog.gen || 0) + 1;

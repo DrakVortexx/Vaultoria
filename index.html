@@ -586,6 +586,57 @@
   .quest-desc { font-size: 12px; color: #8b93bd; margin: 3px 0 8px; }
   .quest-reward { font-size: 12px; color: #7bdc78; font-weight: 700; }
 
+  body.christmas { background: #07120d; }
+  body.christmas::before {
+    background:
+      radial-gradient(38% 38% at 22% 26%, rgba(220,38,38,0.24), transparent 62%),
+      radial-gradient(34% 34% at 78% 74%, rgba(34,197,94,0.22), transparent 62%),
+      radial-gradient(30% 30% at 66% 16%, rgba(255,215,0,0.14), transparent 62%);
+  }
+  body.christmas::after {
+    content: ""; position: fixed; inset: -20%; z-index: 1; pointer-events: none;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1.6px),
+      radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 1.6px),
+      radial-gradient(circle, rgba(138,255,216,0.5) 1px, transparent 1.6px);
+    background-size: 90px 90px, 140px 140px, 210px 210px;
+    background-position: 0 0, 45px 60px, 120px 30px;
+    animation: snowFall 14s linear infinite;
+  }
+  @keyframes snowFall { from { transform: translate3d(0, -10%, 0); } to { transform: translate3d(0, 10%, 0); } }
+  body.christmas #authScreen,
+  body.christmas #dashScreen {
+    background:
+      radial-gradient(circle at 30% 20%, rgba(220,38,38,0.28), transparent 55%),
+      radial-gradient(circle at 75% 80%, rgba(34,197,94,0.22), transparent 55%),
+      #07120d;
+  }
+  body.christmas .brand { text-shadow: 0 0 24px #ff5c5c, 0 0 60px #22c55e; }
+  body.christmas .auth-card, body.christmas .dash-card, body.christmas .dash-panel, body.christmas .modal-card {
+    background: rgba(8, 20, 14, 0.9);
+    border-color: rgba(255,255,255,0.16);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 44px rgba(34,197,94,0.12);
+  }
+  body.christmas .dash-card:hover { border-color: rgba(255,255,255,0.5); box-shadow: 0 24px 60px rgba(220,38,38,0.32); }
+  body.christmas .play-card { background: linear-gradient(160deg, rgba(220,38,38,0.35), rgba(8,20,14,0.92)); border-color: rgba(255,255,255,0.32); }
+  body.christmas .btn, body.christmas #gen, body.christmas .sell-btn, body.christmas .mini-btn, body.christmas .buy {
+    background: linear-gradient(135deg, #dc2626, #16a34a);
+    box-shadow: 0 8px 24px rgba(220,38,38,0.4);
+  }
+  body.christmas .btn.ghost { background: rgba(255,255,255,0.06); box-shadow: none; }
+  body.christmas .auth-tab.active, body.christmas .tab.active { background: linear-gradient(135deg, #dc2626, #16a34a); }
+  .event-card { position: relative; }
+  .event-card .dc-icon { color: #ff6b6b; text-shadow: 0 0 20px #ff5c5c; }
+  .event-badge { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; background: #dc2626; padding: 3px 9px; border-radius: 10px; }
+  .event-banner { padding: 16px 18px; margin-bottom: 18px; border-radius: 16px; background: linear-gradient(135deg, rgba(220,38,38,0.22), rgba(34,197,94,0.2)); border: 1px solid rgba(255,255,255,0.14); }
+  .event-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  .event-desc { font-size: 13px; color: #c3c8e6; line-height: 1.6; }
+  .event-subtitle { margin: 0 0 12px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; }
+  .event-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+  .event-item { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  .event-name { font-size: 13px; font-weight: 700; }
+  .event-value { font-size: 12px; font-weight: 700; color: #7bdc78; white-space: nowrap; }
+
   /* Responsive */
   @media (max-width: 768px) {
     .dash-grid { grid-template-columns: 1fr; }
@@ -676,6 +727,12 @@
         <div class="dc-icon">&#127911;</div>
         <div class="dc-title">Customize</div>
         <div class="dc-desc">Customize your character appearance with colors and effects.</div>
+      </button>
+      <button class="dash-card event-card" id="eventBtn" type="button">
+        <span class="event-badge hidden" id="eventBadge">LIVE</span>
+        <div class="dc-icon">&#10052;</div>
+        <div class="dc-title">Event</div>
+        <div class="dc-desc" id="eventCardDesc">Check back December 1&ndash;25 for the Christmas event.</div>
       </button>
       <details class="dash-card rules-card">
         <summary>
@@ -1127,7 +1184,8 @@ const RARITIES = [
   { key: 'divine',     name: 'Divine',     color: '#fff3c0', weight: 1500 },
   { key: 'celestial',  name: 'Celestial',  color: '#5a7bff', weight: 800 },
   { key: 'eternal',    name: 'Eternal',    color: '#ff4fd8', weight: 400 },
-  { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 200 }
+  { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 200 },
+  { key: 'christmas',  name: 'Christmas',  color: '#ff6b6b', weight: 0 }
 ];
 const ITEMS_BY_RARITY = {
   common: ["Iron Scrap","Cracked Stone","Copper Wire","Coal Chunk","Rusty Bolt","Glass Shard","Faded Circuit","Dust Crystal","Scrap Metal","Empty Power Cell"],
@@ -1139,7 +1197,8 @@ const ITEMS_BY_RARITY = {
   divine: ["Heavenstone","Genesis Core","Seraphic Engine","Miracle Fragment","Dawn Singularity","Divine Circuit","Worldroot Crystal","Sacred Chrono Gear","Creation Battery","Halo of Eternity"],
   celestial: ["Nebula Heart","Galaxy Engine","Starborn Relic","Cosmic Prism","Astral Crown","Blackstar Core","Universe Fragment","Event Horizon Lens","Multiverse Battery","Celestial Throne"],
   eternal: ["Infinity Heart","Eternal Singularity","Timebreak Relic","Unending Engine","Immortal Prism","Endlessness Core","Absolute Chrono Gear","Evernight Crystal","Eternal Crown","Last Light of Time"],
-  omniversal: ["Omniversal Seed","Reality's Last Spark","Infinite Paradox","The First Singularity","Multiverse Heart","Absolute Infinity","The Unwritten World","Omniscient Core","The Final Constant","The Omniversal"]
+  omniversal: ["Omniversal Seed","Reality's Last Spark","Infinite Paradox","The First Singularity","Multiverse Heart","Absolute Infinity","The Unwritten World","Omniscient Core","The Final Constant","The Omniversal"],
+  christmas: ["Candy Cane Shard","Frosted Circuit","Jingle Bell Alloy","Gingerbread Core","Snowglobe Prism","Tinsel Power Cell","Reindeer Flux Drive","North Star Fragment","Santa's Sigil","Christmas Miracle"]
 };
 const ITEM_BASE = {
   "Iron Scrap": 5, "Cracked Stone": 3, "Copper Wire": 8, "Coal Chunk": 6, "Rusty Bolt": 4, "Glass Shard": 7, "Faded Circuit": 12, "Dust Crystal": 10, "Scrap Metal": 9, "Empty Power Cell": 15,
@@ -1151,8 +1210,24 @@ const ITEM_BASE = {
   "Heavenstone": 1000000, "Genesis Core": 1250000, "Seraphic Engine": 1500000, "Miracle Fragment": 1800000, "Dawn Singularity": 2200000, "Divine Circuit": 2700000, "Worldroot Crystal": 3200000, "Sacred Chrono Gear": 4000000, "Creation Battery": 5000000, "Halo of Eternity": 7500000,
   "Nebula Heart": 10000000, "Galaxy Engine": 12500000, "Starborn Relic": 15000000, "Cosmic Prism": 20000000, "Astral Crown": 25000000, "Blackstar Core": 35000000, "Universe Fragment": 50000000, "Event Horizon Lens": 65000000, "Multiverse Battery": 85000000, "Celestial Throne": 100000000,
   "Infinity Heart": 150000000, "Eternal Singularity": 200000000, "Timebreak Relic": 250000000, "Unending Engine": 300000000, "Immortal Prism": 400000000, "Endlessness Core": 500000000, "Absolute Chrono Gear": 650000000, "Evernight Crystal": 800000000, "Eternal Crown": 1000000000, "Last Light of Time": 1500000000,
-  "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000
+  "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000,
+  "Candy Cane Shard": 25, "Frosted Circuit": 60, "Jingle Bell Alloy": 150, "Gingerbread Core": 400, "Snowglobe Prism": 1000, "Tinsel Power Cell": 3000, "Reindeer Flux Drive": 10000, "North Star Fragment": 50000, "Santa's Sigil": 250000, "Christmas Miracle": 1000000
 };
+const CHRISTMAS_ITEMS = ITEMS_BY_RARITY.christmas;
+function isChristmasEvent(date = new Date()) {
+  return date.getUTCMonth() === 11 && date.getUTCDate() >= 1 && date.getUTCDate() <= 25;
+}
+function applyChristmasTheme() {
+  document.body.classList.toggle('christmas', isChristmasEvent());
+  if ($('eventBtn')) {
+    $('eventBadge').classList.toggle('hidden', !isChristmasEvent());
+    $('eventCardDesc').textContent = isChristmasEvent()
+      ? 'Christmas is here! Explore exclusive holiday items.'
+      : 'Check back December 1\u201325 for the Christmas event.';
+  }
+  if ($('panel-codex') && $('panel-codex').classList.contains('active')) renderCodex();
+  if (!$('dashPanel').classList.contains('hidden') && $('dashPanel').dataset.panel === 'event') renderEventPanel();
+}
 const MAX_LEVEL = 100;
 const SUF = ["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","UDc","DDc","TDc","QaDc","QiDc","SxDc"];
 const SERVER_CAPACITY = 8;
@@ -1331,6 +1406,9 @@ let spotTimer = null;
 let dailyData = null;
 let bossState = null;
 let lastMoneyShown = null;
+
+applyChristmasTheme();
+setInterval(applyChristmasTheme, 60000);
 
 /* =============================================================
  * FX
@@ -1765,21 +1843,50 @@ function renderDash() {
   $('dashWho').textContent = 'Signed in as ' + me.username;
   $('dashMoney').textContent = '$' + fmt(state.money);
   $('dashLevel').textContent = 'Lv ' + state.level;
+  applyChristmasTheme();
 }
 function openDashPanel(which) {
   const p = $('dashPanel');
   p.classList.remove('hidden');
+  p.dataset.panel = which;
   p.innerHTML = '<div class="spinner">Loading...</div>';
-  if (which === 'servers') renderServersPanel();
+  if (which === 'event') renderEventPanel();
+  else if (which === 'servers') renderServersPanel();
   else if (which === 'friends') renderFriendsPanel();
   else if (which === 'settings') renderSettingsPanel();
   else if (which === 'customize') renderCustomizePanel();
 }
 $('playBtn').addEventListener('click', play);
+$('eventBtn').addEventListener('click', () => openDashPanel('event'));
 $('serversBtn').addEventListener('click', () => openDashPanel('servers'));
 $('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
 $('settingsBtn').addEventListener('click', () => openDashPanel('settings'));
 $('customizeBtn').addEventListener('click', () => openDashPanel('customize'));
+
+function renderEventPanel() {
+  const p = $('dashPanel');
+  p.classList.remove('hidden');
+  let html = '<h3>Event</h3>';
+  if (isChristmasEvent()) {
+    html +=
+      '<div class="event-banner">' +
+        '<div class="event-title">&#10052; Christmas Event</div>' +
+        '<div class="event-desc">December 1&ndash;25 &middot; festive items can drop from the generator during the holiday season. Collect them all in the Christmas codex category.</div>' +
+      '</div>' +
+      '<h4 class="event-subtitle">Christmas Items</h4>' +
+      '<div class="event-items">';
+    CHRISTMAS_ITEMS.forEach(name => {
+      html += '<div class="event-item">' +
+        '<span class="event-name" style="color:#ff6b6b">' + esc(name) + '</span>' +
+        '<span class="event-value">$' + fmt(Math.round(ITEM_BASE[name] * SELL_MULT)) + '</span>' +
+      '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="empty-note" style="padding:8px 4px 14px">No event is live right now. The Christmas event runs every year from December 1 to December 25.</div>';
+  }
+  p.innerHTML = html;
+}
 
 function renderSettingsPanel() {
   const p = $('dashPanel');
@@ -3023,9 +3130,11 @@ function renderCodex() {
     const base = baseName(key);
     owned[base] = (owned[base] || 0) + Math.max(0, Number(state.counts[key]) || 0);
   }
+  const shownRarities = RARITIES.filter(rar => rar.key !== 'christmas' || isChristmasEvent());
   let discoveredTotal = 0;
+  let totalItems = 0;
   list.innerHTML = '';
-  RARITIES.forEach(rar => {
+  shownRarities.forEach(rar => {
     const names = ITEMS_BY_RARITY[rar.key] || [];
     let found = 0;
     const header = document.createElement('li');
@@ -3074,9 +3183,12 @@ function renderCodex() {
     });
     header.textContent = rar.name + '  ' + found + ' / ' + names.length;
     discoveredTotal += found;
+    totalItems += names.length;
   });
-  $('codexInfo').textContent = 'Discovered ' + discoveredTotal + ' / 100';
-  $('codexSummary').textContent = 'Tap a discovered item to see its value. Unknown items unlock when you generate or own them.';
+  $('codexInfo').textContent = 'Discovered ' + discoveredTotal + ' / ' + totalItems;
+  $('codexSummary').textContent = isChristmasEvent()
+    ? 'Tap a discovered item to see its value. Christmas items can drop from the generator until December 25.'
+    : 'Tap a discovered item to see its value. Unknown items unlock when you generate or own them.';
 }
 
 /* generator */

@@ -61,6 +61,11 @@ var RARITIES = [{
   name: 'Omniversal',
   color: '#8affd8',
   weight: 200
+}, {
+  key: 'christmas',
+  name: 'Christmas',
+  color: '#ff6b6b',
+  weight: 0
 }];
 var ITEMS_BY_RARITY = {
   common: ["Iron Scrap", "Cracked Stone", "Copper Wire", "Coal Chunk", "Rusty Bolt", "Glass Shard", "Faded Circuit", "Dust Crystal", "Scrap Metal", "Empty Power Cell"],
@@ -72,7 +77,8 @@ var ITEMS_BY_RARITY = {
   divine: ["Heavenstone", "Genesis Core", "Seraphic Engine", "Miracle Fragment", "Dawn Singularity", "Divine Circuit", "Worldroot Crystal", "Sacred Chrono Gear", "Creation Battery", "Halo of Eternity"],
   celestial: ["Nebula Heart", "Galaxy Engine", "Starborn Relic", "Cosmic Prism", "Astral Crown", "Blackstar Core", "Universe Fragment", "Event Horizon Lens", "Multiverse Battery", "Celestial Throne"],
   eternal: ["Infinity Heart", "Eternal Singularity", "Timebreak Relic", "Unending Engine", "Immortal Prism", "Endlessness Core", "Absolute Chrono Gear", "Evernight Crystal", "Eternal Crown", "Last Light of Time"],
-  omniversal: ["Omniversal Seed", "Reality's Last Spark", "Infinite Paradox", "The First Singularity", "Multiverse Heart", "Absolute Infinity", "The Unwritten World", "Omniscient Core", "The Final Constant", "The Omniversal"]
+  omniversal: ["Omniversal Seed", "Reality's Last Spark", "Infinite Paradox", "The First Singularity", "Multiverse Heart", "Absolute Infinity", "The Unwritten World", "Omniscient Core", "The Final Constant", "The Omniversal"],
+  christmas: ["Candy Cane Shard", "Frosted Circuit", "Jingle Bell Alloy", "Gingerbread Core", "Snowglobe Prism", "Tinsel Power Cell", "Reindeer Flux Drive", "North Star Fragment", "Santa's Sigil", "Christmas Miracle"]
 };
 var ITEM_BASE = {
   "Iron Scrap": 5,
@@ -174,8 +180,32 @@ var ITEM_BASE = {
   "The Unwritten World": 20000000000,
   "Omniscient Core": 30000000000,
   "The Final Constant": 50000000000,
-  "The Omniversal": 100000000000
+  "The Omniversal": 100000000000,
+  "Candy Cane Shard": 25,
+  "Frosted Circuit": 60,
+  "Jingle Bell Alloy": 150,
+  "Gingerbread Core": 400,
+  "Snowglobe Prism": 1000,
+  "Tinsel Power Cell": 3000,
+  "Reindeer Flux Drive": 10000,
+  "North Star Fragment": 50000,
+  "Santa's Sigil": 250000,
+  "Christmas Miracle": 1000000
 };
+var CHRISTMAS_ITEMS = ITEMS_BY_RARITY.christmas;
+function isChristmasEvent() {
+  var date = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new Date();
+  return date.getUTCMonth() === 11 && date.getUTCDate() >= 1 && date.getUTCDate() <= 25;
+}
+function applyChristmasTheme() {
+  document.body.classList.toggle('christmas', isChristmasEvent());
+  if ($('eventBtn')) {
+    $('eventBadge').classList.toggle('hidden', !isChristmasEvent());
+    $('eventCardDesc').textContent = isChristmasEvent() ? 'Christmas is here! Explore exclusive holiday items.' : "Check back December 1\u201325 for the Christmas event.";
+  }
+  if ($('panel-codex') && $('panel-codex').classList.contains('active')) renderCodex();
+  if (!$('dashPanel').classList.contains('hidden') && $('dashPanel').dataset.panel === 'event') renderEventPanel();
+}
 var MAX_LEVEL = 100;
 var SUF = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "UDc", "DDc", "TDc", "QaDc", "QiDc", "SxDc"];
 var SERVER_CAPACITY = 8;
@@ -464,12 +494,6 @@ var saveTimer = null;
 var hideTimeout = null;
 var salesCount = 0;
 var bazaarOpened = false;
-var pendingTradeReqs = [];
-var activeTrade = null;
-var tradeDraft = {
-  items: {},
-  money: 0
-};
 var ev = null;
 var vaultOpen = false;
 var generating = false;
@@ -484,6 +508,8 @@ var spotTimer = null;
 var dailyData = null;
 var bossState = null;
 var lastMoneyShown = null;
+applyChristmasTheme();
+setInterval(applyChristmasTheme, 60000);
 var actx = null;
 function ac() {
   if (!actx) {
@@ -638,45 +664,45 @@ function api(_x, _x2) {
   return _api.apply(this, arguments);
 }
 function _api() {
-  _api = _asyncToGenerator(_regenerator().m(function _callee12(path, opts) {
-    var headers, res, data, err, _t12;
-    return _regenerator().w(function (_context12) {
-      while (1) switch (_context12.p = _context12.n) {
+  _api = _asyncToGenerator(_regenerator().m(function _callee15(path, opts) {
+    var headers, res, data, err, _t15;
+    return _regenerator().w(function (_context15) {
+      while (1) switch (_context15.p = _context15.n) {
         case 0:
           opts = opts || {};
           headers = Object.assign({
             'Content-Type': 'application/json'
           }, opts.headers || {});
           if (token) headers.Authorization = 'Bearer ' + token;
-          _context12.n = 1;
+          _context15.n = 1;
           return fetch('/api' + path, Object.assign({}, opts, {
             headers: headers
           }));
         case 1:
-          res = _context12.v;
+          res = _context15.v;
           data = {};
-          _context12.p = 2;
-          _context12.n = 3;
+          _context15.p = 2;
+          _context15.n = 3;
           return res.json();
         case 3:
-          data = _context12.v;
-          _context12.n = 5;
+          data = _context15.v;
+          _context15.n = 5;
           break;
         case 4:
-          _context12.p = 4;
-          _t12 = _context12.v;
+          _context15.p = 4;
+          _t15 = _context15.v;
         case 5:
           if (res.ok) {
-            _context12.n = 6;
+            _context15.n = 6;
             break;
           }
           err = new Error(data.error || 'Request failed (' + res.status + ')');
           err.status = res.status;
           throw err;
         case 6:
-          return _context12.a(2, data);
+          return _context15.a(2, data);
       }
-    }, _callee12, null, [[2, 4]]);
+    }, _callee15, null, [[2, 4]]);
   }));
   return _api.apply(this, arguments);
 }
@@ -764,15 +790,15 @@ function loadMe() {
   return _loadMe.apply(this, arguments);
 }
 function _loadMe() {
-  _loadMe = _asyncToGenerator(_regenerator().m(function _callee13() {
+  _loadMe = _asyncToGenerator(_regenerator().m(function _callee16() {
     var data;
-    return _regenerator().w(function (_context13) {
-      while (1) switch (_context13.n) {
+    return _regenerator().w(function (_context16) {
+      while (1) switch (_context16.n) {
         case 0:
-          _context13.n = 1;
+          _context16.n = 1;
           return api('/me');
         case 1:
-          data = _context13.v;
+          data = _context16.v;
           me = data.user;
           state = data.state;
           dailyData = data.daily || null;
@@ -795,9 +821,9 @@ function _loadMe() {
             }
           }
         case 2:
-          return _context13.a(2);
+          return _context16.a(2);
       }
-    }, _callee13);
+    }, _callee16);
   }));
   return _loadMe.apply(this, arguments);
 }
@@ -814,24 +840,24 @@ function refreshState() {
   return _refreshState.apply(this, arguments);
 }
 function _refreshState() {
-  _refreshState = _asyncToGenerator(_regenerator().m(function _callee14() {
+  _refreshState = _asyncToGenerator(_regenerator().m(function _callee17() {
     var data;
-    return _regenerator().w(function (_context14) {
-      while (1) switch (_context14.n) {
+    return _regenerator().w(function (_context17) {
+      while (1) switch (_context17.n) {
         case 0:
-          _context14.n = 1;
+          _context17.n = 1;
           return api('/me');
         case 1:
-          data = _context14.v;
+          data = _context17.v;
           me = data.user;
           state = data.state;
           dailyData = data.daily || null;
           tutorialDone = !!state.tutorialDone;
           renderVault();
         case 2:
-          return _context14.a(2);
+          return _context17.a(2);
       }
-    }, _callee14);
+    }, _callee17);
   }));
   return _refreshState.apply(this, arguments);
 }
@@ -839,633 +865,119 @@ function onBreached(_x4) {
   return _onBreached.apply(this, arguments);
 }
 function _onBreached() {
-  _onBreached = _asyncToGenerator(_regenerator().m(function _callee15(msg) {
-    var took, _t13;
-    return _regenerator().w(function (_context15) {
-      while (1) switch (_context15.p = _context15.n) {
+  _onBreached = _asyncToGenerator(_regenerator().m(function _callee18(msg) {
+    var took, _t16;
+    return _regenerator().w(function (_context18) {
+      while (1) switch (_context18.p = _context18.n) {
         case 0:
           took = [];
           if (msg.item) took.push(itemDisplayName(makeKey(msg.item.name, msg.item.mutation ? MUT_BY_ID[msg.item.mutation] || null : null)) + ' x' + msg.item.qty);
           if (msg.money > 0) took.push('$' + fmt(msg.money));
           toast('YOU WERE BREACHED', (msg.byName || 'Someone') + ' raided your vault' + (took.length ? " \u2014 stole " + took.join(' + ') : " \u2014 took your change"), null, '#ff6b8a');
           sfxToast();
-          _context15.p = 1;
-          _context15.n = 2;
+          _context18.p = 1;
+          _context18.n = 2;
           return refreshState();
         case 2:
-          _context15.n = 4;
+          _context18.n = 4;
           break;
         case 3:
-          _context15.p = 3;
-          _t13 = _context15.v;
+          _context18.p = 3;
+          _t16 = _context18.v;
         case 4:
           renderBreachTargets();
         case 5:
-          return _context15.a(2);
+          return _context18.a(2);
       }
-    }, _callee15, null, [[1, 3]]);
+    }, _callee18, null, [[1, 3]]);
   }));
   return _onBreached.apply(this, arguments);
 }
-var tradeDraftDirty = false;
-$('tradeBtn').addEventListener('click', function () {
-  ac();
-  openTrade();
-});
-function openTrade() {
-  if (!inGame) return;
-  closeAllModals();
-  $('tradeModal').classList.remove('hidden');
-  $('tMoney').textContent = '$' + fmt(state.money);
-  if (activeTrade) {
+function onTradeRequest(msg) {
+  var reqId = msg.requestId || msg.id;
+  if (pendingTradeReqs.find(function (x) {
+    return x.id === reqId;
+  })) return;
+  pendingTradeReqs.push({
+    id: reqId,
+    fromName: msg.fromName
+  });
+  if (!$('tradeModal').classList.contains('hidden') && !activeTrade) renderPendingReqs();
+  toast('TRADE REQUEST', msg.fromName + ' wants to trade with you', null, '#4fd1ff');
+}
+function onTradeOpened(msg) {
+  activeTrade = msg.trade;
+  if (!$('tradeModal').classList.contains('hidden')) {
     $('tradeStart').classList.add('hidden');
     $('tradeBuilder').classList.remove('hidden');
     renderTrade();
-    return;
   }
-  $('tradeStart').classList.remove('hidden');
-  $('tradeBuilder').classList.add('hidden');
-  renderPendingReqs();
-  loadOnline();
-}
-function loadOnline() {
-  return _loadOnline.apply(this, arguments);
-}
-function _loadOnline() {
-  _loadOnline = _asyncToGenerator(_regenerator().m(function _callee16() {
-    var list, _yield$api, online, _others, _iterator12, _step12, _loop0, _t14, _t15;
-    return _regenerator().w(function (_context17) {
-      while (1) switch (_context17.p = _context17.n) {
-        case 0:
-          list = $('onlineList');
-          list.innerHTML = '<li class="empty">Loading online keepers...</li>';
-          _context17.p = 1;
-          _context17.n = 2;
-          return api('/online');
-        case 2:
-          _yield$api = _context17.v;
-          online = _yield$api.online;
-          list.innerHTML = '';
-          _others = (online || []).filter(function (o) {
-            return o.id !== me.id;
-          });
-          if (_others.length) {
-            _context17.n = 3;
-            break;
-          }
-          list.innerHTML = '<li class="empty">No one else is online right now.</li>';
-          return _context17.a(2);
-        case 3:
-          _iterator12 = _createForOfIteratorHelper(_others);
-          _context17.p = 4;
-          _loop0 = _regenerator().m(function _loop0() {
-            var o, li;
-            return _regenerator().w(function (_context16) {
-              while (1) switch (_context16.n) {
-                case 0:
-                  o = _step12.value;
-                  li = document.createElement('li');
-                  li.innerHTML = '<span class="item-left"><span class="item-name">' + esc(o.username) + '</span><span style="font-size:12px;color:#8b93bd">online</span></span>' + '<span class="item-right"><button class="mini-btn" data-req="' + o.id + '">TRADE</button></span>';
-                  li.querySelector('[data-req]').addEventListener('click', function () {
-                    return requestTrade(o.id, o.username);
-                  });
-                  list.appendChild(li);
-                case 1:
-                  return _context16.a(2);
-              }
-            }, _loop0);
-          });
-          _iterator12.s();
-        case 5:
-          if ((_step12 = _iterator12.n()).done) {
-            _context17.n = 7;
-            break;
-          }
-          return _context17.d(_regeneratorValues(_loop0()), 6);
-        case 6:
-          _context17.n = 5;
-          break;
-        case 7:
-          _context17.n = 9;
-          break;
-        case 8:
-          _context17.p = 8;
-          _t14 = _context17.v;
-          _iterator12.e(_t14);
-        case 9:
-          _context17.p = 9;
-          _iterator12.f();
-          return _context17.f(9);
-        case 10:
-          _context17.n = 12;
-          break;
-        case 11:
-          _context17.p = 11;
-          _t15 = _context17.v;
-          list.innerHTML = '<li class="empty">' + esc(_t15.message) + '</li>';
-        case 12:
-          return _context17.a(2);
-      }
-    }, _callee16, null, [[4, 8, 9, 10], [1, 11]]);
-  }));
-  return _loadOnline.apply(this, arguments);
-}
-$('tradeSend').addEventListener('click', function () {
-  var name = ($('tradeUser').value || '').trim();
-  if (!name) return;
-  requestTrade(null, name);
-});
-function requestTrade(_x5, _x6) {
-  return _requestTrade.apply(this, arguments);
-}
-function _requestTrade() {
-  _requestTrade = _asyncToGenerator(_regenerator().m(function _callee17(id, username) {
-    var _t16;
-    return _regenerator().w(function (_context18) {
-      while (1) switch (_context18.p = _context18.n) {
-        case 0:
-          _context18.p = 0;
-          _context18.n = 1;
-          return api('/trade/request', {
-            method: 'POST',
-            body: JSON.stringify(id ? {
-              toUserId: id
-            } : {
-              toUsername: username
-            })
-          });
-        case 1:
-          toast('REQUEST SENT', 'Waiting for ' + username + ' to accept', null, '#4fd1ff');
-          $('tradeUser').value = '';
-          _context18.n = 3;
-          break;
-        case 2:
-          _context18.p = 2;
-          _t16 = _context18.v;
-          toast('OOPS', _t16.message, null, '#ff6b8a');
-        case 3:
-          return _context18.a(2);
-      }
-    }, _callee17, null, [[0, 2]]);
-  }));
-  return _requestTrade.apply(this, arguments);
-}
-function renderPendingReqs() {
-  var host = $('tradeRequests');
-  if (!host) return;
-  host.innerHTML = '';
-  var _iterator2 = _createForOfIteratorHelper(pendingTradeReqs),
-    _step2;
-  try {
-    var _loop2 = function _loop2() {
-      var r = _step2.value;
-      var row = document.createElement('div');
-      row.className = 'offer-row';
-      row.innerHTML = '<span class="item-left"><span class="item-name" style="color:#8affd8">' + esc(r.fromName) + ' wants to trade</span></span>' + '<span class="item-right"><button class="mini-btn" data-acc="' + r.id + '">ACCEPT</button>' + '<button class="mini-btn ghost" data-dec="' + r.id + '">DECLINE</button></span>';
-      row.querySelector('[data-acc]').addEventListener('click', function () {
-        return acceptTrade(r.id);
-      });
-      row.querySelector('[data-dec]').addEventListener('click', function () {
-        return declineTrade(r.id);
-      });
-      host.appendChild(row);
-    };
-    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-      _loop2();
-    }
-  } catch (err) {
-    _iterator2.e(err);
-  } finally {
-    _iterator2.f();
-  }
-}
-function acceptTrade(_x7) {
-  return _acceptTrade.apply(this, arguments);
-}
-function _acceptTrade() {
-  _acceptTrade = _asyncToGenerator(_regenerator().m(function _callee18(requestId) {
-    var r, _t17;
-    return _regenerator().w(function (_context19) {
-      while (1) switch (_context19.p = _context19.n) {
-        case 0:
-          _context19.p = 0;
-          _context19.n = 1;
-          return api('/trade/request/' + requestId + '/accept', {
-            method: 'POST'
-          });
-        case 1:
-          r = _context19.v;
-          pendingTradeReqs = pendingTradeReqs.filter(function (x) {
-            return x.id !== requestId;
-          });
-          renderPendingReqs();
-          enterTrade(r.sessionId);
-          _context19.n = 3;
-          break;
-        case 2:
-          _context19.p = 2;
-          _t17 = _context19.v;
-          toast('OOPS', _t17.message, null, '#ff6b8a');
-        case 3:
-          return _context19.a(2);
-      }
-    }, _callee18, null, [[0, 2]]);
-  }));
-  return _acceptTrade.apply(this, arguments);
-}
-function declineTrade(_x8) {
-  return _declineTrade.apply(this, arguments);
-}
-function _declineTrade() {
-  _declineTrade = _asyncToGenerator(_regenerator().m(function _callee19(requestId) {
-    var _t18;
-    return _regenerator().w(function (_context20) {
-      while (1) switch (_context20.p = _context20.n) {
-        case 0:
-          _context20.p = 0;
-          _context20.n = 1;
-          return api('/trade/request/' + requestId + '/decline', {
-            method: 'POST'
-          });
-        case 1:
-          _context20.n = 3;
-          break;
-        case 2:
-          _context20.p = 2;
-          _t18 = _context20.v;
-        case 3:
-          pendingTradeReqs = pendingTradeReqs.filter(function (x) {
-            return x.id !== requestId;
-          });
-          renderPendingReqs();
-        case 4:
-          return _context20.a(2);
-      }
-    }, _callee19, null, [[0, 2]]);
-  }));
-  return _declineTrade.apply(this, arguments);
-}
-function onTradeRequest(msg) {
-  if (pendingTradeReqs.find(function (x) {
-    return x.id === msg.requestId;
-  })) return;
-  pendingTradeReqs.push({
-    id: msg.requestId,
-    fromName: msg.fromName
-  });
-  toast('TRADE REQUEST', msg.fromName + ' wants to trade with you', null, '#8affd8');
-  sfxToast();
-  if (!$('tradeModal').classList.contains('hidden') && !activeTrade) renderPendingReqs();
-}
-function onTradeOpened(msg) {
-  enterTrade(msg.sessionId);
 }
 function onTradeDone(msg) {
-  toast('TRADE COMPLETE', 'Items and cash exchanged', null, '#7bdc78');
-  sfxBuy();
-  if (msg.state) {
-    state = msg.state;
-    renderVault();
-  }
+  state = msg.state;
   activeTrade = null;
-  if (!$('tradeModal').classList.contains('hidden')) showTradeStartPanels();
+  toast('TRADE COMPLETE', 'Your trade was successful', null, '#7bdc78');
+  if (!$('tradeModal').classList.contains('hidden')) {
+    $('tradeStart').classList.remove('hidden');
+    $('tradeBuilder').classList.add('hidden');
+    renderPendingReqs();
+    loadOnline();
+  }
+  renderVault();
 }
 function onTradeCancelled(msg) {
-  toast('TRADE ENDED', msg.reason || 'The other keeper ended the trade', null, '#8b93bd');
   activeTrade = null;
-  if (!$('tradeModal').classList.contains('hidden')) showTradeStartPanels();
+  toast('TRADE CANCELLED', 'The trade was cancelled', null, '#8b93bd');
+  if (!$('tradeModal').classList.contains('hidden')) {
+    $('tradeStart').classList.remove('hidden');
+    $('tradeBuilder').classList.add('hidden');
+    renderPendingReqs();
+    loadOnline();
+  }
 }
 function onTradeDeclined(msg) {
   toast('DECLINED', msg.fromName + ' declined your trade request', null, '#8b93bd');
-}
-function showTradeStartPanels() {
-  $('tradeStart').classList.remove('hidden');
-  $('tradeBuilder').classList.add('hidden');
-  renderPendingReqs();
-  loadOnline();
-}
-function enterTrade(sessionId) {
-  closeAllModals();
-  activeTrade = {
-    id: sessionId
-  };
-  tradeDraft = {
-    items: {},
-    money: 0
-  };
-  tradeDraftDirty = false;
-  $('tradeStart').classList.add('hidden');
-  $('tradeBuilder').classList.remove('hidden');
-  $('tradeModal').classList.remove('hidden');
-  $('tMoney').textContent = '$' + fmt(state.money);
-  renderTrade();
+  pendingTradeReqs = pendingTradeReqs.filter(function (x) {
+    return x.id !== msg.id;
+  });
+  if (!$('tradeModal').classList.contains('hidden') && !activeTrade) renderPendingReqs();
 }
 function pollTrade() {
   return _pollTrade.apply(this, arguments);
 }
 function _pollTrade() {
-  _pollTrade = _asyncToGenerator(_regenerator().m(function _callee20() {
-    var s, _t19;
-    return _regenerator().w(function (_context21) {
-      while (1) switch (_context21.p = _context21.n) {
+  _pollTrade = _asyncToGenerator(_regenerator().m(function _callee19() {
+    var r, _t17;
+    return _regenerator().w(function (_context19) {
+      while (1) switch (_context19.p = _context19.n) {
         case 0:
-          if (!(!$('tradeModal').classList.contains('hidden') && activeTrade)) {
-            _context21.n = 6;
+          if (activeTrade) {
+            _context19.n = 1;
             break;
           }
-          _context21.p = 1;
-          _context21.n = 2;
+          return _context19.a(2);
+        case 1:
+          _context19.p = 1;
+          _context19.n = 2;
           return api('/trade/' + activeTrade.id);
         case 2:
-          s = _context21.v;
-          if (!(!s || !s.you || s.state === 'cancelled' || s.state === 'failed')) {
-            _context21.n = 3;
-            break;
+          r = _context19.v;
+          if (r.trade) {
+            activeTrade = r.trade;
+            if (!$('tradeModal').classList.contains('hidden')) renderTrade();
           }
-          onTradeCancelled(s || {
-            reason: 'Trade ended'
-          });
-          return _context21.a(2);
-        case 3:
-          if (!(s.state === 'done')) {
-            _context21.n = 4;
-            break;
-          }
-          onTradeDone(s);
-          return _context21.a(2);
-        case 4:
-          if (!s.you.locked && !tradeDraftDirty) tradeDraft = {
-            items: s.you.items || {},
-            money: s.you.money || 0
-          };
-          activeTrade = s;
-          renderTrade();
-          _context21.n = 6;
+          _context19.n = 4;
           break;
-        case 5:
-          _context21.p = 5;
-          _t19 = _context21.v;
-          activeTrade = null;
-        case 6:
-          return _context21.a(2);
+        case 3:
+          _context19.p = 3;
+          _t17 = _context19.v;
+        case 4:
+          return _context19.a(2);
       }
-    }, _callee20, null, [[1, 5]]);
+    }, _callee19, null, [[1, 3]]);
   }));
   return _pollTrade.apply(this, arguments);
 }
-setInterval(pollTrade, 1000);
-function renderTrade() {
-  if (!activeTrade || !activeTrade.you) return;
-  var you = activeTrade.you;
-  var other = activeTrade.other || {};
-  var locked = !!you.locked;
-  $('tradeOtherName').textContent = " \xB7 " + (other.username || '?');
-  var mine = $('tradeMine');
-  mine.innerHTML = '';
-  var stacks = Object.entries(state.counts || {});
-  if (!stacks.length) mine.innerHTML = '<li class="empty">Your vault is empty</li>';
-  var _loop3 = function _loop3() {
-    var _stacks$_i = _slicedToArray(_stacks[_i], 2),
-      k = _stacks$_i[0],
-      cnt = _stacks$_i[1];
-    var q = tradeDraft.items[k] || 0;
-    var row = document.createElement('div');
-    row.className = 'offer-row';
-    row.innerHTML = '<span class="item-left"><span class="item-name">' + itemDisplayName(k) + '</span>' + '<span style="font-size:12px;color:#8b93bd">own x' + cnt + '</span></span>' + '<span class="item-right"><button class="mini-btn ghost" data-dec="' + esc(k) + "\">\u2212</button>" + '<span class="item-value">' + q + '</span>' + '<button class="mini-btn ghost" data-inc="' + esc(k) + '">+</button></span>';
-    row.querySelector('[data-inc]').addEventListener('click', function () {
-      return bumpOffer(k, 1, cnt);
-    });
-    row.querySelector('[data-dec]').addEventListener('click', function () {
-      return bumpOffer(k, -1, cnt);
-    });
-    mine.appendChild(row);
-  };
-  for (var _i = 0, _stacks = stacks; _i < _stacks.length; _i++) {
-    _loop3();
-  }
-  var moneyRow = document.createElement('div');
-  moneyRow.className = 'offer-row';
-  moneyRow.innerHTML = '<span class="item-left"><span class="item-name">Cash</span><span style="font-size:12px;color:#8b93bd">you hold $' + fmt(state.money) + '</span></span>' + '<span class="item-right"><input type="number" min="0" step="1" inputmode="numeric" value="' + (tradeDraft.money || 0) + '" data-money class="trade-money-input"></span>';
-  var mi = moneyRow.querySelector('[data-money]');
-  mi.addEventListener('input', function () {
-    var raw = mi.value;
-    if (raw === '') {
-      tradeDraft.money = 0;
-      return;
-    }
-    tradeDraft.money = Math.max(0, Math.floor(Number(raw) || 0));
-  });
-  mi.addEventListener('blur', function () {
-    var v = Math.max(0, Math.floor(Number(mi.value) || 0));
-    if (v > state.money) v = state.money;
-    mi.value = v;
-    tradeDraft.money = v;
-    editOffer();
-  });
-  mi.addEventListener('change', function () {
-    var v = Math.max(0, Math.floor(Number(mi.value) || 0));
-    if (v > state.money) v = state.money;
-    mi.value = v;
-    tradeDraft.money = v;
-    editOffer();
-  });
-  mine.appendChild(moneyRow);
-  if (locked) mine.querySelectorAll('button,input').forEach(function (el) {
-    return el.disabled = true;
-  });
-  var theirs = $('tradeTheirs');
-  theirs.innerHTML = '';
-  var trows = Object.entries(other.items || {});
-  if (!trows.length && !(other.money || 0)) theirs.innerHTML = '<li class="empty">Waiting for their offer...</li>';
-  for (var _i2 = 0, _trows = trows; _i2 < _trows.length; _i2++) {
-    var _trows$_i = _slicedToArray(_trows[_i2], 2),
-      k = _trows$_i[0],
-      q = _trows$_i[1];
-    var row = document.createElement('div');
-    row.className = 'offer-row';
-    row.innerHTML = '<span class="item-left"><span class="item-name">' + itemDisplayName(k) + '</span></span>' + '<span class="item-right"><span class="item-count">x' + q + '</span></span>';
-    theirs.appendChild(row);
-  }
-  if (other.money > 0) {
-    var _row = document.createElement('div');
-    _row.className = 'offer-row';
-    _row.innerHTML = '<span class="item-left"><span class="item-name">Cash</span></span><span class="item-right"><span class="item-value">$' + fmt(other.money) + '</span></span>';
-    theirs.appendChild(_row);
-  }
-  var lock = $('tradeLock');
-  lock.textContent = locked ? 'UNLOCK OFFER' : 'LOCK OFFER';
-  lock.className = 'buy' + (locked ? ' maxed' : '');
-  var canConfirm = !!you.locked && !!other.locked;
-  $('tradeConfirm').disabled = !canConfirm;
-  $('tradeConfirm').className = 'buy' + (canConfirm ? '' : ' disabled');
-  var st = $('tradeStatus');
-  if (locked && !you.ready) st.textContent = "Offer locked \u2014 confirm when " + (other.username || 'they') + ' is also ready.';else if (you.ready && !other.ready) st.textContent = "You confirmed \u2014 waiting for " + (other.username || 'them') + '...';else if (you.ready && other.ready) st.textContent = "Both confirmed \u2014 swapping...";else st.textContent = 'Lock your offer to start finalizing.';
-}
-function bumpOffer(key, d, max) {
-  var cur = tradeDraft.items[key] || 0;
-  var next = cur + d;
-  if (next < 0) next = 0;
-  if (next > max) next = max;
-  tradeDraft.items[key] = next;
-  if (!next) delete tradeDraft.items[key];
-  editOffer();
-}
-function editOffer() {
-  tradeDraftDirty = true;
-  pushOffer();
-}
-function pushOffer() {
-  return _pushOffer.apply(this, arguments);
-}
-function _pushOffer() {
-  _pushOffer = _asyncToGenerator(_regenerator().m(function _callee21() {
-    var _t20;
-    return _regenerator().w(function (_context22) {
-      while (1) switch (_context22.p = _context22.n) {
-        case 0:
-          if (!(!activeTrade || !tradeDraft)) {
-            _context22.n = 1;
-            break;
-          }
-          return _context22.a(2);
-        case 1:
-          _context22.p = 1;
-          _context22.n = 2;
-          return api('/trade/' + activeTrade.id + '/offer', {
-            method: 'POST',
-            body: JSON.stringify({
-              items: tradeDraft.items,
-              money: Math.min(tradeDraft.money || 0, state.money)
-            })
-          });
-        case 2:
-          _context22.n = 4;
-          break;
-        case 3:
-          _context22.p = 3;
-          _t20 = _context22.v;
-          toast('OOPS', _t20.message, null, '#ff6b8a');
-        case 4:
-          _context22.p = 4;
-          tradeDraftDirty = false;
-          return _context22.f(4);
-        case 5:
-          return _context22.a(2);
-      }
-    }, _callee21, null, [[1, 3, 4, 5]]);
-  }));
-  return _pushOffer.apply(this, arguments);
-}
-$('tradeLock').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee2() {
-  var locked, _t2;
-  return _regenerator().w(function (_context2) {
-    while (1) switch (_context2.p = _context2.n) {
-      case 0:
-        if (activeTrade) {
-          _context2.n = 1;
-          break;
-        }
-        return _context2.a(2);
-      case 1:
-        locked = !!(activeTrade.you || {}).locked;
-        _context2.p = 2;
-        _context2.n = 3;
-        return api('/trade/' + activeTrade.id + (locked ? '/unlock' : '/lock'), {
-          method: 'POST'
-        });
-      case 3:
-        if (locked) tradeDraft = {
-          items: (activeTrade.you || {}).items || {},
-          money: (activeTrade.you || {}).money || 0
-        };
-        _context2.n = 4;
-        return pollTrade();
-      case 4:
-        _context2.n = 6;
-        break;
-      case 5:
-        _context2.p = 5;
-        _t2 = _context2.v;
-        toast('OOPS', _t2.message, null, '#ff6b8a');
-      case 6:
-        return _context2.a(2);
-    }
-  }, _callee2, null, [[2, 5]]);
-})));
-$('tradeConfirm').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee3() {
-  var r, _t3;
-  return _regenerator().w(function (_context3) {
-    while (1) switch (_context3.p = _context3.n) {
-      case 0:
-        if (activeTrade) {
-          _context3.n = 1;
-          break;
-        }
-        return _context3.a(2);
-      case 1:
-        _context3.p = 1;
-        _context3.n = 2;
-        return api('/trade/' + activeTrade.id + '/confirm', {
-          method: 'POST'
-        });
-      case 2:
-        r = _context3.v;
-        if (!r.done) {
-          _context3.n = 3;
-          break;
-        }
-        toast('TRADE COMPLETE', 'Items and cash exchanged', null, '#7bdc78');
-        state = r.state;
-        renderVault();
-        activeTrade = null;
-        showTradeStartPanels();
-        _context3.n = 4;
-        break;
-      case 3:
-        _context3.n = 4;
-        return pollTrade();
-      case 4:
-        _context3.n = 6;
-        break;
-      case 5:
-        _context3.p = 5;
-        _t3 = _context3.v;
-        toast('OOPS', _t3.message, null, '#ff6b8a');
-      case 6:
-        return _context3.a(2);
-    }
-  }, _callee3, null, [[1, 5]]);
-})));
-$('tradeCancel').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee4() {
-  var _t4;
-  return _regenerator().w(function (_context4) {
-    while (1) switch (_context4.p = _context4.n) {
-      case 0:
-        if (activeTrade) {
-          _context4.n = 1;
-          break;
-        }
-        return _context4.a(2);
-      case 1:
-        _context4.p = 1;
-        _context4.n = 2;
-        return api('/trade/' + activeTrade.id + '/cancel', {
-          method: 'POST'
-        });
-      case 2:
-        _context4.n = 4;
-        break;
-      case 3:
-        _context4.p = 3;
-        _t4 = _context4.v;
-      case 4:
-        activeTrade = null;
-        showTradeStartPanels();
-      case 5:
-        return _context4.a(2);
-    }
-  }, _callee4, null, [[1, 3]]);
-})));
 function nearWheel() {
   var cx = player.x + player.w / 2,
     cy = player.y + player.h / 2;
@@ -1478,28 +990,28 @@ function refreshEvent() {
   return _refreshEvent.apply(this, arguments);
 }
 function _refreshEvent() {
-  _refreshEvent = _asyncToGenerator(_regenerator().m(function _callee22() {
-    var r, _t21;
-    return _regenerator().w(function (_context23) {
-      while (1) switch (_context23.p = _context23.n) {
+  _refreshEvent = _asyncToGenerator(_regenerator().m(function _callee20() {
+    var r, _t18;
+    return _regenerator().w(function (_context20) {
+      while (1) switch (_context20.p = _context20.n) {
         case 0:
-          _context23.p = 0;
-          _context23.n = 1;
+          _context20.p = 0;
+          _context20.n = 1;
           return api('/event');
         case 1:
-          r = _context23.v;
+          r = _context20.v;
           ev = r.event;
           renderEventTag();
           if (!$('wheelModal').classList.contains('hidden')) renderWheelModal();
-          _context23.n = 3;
+          _context20.n = 3;
           break;
         case 2:
-          _context23.p = 2;
-          _t21 = _context23.v;
+          _context20.p = 2;
+          _t18 = _context20.v;
         case 3:
-          return _context23.a(2);
+          return _context20.a(2);
       }
-    }, _callee22, null, [[0, 2]]);
+    }, _callee20, null, [[0, 2]]);
   }));
   return _refreshEvent.apply(this, arguments);
 }
@@ -1642,28 +1154,28 @@ function openWheel() {
   return _openWheel.apply(this, arguments);
 }
 function _openWheel() {
-  _openWheel = _asyncToGenerator(_regenerator().m(function _callee23() {
-    return _regenerator().w(function (_context24) {
-      while (1) switch (_context24.n) {
+  _openWheel = _asyncToGenerator(_regenerator().m(function _callee21() {
+    return _regenerator().w(function (_context21) {
+      while (1) switch (_context21.n) {
         case 0:
           if (inGame) {
-            _context24.n = 1;
+            _context21.n = 1;
             break;
           }
-          return _context24.a(2);
+          return _context21.a(2);
         case 1:
           closeAllModals();
           $('wheelModal').classList.remove('hidden');
           $('wheelResult').innerHTML = '';
           renderWheelModal();
-          _context24.n = 2;
+          _context21.n = 2;
           return refreshEvent();
         case 2:
           if (eventActive()) startWheelSpin();
         case 3:
-          return _context24.a(2);
+          return _context21.a(2);
       }
-    }, _callee23);
+    }, _callee21);
   }));
   return _openWheel.apply(this, arguments);
 }
@@ -1698,18 +1210,18 @@ function runWheelSpin() {
   return _runWheelSpin.apply(this, arguments);
 }
 function _runWheelSpin() {
-  _runWheelSpin = _asyncToGenerator(_regenerator().m(function _callee24() {
-    var r, name, _t22;
-    return _regenerator().w(function (_context25) {
-      while (1) switch (_context25.p = _context25.n) {
+  _runWheelSpin = _asyncToGenerator(_regenerator().m(function _callee22() {
+    var r, name, _t19;
+    return _regenerator().w(function (_context22) {
+      while (1) switch (_context22.p = _context22.n) {
         case 0:
-          _context25.p = 0;
-          _context25.n = 1;
+          _context22.p = 0;
+          _context22.n = 1;
           return api('/event/spin', {
             method: 'POST'
           });
         case 1:
-          r = _context25.v;
+          r = _context22.v;
           state = r.state;
           renderVault();
           ev = r.event;
@@ -1719,16 +1231,16 @@ function _runWheelSpin() {
           $('wheelResult').innerHTML = '<div class="empty-note" style="padding:10px 0;text-align:center"><div style="font-weight:800;color:#8affd8;font-size:16px">' + name + (r.jackpot ? " \u2014 ELECTRIC!" : '') + '</div><div style="font-size:12px;color:#8b93bd">-\$' + fmt(r.cost) + '</div></div>';
           sfxBuy();
           if (r.newAch && r.newAch.length) showNewAch(r.newAch);
-          _context25.n = 3;
+          _context22.n = 3;
           break;
         case 2:
-          _context25.p = 2;
-          _t22 = _context25.v;
-          toast('OOPS', _t22.message, null, '#ff6b8a');
+          _context22.p = 2;
+          _t19 = _context22.v;
+          toast('OOPS', _t19.message, null, '#ff6b8a');
         case 3:
-          return _context25.a(2);
+          return _context22.a(2);
       }
-    }, _callee24, null, [[0, 2]]);
+    }, _callee22, null, [[0, 2]]);
   }));
   return _runWheelSpin.apply(this, arguments);
 }
@@ -1737,14 +1249,19 @@ function renderDash() {
   $('dashWho').textContent = 'Signed in as ' + me.username;
   $('dashMoney').textContent = '$' + fmt(state.money);
   $('dashLevel').textContent = 'Lv ' + state.level;
+  applyChristmasTheme();
 }
 function openDashPanel(which) {
   var p = $('dashPanel');
   p.classList.remove('hidden');
+  p.dataset.panel = which;
   p.innerHTML = '<div class="spinner">Loading...</div>';
-  if (which === 'servers') renderServersPanel();else if (which === 'friends') renderFriendsPanel();else if (which === 'settings') renderSettingsPanel();else if (which === 'customize') renderCustomizePanel();
+  if (which === 'event') renderEventPanel();else if (which === 'servers') renderServersPanel();else if (which === 'friends') renderFriendsPanel();else if (which === 'settings') renderSettingsPanel();else if (which === 'customize') renderCustomizePanel();
 }
 $('playBtn').addEventListener('click', play);
+$('eventBtn').addEventListener('click', function () {
+  return openDashPanel('event');
+});
 $('serversBtn').addEventListener('click', function () {
   return openDashPanel('servers');
 });
@@ -1757,43 +1274,25 @@ $('settingsBtn').addEventListener('click', function () {
 $('customizeBtn').addEventListener('click', function () {
   return openDashPanel('customize');
 });
+function renderEventPanel() {
+  var p = $('dashPanel');
+  p.classList.remove('hidden');
+  var html = '<h3>Event</h3>';
+  if (isChristmasEvent()) {
+    html += '<div class="event-banner">' + '<div class="event-title">&#10052; Christmas Event</div>' + '<div class="event-desc">December 1&ndash;25 &middot; festive items can drop from the generator during the holiday season. Collect them all in the Christmas codex category.</div>' + '</div>' + '<h4 class="event-subtitle">Christmas Items</h4>' + '<div class="event-items">';
+    CHRISTMAS_ITEMS.forEach(function (name) {
+      html += '<div class="event-item">' + '<span class="event-name" style="color:#ff6b6b">' + esc(name) + '</span>' + '<span class="event-value">$' + fmt(Math.round(ITEM_BASE[name] * SELL_MULT)) + '</span>' + '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="empty-note" style="padding:8px 4px 14px">No event is live right now. The Christmas event runs every year from December 1 to December 25.</div>';
+  }
+  p.innerHTML = html;
+}
 function renderSettingsPanel() {
   var p = $('dashPanel');
   p.classList.remove('hidden');
-  p.innerHTML = '<h3 style="margin:0 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">TRADE PRIVACY</h3>' + '<label class="sell-field" style="gap:6px"><span style="font-size:11px;color:#8b93bd">Who can request a trade with you?</span>' + '<select id="tradePrivacySel">' + '<option value="everyone"' + ((state.tradePrivacy || 'everyone') === 'everyone' ? ' selected' : '') + '>Everyone</option>' + '<option value="friends"' + (state.tradePrivacy === 'friends' ? ' selected' : '') + '>Friends only</option>' + '<option value="off"' + (state.tradePrivacy === 'off' ? ' selected' : '') + '>Off</option>' + '</select></label>';
-  $('tradePrivacySel').addEventListener('change', function () {
-    var _ref5 = _asyncToGenerator(_regenerator().m(function _callee5(e) {
-      var r, _t5;
-      return _regenerator().w(function (_context5) {
-        while (1) switch (_context5.p = _context5.n) {
-          case 0:
-            _context5.p = 0;
-            _context5.n = 1;
-            return api('/settings', {
-              method: 'POST',
-              body: JSON.stringify({
-                tradePrivacy: e.target.value
-              })
-            });
-          case 1:
-            r = _context5.v;
-            state = r.state;
-            toast('SAVED', 'Trade privacy set to ' + e.target.value.toUpperCase(), null, '#7bdc78');
-            _context5.n = 3;
-            break;
-          case 2:
-            _context5.p = 2;
-            _t5 = _context5.v;
-            toast('OOPS', _t5.message, null, '#ff6b8a');
-          case 3:
-            return _context5.a(2);
-        }
-      }, _callee5, null, [[0, 2]]);
-    }));
-    return function (_x9) {
-      return _ref5.apply(this, arguments);
-    };
-  }());
+  p.innerHTML = '<h3 style="margin:0 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">SETTINGS</h3>' + '<div style="font-size:13px;color:#8b93bd">No settings available at this time.</div>';
 }
 function renderCustomizePanel() {
   var p = $('dashPanel');
@@ -1881,14 +1380,14 @@ function renderCustomizePanel() {
       if (!owned && !canAfford) {
         btn.classList.add('disabled');
       } else if (!selected) {
-        btn.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee6() {
-          var r, _t6;
-          return _regenerator().w(function (_context6) {
-            while (1) switch (_context6.p = _context6.n) {
+        btn.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee2() {
+          var r, _t2;
+          return _regenerator().w(function (_context2) {
+            while (1) switch (_context2.p = _context2.n) {
               case 0:
-                _context6.p = 0;
+                _context2.p = 0;
                 btn.classList.add('loading');
-                _context6.n = 1;
+                _context2.n = 1;
                 return api('/customize', {
                   method: 'POST',
                   body: JSON.stringify({
@@ -1897,21 +1396,21 @@ function renderCustomizePanel() {
                   })
                 });
               case 1:
-                r = _context6.v;
+                r = _context2.v;
                 state = r.state;
                 renderCustomizePanel();
                 toast('CUSTOMIZED', opt.name + ' applied!', null, '#7bdc78');
-                _context6.n = 3;
+                _context2.n = 3;
                 break;
               case 2:
-                _context6.p = 2;
-                _t6 = _context6.v;
-                toast('OOPS', _t6.message, null, '#ff6b8a');
+                _context2.p = 2;
+                _t2 = _context2.v;
+                toast('OOPS', _t2.message, null, '#ff6b8a');
                 btn.classList.remove('loading');
               case 3:
-                return _context6.a(2);
+                return _context2.a(2);
             }
-          }, _callee6, null, [[0, 2]]);
+          }, _callee2, null, [[0, 2]]);
         })));
       }
       container.appendChild(btn);
@@ -1925,29 +1424,29 @@ function play() {
   return _play.apply(this, arguments);
 }
 function _play() {
-  _play = _asyncToGenerator(_regenerator().m(function _callee25() {
-    var p, _yield$api2, servers, target, created, _t23;
-    return _regenerator().w(function (_context26) {
-      while (1) switch (_context26.p = _context26.n) {
+  _play = _asyncToGenerator(_regenerator().m(function _callee23() {
+    var p, _yield$api, servers, target, created, _t20;
+    return _regenerator().w(function (_context23) {
+      while (1) switch (_context23.p = _context23.n) {
         case 0:
-          _context26.p = 0;
+          _context23.p = 0;
           p = $('dashPanel');
           p.classList.remove('hidden');
           p.innerHTML = '<div class="spinner">Finding an open world...</div>';
-          _context26.n = 1;
+          _context23.n = 1;
           return api('/servers');
         case 1:
-          _yield$api2 = _context26.v;
-          servers = _yield$api2.servers;
+          _yield$api = _context23.v;
+          servers = _yield$api.servers;
           target = servers.find(function (s) {
             return s.members < s.capacity;
           });
           if (!target && servers.length) target = servers[0];
           if (target) {
-            _context26.n = 3;
+            _context23.n = 3;
             break;
           }
-          _context26.n = 2;
+          _context23.n = 2;
           return api('/servers', {
             method: 'POST',
             body: JSON.stringify({
@@ -1955,23 +1454,23 @@ function _play() {
             })
           });
         case 2:
-          created = _context26.v;
+          created = _context23.v;
           target = created.server;
         case 3:
-          _context26.n = 4;
+          _context23.n = 4;
           return enterServer(target.id, 'World ' + target.id);
         case 4:
           refreshEvent();
-          _context26.n = 6;
+          _context23.n = 6;
           break;
         case 5:
-          _context26.p = 5;
-          _t23 = _context26.v;
-          toast('OOPS', _t23.message, null, '#ff6b8a');
+          _context23.p = 5;
+          _t20 = _context23.v;
+          toast('OOPS', _t20.message, null, '#ff6b8a');
         case 6:
-          return _context26.a(2);
+          return _context23.a(2);
       }
-    }, _callee25, null, [[0, 5]]);
+    }, _callee23, null, [[0, 5]]);
   }));
   return _play.apply(this, arguments);
 }
@@ -1979,18 +1478,18 @@ function renderServersPanel() {
   return _renderServersPanel.apply(this, arguments);
 }
 function _renderServersPanel() {
-  _renderServersPanel = _asyncToGenerator(_regenerator().m(function _callee27() {
-    var p, _yield$api3, servers, html, _iterator13, _step13, s, full, _t25;
-    return _regenerator().w(function (_context28) {
-      while (1) switch (_context28.p = _context28.n) {
+  _renderServersPanel = _asyncToGenerator(_regenerator().m(function _callee25() {
+    var p, _yield$api2, servers, html, _iterator13, _step13, s, full, _t22;
+    return _regenerator().w(function (_context25) {
+      while (1) switch (_context25.p = _context25.n) {
         case 0:
           p = $('dashPanel');
-          _context28.p = 1;
-          _context28.n = 2;
+          _context25.p = 1;
+          _context25.n = 2;
           return api('/servers');
         case 2:
-          _yield$api3 = _context28.v;
-          servers = _yield$api3.servers;
+          _yield$api2 = _context25.v;
+          servers = _yield$api2.servers;
           html = '<h3>Open Servers</h3>' + '<div class="inline-form"><input id="newServerName" maxlength="40" placeholder="New world name"><button class="btn green" id="createServerBtn" type="button">Create World</button></div>';
           if (!servers.length) html += '<div class="empty-note">No open servers yet. Create one!</div>';
           _iterator13 = _createForOfIteratorHelper(servers);
@@ -2006,14 +1505,14 @@ function _renderServersPanel() {
             _iterator13.f();
           }
           p.innerHTML = html;
-          p.querySelector('#createServerBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee26() {
-            var name, _t24;
-            return _regenerator().w(function (_context27) {
-              while (1) switch (_context27.p = _context27.n) {
+          p.querySelector('#createServerBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee24() {
+            var name, _t21;
+            return _regenerator().w(function (_context24) {
+              while (1) switch (_context24.p = _context24.n) {
                 case 0:
                   name = (p.querySelector('#newServerName').value || '').trim() || 'My World';
-                  _context27.p = 1;
-                  _context27.n = 2;
+                  _context24.p = 1;
+                  _context24.n = 2;
                   return api('/servers', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -2022,32 +1521,32 @@ function _renderServersPanel() {
                   });
                 case 2:
                   renderServersPanel();
-                  _context27.n = 4;
+                  _context24.n = 4;
                   break;
                 case 3:
-                  _context27.p = 3;
-                  _t24 = _context27.v;
-                  toast('OOPS', _t24.message, null, '#ff6b8a');
+                  _context24.p = 3;
+                  _t21 = _context24.v;
+                  toast('OOPS', _t21.message, null, '#ff6b8a');
                 case 4:
-                  return _context27.a(2);
+                  return _context24.a(2);
               }
-            }, _callee26, null, [[1, 3]]);
+            }, _callee24, null, [[1, 3]]);
           })));
           p.querySelectorAll('[data-join]').forEach(function (b) {
             return b.addEventListener('click', function () {
               enterServer(parseInt(b.dataset.join, 10), 'World ' + b.dataset.join);
             });
           });
-          _context28.n = 4;
+          _context25.n = 4;
           break;
         case 3:
-          _context28.p = 3;
-          _t25 = _context28.v;
-          p.innerHTML = '<div class="empty-note">' + esc(_t25.message) + '</div>';
+          _context25.p = 3;
+          _t22 = _context25.v;
+          p.innerHTML = '<div class="empty-note">' + esc(_t22.message) + '</div>';
         case 4:
-          return _context28.a(2);
+          return _context25.a(2);
       }
-    }, _callee27, null, [[1, 3]]);
+    }, _callee25, null, [[1, 3]]);
   }));
   return _renderServersPanel.apply(this, arguments);
 }
@@ -2055,17 +1554,17 @@ function renderFriendsPanel() {
   return _renderFriendsPanel.apply(this, arguments);
 }
 function _renderFriendsPanel() {
-  _renderFriendsPanel = _asyncToGenerator(_regenerator().m(function _callee31() {
-    var p, data, html, _iterator14, _step14, f, _iterator15, _step15, _f, _iterator16, _step16, _f2, _t29;
-    return _regenerator().w(function (_context32) {
-      while (1) switch (_context32.p = _context32.n) {
+  _renderFriendsPanel = _asyncToGenerator(_regenerator().m(function _callee29() {
+    var p, data, html, _iterator14, _step14, f, _iterator15, _step15, _f, _iterator16, _step16, _f2, _t26;
+    return _regenerator().w(function (_context29) {
+      while (1) switch (_context29.p = _context29.n) {
         case 0:
           p = $('dashPanel');
-          _context32.p = 1;
-          _context32.n = 2;
+          _context29.p = 1;
+          _context29.n = 2;
           return api('/friends');
         case 2:
-          data = _context32.v;
+          data = _context29.v;
           html = '<h3>Friends</h3>' + '<div class="inline-form"><input id="friendName" maxlength="20" placeholder="Add by username"><button class="btn" id="addFriendBtn" type="button">Send Request</button></div>';
           if (data.incoming.length) {
             html += '<h3 style="margin-top:18px">Requests to you</h3>';
@@ -2109,14 +1608,14 @@ function _renderFriendsPanel() {
             _iterator16.f();
           }
           p.innerHTML = html;
-          p.querySelector('#addFriendBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee28() {
-            var username, _t26;
-            return _regenerator().w(function (_context29) {
-              while (1) switch (_context29.p = _context29.n) {
+          p.querySelector('#addFriendBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee26() {
+            var username, _t23;
+            return _regenerator().w(function (_context26) {
+              while (1) switch (_context26.p = _context26.n) {
                 case 0:
                   username = (p.querySelector('#friendName').value || '').trim();
-                  _context29.p = 1;
-                  _context29.n = 2;
+                  _context26.p = 1;
+                  _context26.n = 2;
                   return api('/friends/request', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -2126,75 +1625,75 @@ function _renderFriendsPanel() {
                 case 2:
                   toast('REQUEST SENT', username, null, '#4fd1ff');
                   renderFriendsPanel();
-                  _context29.n = 4;
+                  _context26.n = 4;
                   break;
                 case 3:
-                  _context29.p = 3;
-                  _t26 = _context29.v;
-                  toast('OOPS', _t26.message, null, '#ff6b8a');
+                  _context26.p = 3;
+                  _t23 = _context26.v;
+                  toast('OOPS', _t23.message, null, '#ff6b8a');
                 case 4:
-                  return _context29.a(2);
+                  return _context26.a(2);
               }
-            }, _callee28, null, [[1, 3]]);
+            }, _callee26, null, [[1, 3]]);
           })));
           p.querySelectorAll('[data-accept]').forEach(function (b) {
-            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee29() {
-              var _t27;
-              return _regenerator().w(function (_context30) {
-                while (1) switch (_context30.p = _context30.n) {
+            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee27() {
+              var _t24;
+              return _regenerator().w(function (_context27) {
+                while (1) switch (_context27.p = _context27.n) {
                   case 0:
-                    _context30.p = 0;
-                    _context30.n = 1;
+                    _context27.p = 0;
+                    _context27.n = 1;
                     return api('/friends/' + b.dataset.accept + '/accept', {
                       method: 'POST'
                     });
                   case 1:
                     renderFriendsPanel();
-                    _context30.n = 3;
+                    _context27.n = 3;
                     break;
                   case 2:
-                    _context30.p = 2;
-                    _t27 = _context30.v;
+                    _context27.p = 2;
+                    _t24 = _context27.v;
                   case 3:
-                    return _context30.a(2);
+                    return _context27.a(2);
                 }
-              }, _callee29, null, [[0, 2]]);
+              }, _callee27, null, [[0, 2]]);
             })));
           });
           p.querySelectorAll('[data-remove]').forEach(function (b) {
-            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee30() {
-              var _t28;
-              return _regenerator().w(function (_context31) {
-                while (1) switch (_context31.p = _context31.n) {
+            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee28() {
+              var _t25;
+              return _regenerator().w(function (_context28) {
+                while (1) switch (_context28.p = _context28.n) {
                   case 0:
-                    _context31.p = 0;
-                    _context31.n = 1;
+                    _context28.p = 0;
+                    _context28.n = 1;
                     return api('/friends/' + b.dataset.remove, {
                       method: 'DELETE'
                     });
                   case 1:
                     renderFriendsPanel();
-                    _context31.n = 3;
+                    _context28.n = 3;
                     break;
                   case 2:
-                    _context31.p = 2;
-                    _t28 = _context31.v;
+                    _context28.p = 2;
+                    _t25 = _context28.v;
                   case 3:
-                    return _context31.a(2);
+                    return _context28.a(2);
                 }
-              }, _callee30, null, [[0, 2]]);
+              }, _callee28, null, [[0, 2]]);
             })));
           });
-          _context32.n = 4;
+          _context29.n = 4;
           break;
         case 3:
-          _context32.p = 3;
-          _t29 = _context32.v;
-          p.innerHTML = '<div class="empty-note">' + esc(_t29.message) + '</div>';
+          _context29.p = 3;
+          _t26 = _context29.v;
+          p.innerHTML = '<div class="empty-note">' + esc(_t26.message) + '</div>';
         case 4:
-          return _context32.a(2);
+          return _context29.a(2);
       }
-    }, _callee31, null, [[1, 3]]);
+    }, _callee29, null, [[1, 3]]);
   }));
   return _renderFriendsPanel.apply(this, arguments);
 }
@@ -2209,22 +1708,22 @@ function esc(s) {
     }[c];
   });
 }
-function enterServer(_x0, _x1) {
+function enterServer(_x5, _x6) {
   return _enterServer.apply(this, arguments);
 }
 function _enterServer() {
-  _enterServer = _asyncToGenerator(_regenerator().m(function _callee32(sid, name) {
-    var r, savedOk, b, _t30, _t31;
-    return _regenerator().w(function (_context33) {
-      while (1) switch (_context33.p = _context33.n) {
+  _enterServer = _asyncToGenerator(_regenerator().m(function _callee30(sid, name) {
+    var r, savedOk, b, _t27, _t28;
+    return _regenerator().w(function (_context30) {
+      while (1) switch (_context30.p = _context30.n) {
         case 0:
-          _context33.p = 0;
-          _context33.n = 1;
+          _context30.p = 0;
+          _context30.n = 1;
           return api('/servers/' + sid + '/join', {
             method: 'POST'
           });
         case 1:
-          r = _context33.v;
+          r = _context30.v;
           mySlot = r.slot;
           currentServer = {
             id: sid
@@ -2247,31 +1746,31 @@ function _enterServer() {
           renderVault();
           addChat('sys', 'You joined World ' + currentServer.id + ' (slot ' + (mySlot + 1) + '/8).');
           refreshEvent();
-          _context33.p = 2;
-          _context33.n = 3;
+          _context30.p = 2;
+          _context30.n = 3;
           return api('/boss');
         case 3:
-          b = _context33.v;
+          b = _context30.v;
           if (b) {
             if (b.boss) onBoss(b.boss);
             setBossYou(b.you);
           }
-          _context33.n = 5;
+          _context30.n = 5;
           break;
         case 4:
-          _context33.p = 4;
-          _t30 = _context33.v;
+          _context30.p = 4;
+          _t27 = _context30.v;
         case 5:
-          _context33.n = 7;
+          _context30.n = 7;
           break;
         case 6:
-          _context33.p = 6;
-          _t31 = _context33.v;
-          toast('OOPS', _t31.message, null, '#ff6b8a');
+          _context30.p = 6;
+          _t28 = _context30.v;
+          toast('OOPS', _t28.message, null, '#ff6b8a');
         case 7:
-          return _context33.a(2);
+          return _context30.a(2);
       }
-    }, _callee32, null, [[2, 4], [0, 6]]);
+    }, _callee30, null, [[2, 4], [0, 6]]);
   }));
   return _enterServer.apply(this, arguments);
 }
@@ -2305,19 +1804,19 @@ function connectWS() {
     }
   });
   sock.addEventListener('close', function () {
-    var _ref7 = _asyncToGenerator(_regenerator().m(function _callee7(ev) {
-      var _t7, _t8;
-      return _regenerator().w(function (_context7) {
-        while (1) switch (_context7.p = _context7.n) {
+    var _ref3 = _asyncToGenerator(_regenerator().m(function _callee3(ev) {
+      var _t3, _t4;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.p = _context3.n) {
           case 0:
             if (!(sock !== ws)) {
-              _context7.n = 1;
+              _context3.n = 1;
               break;
             }
-            return _context7.a(2);
+            return _context3.a(2);
           case 1:
             if (!(ev.code === 4003)) {
-              _context7.n = 2;
+              _context3.n = 2;
               break;
             }
             toast('BANNED', 'You have been banned by an admin.', null, '#ff6b8a');
@@ -2326,55 +1825,55 @@ function connectWS() {
             setTimeout(function () {
               return location.reload();
             }, 1200);
-            return _context7.a(2);
+            return _context3.a(2);
           case 2:
             if (!(ev.code === 4004)) {
-              _context7.n = 7;
+              _context3.n = 7;
               break;
             }
             toast('REMOVED', 'An admin kicked you from the world.', null, '#ff6b8a');
             currentServer = null;
             mySlot = -1;
-            _context7.p = 3;
-            _context7.n = 4;
+            _context3.p = 3;
+            _context3.n = 4;
             return loadMe();
           case 4:
-            _context7.n = 6;
+            _context3.n = 6;
             break;
           case 5:
-            _context7.p = 5;
-            _t7 = _context7.v;
+            _context3.p = 5;
+            _t3 = _context3.v;
           case 6:
             showScreen('dash');
-            return _context7.a(2);
+            return _context3.a(2);
           case 7:
             if (!(inGame && token && currentServer)) {
-              _context7.n = 12;
+              _context3.n = 12;
               break;
             }
-            _context7.p = 8;
-            _context7.n = 9;
+            _context3.p = 8;
+            _context3.n = 9;
             return api('/servers/' + currentServer.id + '/join', {
               method: 'POST'
             });
           case 9:
-            _context7.n = 11;
+            _context3.n = 11;
             break;
           case 10:
-            _context7.p = 10;
-            _t8 = _context7.v;
+            _context3.p = 10;
+            _t4 = _context3.v;
           case 11:
             if (inGame && currentServer && ws === sock) {
               clearTimeout(wsTimer);
               wsTimer = setTimeout(connectWS, 1200);
             }
           case 12:
-            return _context7.a(2);
+            return _context3.a(2);
         }
-      }, _callee7, null, [[8, 10], [3, 5]]);
+      }, _callee3, null, [[8, 10], [3, 5]]);
     }));
-    return function (_x10) {
-      return _ref7.apply(this, arguments);
+    return function (_x7) {
+      return _ref3.apply(this, arguments);
     };
   }());
   sock.addEventListener('error', function () {});
@@ -2397,11 +1896,11 @@ function wsSend(obj) {
 function onMembers(list) {
   members = list;
   var seen = {};
-  var _iterator3 = _createForOfIteratorHelper(list),
-    _step3;
+  var _iterator2 = _createForOfIteratorHelper(list),
+    _step2;
   try {
-    for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-      var m = _step3.value;
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var m = _step2.value;
       seen[m.id] = true;
       if (m.id === me.id) continue;
       if (!m.online) continue;
@@ -2435,9 +1934,9 @@ function onMembers(list) {
       }
     }
   } catch (err) {
-    _iterator3.e(err);
+    _iterator2.e(err);
   } finally {
-    _iterator3.f();
+    _iterator2.f();
   }
   for (var id in others) if (!seen[id]) delete others[id];
   updateHudMeta();
@@ -2545,17 +2044,17 @@ function aabb(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 function solidAt(body) {
-  var _iterator4 = _createForOfIteratorHelper(solidList),
-    _step4;
+  var _iterator3 = _createForOfIteratorHelper(solidList),
+    _step3;
   try {
-    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
-      var s = _step4.value;
+    for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+      var s = _step3.value;
       if (aabb(body, s)) return true;
     }
   } catch (err) {
-    _iterator4.e(err);
+    _iterator3.e(err);
   } finally {
-    _iterator4.f();
+    _iterator3.f();
   }
   return false;
 }
@@ -2738,10 +2237,10 @@ function drawFloor() {
   }
   ctx.strokeStyle = 'rgba(124,92,255,0.06)';
   ctx.lineWidth = 1;
-  for (var _x11 = 0; _x11 <= WORLD_W; _x11 += 80) {
+  for (var _x8 = 0; _x8 <= WORLD_W; _x8 += 80) {
     ctx.beginPath();
-    ctx.moveTo(_x11, 0);
-    ctx.lineTo(_x11, WORLD_H);
+    ctx.moveTo(_x8, 0);
+    ctx.lineTo(_x8, WORLD_H);
     ctx.stroke();
   }
   for (var _y = 0; _y <= WORLD_H; _y += 80) {
@@ -2775,11 +2274,11 @@ function drawFloor() {
 }
 function drawMotes(now) {
   ctx.save();
-  var _iterator5 = _createForOfIteratorHelper(MOTES),
-    _step5;
+  var _iterator4 = _createForOfIteratorHelper(MOTES),
+    _step4;
   try {
-    for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
-      var m = _step5.value;
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var m = _step4.value;
       var dx = Math.sin(now / m.sp + m.p) * 26;
       var dy = Math.cos(now / m.sp2 + m.p) * 20 - now / 1000 * m.rise % (WORLD_H + 200);
       var y = ((m.y + dy) % (WORLD_H + 80) + WORLD_H + 80) % (WORLD_H + 80) - 40;
@@ -2794,9 +2293,9 @@ function drawMotes(now) {
       ctx.fill();
     }
   } catch (err) {
-    _iterator5.e(err);
+    _iterator4.e(err);
   } finally {
-    _iterator5.f();
+    _iterator4.f();
   }
   ctx.restore();
   ctx.globalAlpha = 1;
@@ -3063,8 +2562,8 @@ function drawAurora(now) {
   }];
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  for (var _i3 = 0, _blobs = blobs; _i3 < _blobs.length; _i3++) {
-    var g = _blobs[_i3];
+  for (var _i = 0, _blobs = blobs; _i < _blobs.length; _i++) {
+    var g = _blobs[_i];
     var grad = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
     grad.addColorStop(0, 'rgba(' + g.c + ',0.05)');
     grad.addColorStop(1, 'rgba(' + g.c + ',0)');
@@ -3082,17 +2581,17 @@ function drawWorld(now) {
   drawWheel(now);
   drawWarzone(now);
   for (var i = 0; i < 8; i++) drawVaultPad(i);
-  var _iterator6 = _createForOfIteratorHelper(solidList),
-    _step6;
+  var _iterator5 = _createForOfIteratorHelper(solidList),
+    _step5;
   try {
-    for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
-      var s = _step6.value;
+    for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+      var s = _step5.value;
       drawWall(s);
     }
   } catch (err) {
-    _iterator6.e(err);
+    _iterator5.e(err);
   } finally {
-    _iterator6.f();
+    _iterator5.f();
   }
   if (inGame) {
     var px = player.x + player.w / 2,
@@ -3105,7 +2604,7 @@ function drawWorld(now) {
     ctx.arc(px, py, 220, 0, Math.PI * 2);
     ctx.fill();
   }
-  var _loop4 = function _loop4(id) {
+  var _loop2 = function _loop2(id) {
       var o = others[id];
       if (!o.online) return 0;
       var member = members.find(function (m) {
@@ -3118,7 +2617,7 @@ function drawWorld(now) {
     },
     _ret;
   for (var id in others) {
-    _ret = _loop4(id);
+    _ret = _loop2(id);
     if (_ret === 0) continue;
   }
   if (inGame) {
@@ -3512,7 +3011,7 @@ function updateHint() {
   var vb = $('vaultBtn');
   vb.textContent = nearMyVault() ? 'Open Vault' : 'Vault';
 }
-var MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'tradeModal', 'wheelModal', 'bossModal'];
+var MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'wheelModal', 'bossModal', 'tradeModal'];
 function anyModalOpen() {
   return MODAL_IDS.some(function (id) {
     return !$(id).classList.contains('hidden');
@@ -3626,13 +3125,13 @@ function renderVault() {
     var entries = Object.entries(state.counts).sort(function (a, b) {
       return itemValueKey(b[0]) - itemValueKey(a[0]);
     });
-    var _iterator7 = _createForOfIteratorHelper(entries),
-      _step7;
+    var _iterator6 = _createForOfIteratorHelper(entries),
+      _step6;
     try {
-      var _loop5 = function _loop5() {
-        var _step7$value = _slicedToArray(_step7.value, 2),
-          it = _step7$value[0],
-          count = _step7$value[1];
+      var _loop3 = function _loop3() {
+        var _step6$value = _slicedToArray(_step6.value, 2),
+          it = _step6$value[0],
+          count = _step6$value[1];
         var rar = rarityFor(baseName(it));
         var mut = mutationOf(it);
         var baseValue = ITEM_BASE[baseName(it)] || 0;
@@ -3648,13 +3147,13 @@ function renderVault() {
         li.querySelector('.item-name').addEventListener('mouseleave', hideItemTooltip);
         list.appendChild(li);
       };
-      for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
-        _loop5();
+      for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+        _loop3();
       }
     } catch (err) {
-      _iterator7.e(err);
+      _iterator6.e(err);
     } finally {
-      _iterator7.f();
+      _iterator6.f();
     }
   }
   renderAch();
@@ -3672,9 +3171,13 @@ function renderCodex() {
     var base = baseName(key);
     owned[base] = (owned[base] || 0) + Math.max(0, Number(state.counts[key]) || 0);
   }
+  var shownRarities = RARITIES.filter(function (rar) {
+    return rar.key !== 'christmas' || isChristmasEvent();
+  });
   var discoveredTotal = 0;
+  var totalItems = 0;
   list.innerHTML = '';
-  RARITIES.forEach(function (rar) {
+  shownRarities.forEach(function (rar) {
     var names = ITEMS_BY_RARITY[rar.key] || [];
     var found = 0;
     var header = document.createElement('li');
@@ -3723,9 +3226,10 @@ function renderCodex() {
     });
     header.textContent = rar.name + '  ' + found + ' / ' + names.length;
     discoveredTotal += found;
+    totalItems += names.length;
   });
-  $('codexInfo').textContent = 'Discovered ' + discoveredTotal + ' / 100';
-  $('codexSummary').textContent = 'Tap a discovered item to see its value. Unknown items unlock when you generate or own them.';
+  $('codexInfo').textContent = 'Discovered ' + discoveredTotal + ' / ' + totalItems;
+  $('codexSummary').textContent = isChristmasEvent() ? 'Tap a discovered item to see its value. Christmas items can drop from the generator until December 25.' : 'Tap a discovered item to see its value. Unknown items unlock when you generate or own them.';
 }
 $('gen').addEventListener('click', function () {
   ac();
@@ -3747,28 +3251,28 @@ function finishGen() {
   return _finishGen.apply(this, arguments);
 }
 function _finishGen() {
-  _finishGen = _asyncToGenerator(_regenerator().m(function _callee33() {
-    var r, rar, mut, color, idx, el, _t32;
-    return _regenerator().w(function (_context34) {
-      while (1) switch (_context34.p = _context34.n) {
+  _finishGen = _asyncToGenerator(_regenerator().m(function _callee31() {
+    var r, rar, mut, color, idx, el, _t29;
+    return _regenerator().w(function (_context31) {
+      while (1) switch (_context31.p = _context31.n) {
         case 0:
           if (!genBusy) {
-            _context34.n = 1;
+            _context31.n = 1;
             break;
           }
-          return _context34.a(2);
+          return _context31.a(2);
         case 1:
           genBusy = true;
           generating = false;
           $('generator').classList.remove('charging');
           $('gen').disabled = true;
-          _context34.p = 2;
-          _context34.n = 3;
+          _context31.p = 2;
+          _context31.n = 3;
           return api('/generate', {
             method: 'POST'
           });
         case 3:
-          r = _context34.v;
+          r = _context31.v;
           state = r.state;
           rar = RARITIES.find(function (x) {
             return x.key === r.rarity;
@@ -3798,21 +3302,21 @@ function _finishGen() {
           if (r.bossDefeated) onBossDefeated(r.bossDefeated);
           renderVault();
           refreshTutorial();
-          _context34.n = 5;
+          _context31.n = 5;
           break;
         case 4:
-          _context34.p = 4;
-          _t32 = _context34.v;
-          toast('OOPS', _t32.message, null, '#ff6b8a');
+          _context31.p = 4;
+          _t29 = _context31.v;
+          toast('OOPS', _t29.message, null, '#ff6b8a');
         case 5:
-          _context34.p = 5;
+          _context31.p = 5;
           genBusy = false;
           $('gen').disabled = false;
-          return _context34.f(5);
+          return _context31.f(5);
         case 6:
-          return _context34.a(2);
+          return _context31.a(2);
       }
-    }, _callee33, null, [[2, 4, 5, 6]]);
+    }, _callee31, null, [[2, 4, 5, 6]]);
   }));
   return _finishGen.apply(this, arguments);
 }
@@ -3830,24 +3334,24 @@ setInterval(function () {
     }
   }
 }, 100);
-function sellItem(_x12, _x13) {
+function sellItem(_x9, _x0) {
   return _sellItem.apply(this, arguments);
 }
 function _sellItem() {
-  _sellItem = _asyncToGenerator(_regenerator().m(function _callee34(item, ev) {
-    var box, _r, _t33;
-    return _regenerator().w(function (_context35) {
-      while (1) switch (_context35.p = _context35.n) {
+  _sellItem = _asyncToGenerator(_regenerator().m(function _callee32(item, ev) {
+    var box, _r, _t30;
+    return _regenerator().w(function (_context32) {
+      while (1) switch (_context32.p = _context32.n) {
         case 0:
           if (state.counts[item]) {
-            _context35.n = 1;
+            _context32.n = 1;
             break;
           }
-          return _context35.a(2);
+          return _context32.a(2);
         case 1:
           box = (ev && (ev.currentTarget || ev.target)).getBoundingClientRect();
-          _context35.p = 2;
-          _context35.n = 3;
+          _context32.p = 2;
+          _context32.n = 3;
           return api('/sell', {
             method: 'POST',
             body: JSON.stringify({
@@ -3855,7 +3359,7 @@ function _sellItem() {
             })
           });
         case 3:
-          _r = _context35.v;
+          _r = _context32.v;
           state = _r.state;
           salesCount++;
           sfxSell();
@@ -3863,38 +3367,38 @@ function _sellItem() {
           if (_r.newAch && _r.newAch.length) showNewAch(_r.newAch);
           if (_r.daily) dailyData = Object.assign({}, dailyData, _r.daily);
           renderVault();
-          _context35.n = 5;
+          _context32.n = 5;
           break;
         case 4:
-          _context35.p = 4;
-          _t33 = _context35.v;
-          toast('OOPS', _t33.message, null, '#ff6b8a');
+          _context32.p = 4;
+          _t30 = _context32.v;
+          toast('OOPS', _t30.message, null, '#ff6b8a');
         case 5:
-          return _context35.a(2);
+          return _context32.a(2);
       }
-    }, _callee34, null, [[2, 4]]);
+    }, _callee32, null, [[2, 4]]);
   }));
   return _sellItem.apply(this, arguments);
 }
-function sellAllItems(_x14) {
+function sellAllItems(_x1) {
   return _sellAllItems.apply(this, arguments);
 }
 function _sellAllItems() {
-  _sellAllItems = _asyncToGenerator(_regenerator().m(function _callee35(srcEl) {
-    var src, box, _r2, _t34;
-    return _regenerator().w(function (_context36) {
-      while (1) switch (_context36.p = _context36.n) {
+  _sellAllItems = _asyncToGenerator(_regenerator().m(function _callee33(srcEl) {
+    var src, box, _r2, _t31;
+    return _regenerator().w(function (_context33) {
+      while (1) switch (_context33.p = _context33.n) {
         case 0:
           if (!(!state || !Object.keys(state.counts || {}).length)) {
-            _context36.n = 1;
+            _context33.n = 1;
             break;
           }
-          return _context36.a(2);
+          return _context33.a(2);
         case 1:
           src = srcEl || $('sellAll');
           box = src.getBoundingClientRect();
-          _context36.p = 2;
-          _context36.n = 3;
+          _context33.p = 2;
+          _context33.n = 3;
           return api('/sell', {
             method: 'POST',
             body: JSON.stringify({
@@ -3902,7 +3406,7 @@ function _sellAllItems() {
             })
           });
         case 3:
-          _r2 = _context36.v;
+          _r2 = _context33.v;
           state = _r2.state;
           salesCount++;
           sfxSell();
@@ -3914,62 +3418,62 @@ function _sellAllItems() {
           if (_r2.newAch && _r2.newAch.length) showNewAch(_r2.newAch);
           if (_r2.daily) dailyData = Object.assign({}, dailyData, _r2.daily);
           renderVault();
-          _context36.n = 5;
+          _context33.n = 5;
           break;
         case 4:
-          _context36.p = 4;
-          _t34 = _context36.v;
-          toast('OOPS', _t34.message, null, '#ff6b8a');
+          _context33.p = 4;
+          _t31 = _context33.v;
+          toast('OOPS', _t31.message, null, '#ff6b8a');
         case 5:
-          return _context36.a(2);
+          return _context33.a(2);
       }
-    }, _callee35, null, [[2, 4]]);
+    }, _callee33, null, [[2, 4]]);
   }));
   return _sellAllItems.apply(this, arguments);
 }
 $('sellAll').addEventListener('click', function (e) {
   return sellAllItems(e.currentTarget);
 });
-$('genBuy').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee8() {
-  var r, _t9;
-  return _regenerator().w(function (_context8) {
-    while (1) switch (_context8.p = _context8.n) {
+$('genBuy').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee4() {
+  var r, _t5;
+  return _regenerator().w(function (_context4) {
+    while (1) switch (_context4.p = _context4.n) {
       case 0:
         if (!(upgradeBusy || state.level >= MAX_LEVEL)) {
-          _context8.n = 1;
+          _context4.n = 1;
           break;
         }
-        return _context8.a(2);
+        return _context4.a(2);
       case 1:
         upgradeBusy = true;
         $('genBuy').disabled = true;
-        _context8.p = 2;
-        _context8.n = 3;
+        _context4.p = 2;
+        _context4.n = 3;
         return api('/upgrade', {
           method: 'POST'
         });
       case 3:
-        r = _context8.v;
+        r = _context4.v;
         state = r.state;
         sfxBuy();
         if (r.newAch && r.newAch.length) showNewAch(r.newAch);
         renderVault();
         refreshTutorial();
-        _context8.n = 5;
+        _context4.n = 5;
         break;
       case 4:
-        _context8.p = 4;
-        _t9 = _context8.v;
-        toast('OOPS', _t9.message, null, '#ff6b8a');
+        _context4.p = 4;
+        _t5 = _context4.v;
+        toast('OOPS', _t5.message, null, '#ff6b8a');
       case 5:
-        _context8.p = 5;
+        _context4.p = 5;
         upgradeBusy = false;
         renderVault();
-        return _context8.f(5);
+        return _context4.f(5);
       case 6:
-        return _context8.a(2);
+        return _context4.a(2);
     }
-  }, _callee8, null, [[2, 4, 5, 6]]);
+  }, _callee4, null, [[2, 4, 5, 6]]);
 })));
 function renderShieldBtn() {
   var sb = $('shieldBtn');
@@ -3986,38 +3490,38 @@ function renderShieldBtn() {
     sb.title = '';
   }
 }
-$('shieldBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee9() {
-  var r, _t0;
-  return _regenerator().w(function (_context9) {
-    while (1) switch (_context9.p = _context9.n) {
+$('shieldBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee5() {
+  var r, _t6;
+  return _regenerator().w(function (_context5) {
+    while (1) switch (_context5.p = _context5.n) {
       case 0:
         if (!(!state || genBusy)) {
-          _context9.n = 1;
+          _context5.n = 1;
           break;
         }
-        return _context9.a(2);
+        return _context5.a(2);
       case 1:
-        _context9.p = 1;
-        _context9.n = 2;
+        _context5.p = 1;
+        _context5.n = 2;
         return api('/shield', {
           method: 'POST'
         });
       case 2:
-        r = _context9.v;
+        r = _context5.v;
         state = r.state;
         sfxToast();
         toast('SHIELD', 'Vault shielded for ' + Math.floor(r.seconds / 60) + ' min', null, '#7bdcf0');
         renderVault();
-        _context9.n = 4;
+        _context5.n = 4;
         break;
       case 3:
-        _context9.p = 3;
-        _t0 = _context9.v;
-        toast('OOPS', _t0.message, null, '#ff6b8a');
+        _context5.p = 3;
+        _t6 = _context5.v;
+        toast('OOPS', _t6.message, null, '#ff6b8a');
       case 4:
-        return _context9.a(2);
+        return _context5.a(2);
     }
-  }, _callee9, null, [[1, 3]]);
+  }, _callee5, null, [[1, 3]]);
 })));
 setInterval(function () {
   if (!inGame || !state) return;
@@ -4056,18 +3560,18 @@ function doRebirth() {
   return _doRebirth.apply(this, arguments);
 }
 function _doRebirth() {
-  _doRebirth = _asyncToGenerator(_regenerator().m(function _callee36() {
-    var _r3, _t35;
-    return _regenerator().w(function (_context37) {
-      while (1) switch (_context37.p = _context37.n) {
+  _doRebirth = _asyncToGenerator(_regenerator().m(function _callee34() {
+    var _r3, _t32;
+    return _regenerator().w(function (_context34) {
+      while (1) switch (_context34.p = _context34.n) {
         case 0:
-          _context37.p = 0;
-          _context37.n = 1;
+          _context34.p = 0;
+          _context34.n = 1;
           return api('/rebirth', {
             method: 'POST'
           });
         case 1:
-          _r3 = _context37.v;
+          _r3 = _context34.v;
           state = _r3.state;
           sfxBuy();
           toast('REBIRTH', 'Rebirth ' + _r3.rebirths + " \u2014 the vault resets but grows", null, '#8affd8');
@@ -4075,16 +3579,16 @@ function _doRebirth() {
           if (_r3.newAch && _r3.newAch.length) showNewAch(_r3.newAch);
           renderVault();
           refreshTutorial();
-          _context37.n = 3;
+          _context34.n = 3;
           break;
         case 2:
-          _context37.p = 2;
-          _t35 = _context37.v;
-          toast('OOPS', _t35.message, null, '#ff6b8a');
+          _context34.p = 2;
+          _t32 = _context34.v;
+          toast('OOPS', _t32.message, null, '#ff6b8a');
         case 3:
-          return _context37.a(2);
+          return _context34.a(2);
       }
-    }, _callee36, null, [[0, 2]]);
+    }, _callee34, null, [[0, 2]]);
   }));
   return _doRebirth.apply(this, arguments);
 }
@@ -4092,23 +3596,23 @@ function renderOffline() {
   return _renderOffline.apply(this, arguments);
 }
 function _renderOffline() {
-  _renderOffline = _asyncToGenerator(_regenerator().m(function _callee37() {
-    var list, _r4, ol, claimLi, claimBtn, _t36;
-    return _regenerator().w(function (_context38) {
-      while (1) switch (_context38.p = _context38.n) {
+  _renderOffline = _asyncToGenerator(_regenerator().m(function _callee35() {
+    var list, _r4, ol, claimLi, claimBtn, _t33;
+    return _regenerator().w(function (_context35) {
+      while (1) switch (_context35.p = _context35.n) {
         case 0:
           list = $('offlineList');
           if (list) {
-            _context38.n = 1;
+            _context35.n = 1;
             break;
           }
-          return _context38.a(2);
+          return _context35.a(2);
         case 1:
-          _context38.p = 1;
-          _context38.n = 2;
+          _context35.p = 1;
+          _context35.n = 2;
           return api('/offline');
         case 2:
-          _r4 = _context38.v;
+          _r4 = _context35.v;
           ol = _r4.offlineLevel || 0;
           $('offlineInfo').textContent = 'Offline Level ' + ol + ' / ' + _r4.available.length;
           list.innerHTML = '';
@@ -4142,49 +3646,49 @@ function _renderOffline() {
             claimLi.appendChild(claimBtn);
             list.appendChild(claimLi);
           }
-          _context38.n = 4;
+          _context35.n = 4;
           break;
         case 3:
-          _context38.p = 3;
-          _t36 = _context38.v;
-          toast('OOPS', _t36.message, null, '#ff6b8a');
+          _context35.p = 3;
+          _t33 = _context35.v;
+          toast('OOPS', _t33.message, null, '#ff6b8a');
         case 4:
-          return _context38.a(2);
+          return _context35.a(2);
       }
-    }, _callee37, null, [[1, 3]]);
+    }, _callee35, null, [[1, 3]]);
   }));
   return _renderOffline.apply(this, arguments);
 }
-function doOfflineUpgrade(_x15) {
+function doOfflineUpgrade(_x10) {
   return _doOfflineUpgrade.apply(this, arguments);
 }
 function _doOfflineUpgrade() {
-  _doOfflineUpgrade = _asyncToGenerator(_regenerator().m(function _callee38(level) {
-    var _r5, _t37;
-    return _regenerator().w(function (_context39) {
-      while (1) switch (_context39.p = _context39.n) {
+  _doOfflineUpgrade = _asyncToGenerator(_regenerator().m(function _callee36(level) {
+    var _r5, _t34;
+    return _regenerator().w(function (_context36) {
+      while (1) switch (_context36.p = _context36.n) {
         case 0:
-          _context39.p = 0;
-          _context39.n = 1;
+          _context36.p = 0;
+          _context36.n = 1;
           return api('/offline/upgrade', {
             method: 'POST'
           });
         case 1:
-          _r5 = _context39.v;
+          _r5 = _context36.v;
           state = _r5.state;
           sfxBuy();
           toast('UPGRADED', 'Offline rewards upgraded to level ' + _r5.level, null, '#8affd8');
           renderOffline();
-          _context39.n = 3;
+          _context36.n = 3;
           break;
         case 2:
-          _context39.p = 2;
-          _t37 = _context39.v;
-          toast('OOPS', _t37.message, null, '#ff6b8a');
+          _context36.p = 2;
+          _t34 = _context36.v;
+          toast('OOPS', _t34.message, null, '#ff6b8a');
         case 3:
-          return _context39.a(2);
+          return _context36.a(2);
       }
-    }, _callee38, null, [[0, 2]]);
+    }, _callee36, null, [[0, 2]]);
   }));
   return _doOfflineUpgrade.apply(this, arguments);
 }
@@ -4192,32 +3696,32 @@ function doOfflineClaim() {
   return _doOfflineClaim.apply(this, arguments);
 }
 function _doOfflineClaim() {
-  _doOfflineClaim = _asyncToGenerator(_regenerator().m(function _callee39() {
-    var _r6, _t38;
-    return _regenerator().w(function (_context40) {
-      while (1) switch (_context40.p = _context40.n) {
+  _doOfflineClaim = _asyncToGenerator(_regenerator().m(function _callee37() {
+    var _r6, _t35;
+    return _regenerator().w(function (_context37) {
+      while (1) switch (_context37.p = _context37.n) {
         case 0:
-          _context40.p = 0;
-          _context40.n = 1;
+          _context37.p = 0;
+          _context37.n = 1;
           return api('/offline/claim', {
             method: 'POST'
           });
         case 1:
-          _r6 = _context40.v;
+          _r6 = _context37.v;
           state = _r6.state;
           sfxBuy();
           toast('EARNINGS', 'Claimed $' + fmt(_r6.earnings) + ' from ' + _r6.hours.toFixed(1) + ' hours offline', null, '#7bdc78');
           renderOffline();
-          _context40.n = 3;
+          _context37.n = 3;
           break;
         case 2:
-          _context40.p = 2;
-          _t38 = _context40.v;
-          toast('OOPS', _t38.message, null, '#ff6b8a');
+          _context37.p = 2;
+          _t35 = _context37.v;
+          toast('OOPS', _t35.message, null, '#ff6b8a');
         case 3:
-          return _context40.a(2);
+          return _context37.a(2);
       }
-    }, _callee39, null, [[0, 2]]);
+    }, _callee37, null, [[0, 2]]);
   }));
   return _doOfflineClaim.apply(this, arguments);
 }
@@ -4373,19 +3877,11 @@ var ACH = [{
   check: function check() {
     return (state.stats.seen || []).length >= 50;
   }
-}, {
-  id: 'trader',
-  name: 'Trader',
-  desc: 'Complete a bazaar sale',
-  reward: 2500,
-  check: function check() {
-    return (state.stats.trades || 0) >= 1;
-  }
 }];
 function checkAch() {
   if (!state.achievements) state.achievements = [];
-  for (var _i4 = 0, _ACH = ACH; _i4 < _ACH.length; _i4++) {
-    var a = _ACH[_i4];
+  for (var _i2 = 0, _ACH = ACH; _i2 < _ACH.length; _i2++) {
+    var a = _ACH[_i2];
     if (state.achievements.indexOf(a.id) !== -1) continue;
     if (a.check()) {
       state.achievements.push(a.id);
@@ -4399,11 +3895,11 @@ function checkAch() {
 }
 function showNewAch(ids) {
   var shown = 0;
-  var _iterator8 = _createForOfIteratorHelper(ids),
-    _step8;
+  var _iterator7 = _createForOfIteratorHelper(ids),
+    _step7;
   try {
-    var _loop6 = function _loop6() {
-      var id = _step8.value;
+    var _loop4 = function _loop4() {
+      var id = _step7.value;
       var a = ACH.find(function (x) {
         return x.id === id;
       });
@@ -4414,24 +3910,24 @@ function showNewAch(ids) {
       }, shown * 350);
       shown++;
     };
-    for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
-      if (_loop6()) continue;
+    for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+      if (_loop4()) continue;
     }
   } catch (err) {
-    _iterator8.e(err);
+    _iterator7.e(err);
   } finally {
-    _iterator8.f();
+    _iterator7.f();
   }
   if (shown) burst(window.innerWidth / 2, window.innerHeight * 0.3, RARITIES[3]);
 }
 function renderAch() {
   var list = $('achList');
   list.innerHTML = '';
-  var _iterator9 = _createForOfIteratorHelper(ACH),
-    _step9;
+  var _iterator8 = _createForOfIteratorHelper(ACH),
+    _step8;
   try {
-    for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
-      var a = _step9.value;
+    for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
+      var a = _step8.value;
       var done = (state.achievements || []).indexOf(a.id) !== -1;
       var li = document.createElement('li');
       li.className = 'ach' + (done ? ' done' : '');
@@ -4439,14 +3935,18 @@ function renderAch() {
       list.appendChild(li);
     }
   } catch (err) {
-    _iterator9.e(err);
+    _iterator8.e(err);
   } finally {
-    _iterator9.f();
+    _iterator8.f();
   }
 }
 $('bazaarBtn').addEventListener('click', function () {
   ac();
   openBazaar();
+});
+$('tradeBtn').addEventListener('click', function () {
+  ac();
+  openTrade();
 });
 function openBazaar() {
   if (!inGame) return;
@@ -4508,32 +4008,32 @@ function renderMarket() {
   return _renderMarket.apply(this, arguments);
 }
 function _renderMarket() {
-  _renderMarket = _asyncToGenerator(_regenerator().m(function _callee40() {
-    var list, _iterator17, _step17, _loop1, _t39, _t40;
-    return _regenerator().w(function (_context42) {
-      while (1) switch (_context42.p = _context42.n) {
+  _renderMarket = _asyncToGenerator(_regenerator().m(function _callee38() {
+    var list, _iterator17, _step17, _loop0, _t36, _t37;
+    return _regenerator().w(function (_context39) {
+      while (1) switch (_context39.p = _context39.n) {
         case 0:
           list = $('marketList');
           if (state) {
-            _context42.n = 1;
+            _context39.n = 1;
             break;
           }
-          return _context42.a(2);
+          return _context39.a(2);
         case 1:
           $('mMoney').textContent = '$' + fmt(state.money);
           list.innerHTML = '<li class="empty">Loading Market...</li>';
-          _context42.p = 2;
-          _context42.n = 3;
+          _context39.p = 2;
+          _context39.n = 3;
           return api('/market');
         case 3:
-          marketData = _context42.v;
+          marketData = _context39.v;
           list.innerHTML = '';
           _iterator17 = _createForOfIteratorHelper(marketData.items || []);
-          _context42.p = 4;
-          _loop1 = _regenerator().m(function _loop1() {
+          _context39.p = 4;
+          _loop0 = _regenerator().m(function _loop0() {
             var it, li, extra, btn;
-            return _regenerator().w(function (_context41) {
-              while (1) switch (_context41.n) {
+            return _regenerator().w(function (_context38) {
+              while (1) switch (_context38.n) {
                 case 0:
                   it = _step17.value;
                   li = document.createElement('li');
@@ -4548,56 +4048,56 @@ function _renderMarket() {
                   });
                   list.appendChild(li);
                 case 1:
-                  return _context41.a(2);
+                  return _context38.a(2);
               }
-            }, _loop1);
+            }, _loop0);
           });
           _iterator17.s();
         case 5:
           if ((_step17 = _iterator17.n()).done) {
-            _context42.n = 7;
+            _context39.n = 7;
             break;
           }
-          return _context42.d(_regeneratorValues(_loop1()), 6);
+          return _context39.d(_regeneratorValues(_loop0()), 6);
         case 6:
-          _context42.n = 5;
+          _context39.n = 5;
           break;
         case 7:
-          _context42.n = 9;
+          _context39.n = 9;
           break;
         case 8:
-          _context42.p = 8;
-          _t39 = _context42.v;
-          _iterator17.e(_t39);
+          _context39.p = 8;
+          _t36 = _context39.v;
+          _iterator17.e(_t36);
         case 9:
-          _context42.p = 9;
+          _context39.p = 9;
           _iterator17.f();
-          return _context42.f(9);
+          return _context39.f(9);
         case 10:
-          _context42.n = 12;
+          _context39.n = 12;
           break;
         case 11:
-          _context42.p = 11;
-          _t40 = _context42.v;
-          list.innerHTML = '<li class="empty">' + esc(_t40.message) + '</li>';
+          _context39.p = 11;
+          _t37 = _context39.v;
+          list.innerHTML = '<li class="empty">' + esc(_t37.message) + '</li>';
         case 12:
-          return _context42.a(2);
+          return _context39.a(2);
       }
-    }, _callee40, null, [[4, 8, 9, 10], [2, 11]]);
+    }, _callee38, null, [[4, 8, 9, 10], [2, 11]]);
   }));
   return _renderMarket.apply(this, arguments);
 }
-function buyMarketItem(_x16) {
+function buyMarketItem(_x11) {
   return _buyMarketItem.apply(this, arguments);
 }
 function _buyMarketItem() {
-  _buyMarketItem = _asyncToGenerator(_regenerator().m(function _callee41(id) {
-    var _r7, _t41;
-    return _regenerator().w(function (_context43) {
-      while (1) switch (_context43.p = _context43.n) {
+  _buyMarketItem = _asyncToGenerator(_regenerator().m(function _callee39(id) {
+    var _r7, _t38;
+    return _regenerator().w(function (_context40) {
+      while (1) switch (_context40.p = _context40.n) {
         case 0:
-          _context43.p = 0;
-          _context43.n = 1;
+          _context40.p = 0;
+          _context40.n = 1;
           return api('/market/buy', {
             method: 'POST',
             body: JSON.stringify({
@@ -4605,23 +4105,23 @@ function _buyMarketItem() {
             })
           });
         case 1:
-          _r7 = _context43.v;
+          _r7 = _context40.v;
           state = _r7.state;
           sfxBuy();
           toast('PURCHASED', 'Breach added to your arsenal', '$' + fmt(_r7.price), '#ffb648');
           renderVault();
           renderMarket();
           renderBreachTargets();
-          _context43.n = 3;
+          _context40.n = 3;
           break;
         case 2:
-          _context43.p = 2;
-          _t41 = _context43.v;
-          toast('OOPS', _t41.message, null, '#ff6b8a');
+          _context40.p = 2;
+          _t38 = _context40.v;
+          toast('OOPS', _t38.message, null, '#ff6b8a');
         case 3:
-          return _context43.a(2);
+          return _context40.a(2);
       }
-    }, _callee41, null, [[0, 2]]);
+    }, _callee39, null, [[0, 2]]);
   }));
   return _buyMarketItem.apply(this, arguments);
 }
@@ -4638,11 +4138,11 @@ function renderBreachTargets() {
     list.innerHTML = '<li class="empty">No other players online in this world.</li>';
     return;
   }
-  var _iterator0 = _createForOfIteratorHelper(targets),
-    _step0;
+  var _iterator9 = _createForOfIteratorHelper(targets),
+    _step9;
   try {
-    var _loop7 = function _loop7() {
-      var m = _step0.value;
+    var _loop5 = function _loop5() {
+      var m = _step9.value;
       var rookie = m.level <= NEWBIE_LEVEL;
       var blocked = !!m.shielded || rookie;
       var note = '';
@@ -4663,26 +4163,26 @@ function renderBreachTargets() {
       });
       list.appendChild(li);
     };
-    for (_iterator0.s(); !(_step0 = _iterator0.n()).done;) {
-      _loop7();
+    for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
+      _loop5();
     }
   } catch (err) {
-    _iterator0.e(err);
+    _iterator9.e(err);
   } finally {
-    _iterator0.f();
+    _iterator9.f();
   }
 }
-function useBreach(_x17, _x18) {
+function useBreach(_x12, _x13) {
   return _useBreach.apply(this, arguments);
 }
 function _useBreach() {
-  _useBreach = _asyncToGenerator(_regenerator().m(function _callee42(userId, name) {
-    var _r8, got, _t42;
-    return _regenerator().w(function (_context44) {
-      while (1) switch (_context44.p = _context44.n) {
+  _useBreach = _asyncToGenerator(_regenerator().m(function _callee40(userId, name) {
+    var _r8, got, _t39;
+    return _regenerator().w(function (_context41) {
+      while (1) switch (_context41.p = _context41.n) {
         case 0:
-          _context44.p = 0;
-          _context44.n = 1;
+          _context41.p = 0;
+          _context41.n = 1;
           return api('/breach', {
             method: 'POST',
             body: JSON.stringify({
@@ -4690,7 +4190,7 @@ function _useBreach() {
             })
           });
         case 1:
-          _r8 = _context44.v;
+          _r8 = _context41.v;
           state = _r8.state;
           got = [];
           if (_r8.stolen.item) got.push(itemDisplayName(makeKey(_r8.stolen.item.name, _r8.stolen.item.mutation ? MUT_BY_ID[_r8.stolen.item.mutation] || null : null)) + ' x' + _r8.stolen.item.qty);
@@ -4699,16 +4199,16 @@ function _useBreach() {
           toast('BREACH SUCCESS', 'Raided ' + name + (got.length ? " \u2014 took " + got.join(' + ') : " \u2014 they were flat broke"), null, '#ff6b8a');
           renderVault();
           renderBreachTargets();
-          _context44.n = 3;
+          _context41.n = 3;
           break;
         case 2:
-          _context44.p = 2;
-          _t42 = _context44.v;
-          toast('OOPS', _t42.message, null, '#ff6b8a');
+          _context41.p = 2;
+          _t39 = _context41.v;
+          toast('OOPS', _t39.message, null, '#ff6b8a');
         case 3:
-          return _context44.a(2);
+          return _context41.a(2);
       }
-    }, _callee42, null, [[0, 2]]);
+    }, _callee40, null, [[0, 2]]);
   }));
   return _useBreach.apply(this, arguments);
 }
@@ -4729,31 +4229,31 @@ function loadLeaders() {
   return _loadLeaders.apply(this, arguments);
 }
 function _loadLeaders() {
-  _loadLeaders = _asyncToGenerator(_regenerator().m(function _callee43() {
-    var list, _yield$api4, leaders, total, _t43;
-    return _regenerator().w(function (_context45) {
-      while (1) switch (_context45.p = _context45.n) {
+  _loadLeaders = _asyncToGenerator(_regenerator().m(function _callee41() {
+    var list, _yield$api3, leaders, total, _t40;
+    return _regenerator().w(function (_context42) {
+      while (1) switch (_context42.p = _context42.n) {
         case 0:
           list = $('leaderList');
           list.innerHTML = '<li class="empty">Loading leaderboard...</li>';
-          _context45.p = 1;
-          _context45.n = 2;
+          _context42.p = 1;
+          _context42.n = 2;
           return api('/leaderboard');
         case 2:
-          _yield$api4 = _context45.v;
-          leaders = _yield$api4.leaders;
-          total = _yield$api4.total;
+          _yield$api3 = _context42.v;
+          leaders = _yield$api3.leaders;
+          total = _yield$api3.total;
           renderLeaders(leaders, total);
-          _context45.n = 4;
+          _context42.n = 4;
           break;
         case 3:
-          _context45.p = 3;
-          _t43 = _context45.v;
-          list.innerHTML = '<li class="empty">' + esc(_t43.message) + '</li>';
+          _context42.p = 3;
+          _t40 = _context42.v;
+          list.innerHTML = '<li class="empty">' + esc(_t40.message) + '</li>';
         case 4:
-          return _context45.a(2);
+          return _context42.a(2);
       }
-    }, _callee43, null, [[1, 3]]);
+    }, _callee41, null, [[1, 3]]);
   }));
   return _loadLeaders.apply(this, arguments);
 }
@@ -4780,19 +4280,19 @@ function applyLeaderSearch() {
     return;
   }
   list.innerHTML = '';
-  var _iterator1 = _createForOfIteratorHelper(rows),
-    _step1;
+  var _iterator0 = _createForOfIteratorHelper(rows),
+    _step0;
   try {
-    for (_iterator1.s(); !(_step1 = _iterator1.n()).done;) {
-      var p = _step1.value;
+    for (_iterator0.s(); !(_step0 = _iterator0.n()).done;) {
+      var p = _step0.value;
       var li = document.createElement('li');
       li.innerHTML = '<span class="item-left"><span class="item-name"' + (p.me ? ' style="color:#4fd1ff"' : '') + '>#' + p.rank + ' ' + esc(p.username) + (p.me ? ' (you)' : '') + '</span>' + '<span style="font-size:12px;color:#8b93bd">Level ' + p.level + '</span></span>' + '<span class="item-right"><span class="item-value">$' + fmt(p.money) + '</span></span>';
       list.appendChild(li);
     }
   } catch (err) {
-    _iterator1.e(err);
+    _iterator0.e(err);
   } finally {
-    _iterator1.f();
+    _iterator0.f();
   }
 }
 document.querySelectorAll('.tab[data-btab]').forEach(function (tab) {
@@ -4837,35 +4337,35 @@ function loadBazaar() {
   return _loadBazaar.apply(this, arguments);
 }
 function _loadBazaar() {
-  _loadBazaar = _asyncToGenerator(_regenerator().m(function _callee44() {
-    var list, _yield$api5, listings, filtered, _iterator18, _step18, _loop10, _t44, _t45;
-    return _regenerator().w(function (_context47) {
-      while (1) switch (_context47.p = _context47.n) {
+  _loadBazaar = _asyncToGenerator(_regenerator().m(function _callee42() {
+    var list, _yield$api4, listings, filtered, _iterator18, _step18, _loop1, _t41, _t42;
+    return _regenerator().w(function (_context44) {
+      while (1) switch (_context44.p = _context44.n) {
         case 0:
           list = $('browseList');
           initBazaarFilters();
           list.innerHTML = '<li class="empty">Loading bazaar...</li>';
-          _context47.p = 1;
-          _context47.n = 2;
+          _context44.p = 1;
+          _context44.n = 2;
           return api('/bazaar' + (bazaarQuery ? '?q=' + encodeURIComponent(bazaarQuery) : ''));
         case 2:
-          _yield$api5 = _context47.v;
-          listings = _yield$api5.listings;
+          _yield$api4 = _context44.v;
+          listings = _yield$api4.listings;
           filtered = bazaarFiltered(listings);
           if (filtered.length) {
-            _context47.n = 3;
+            _context44.n = 3;
             break;
           }
           list.innerHTML = '<li class="empty">No listings match. Try a different search.</li>';
-          return _context47.a(2);
+          return _context44.a(2);
         case 3:
           list.innerHTML = '';
           _iterator18 = _createForOfIteratorHelper(filtered);
-          _context47.p = 4;
-          _loop10 = _regenerator().m(function _loop10() {
+          _context44.p = 4;
+          _loop1 = _regenerator().m(function _loop1() {
             var l, rar, mut, nameHtml, li;
-            return _regenerator().w(function (_context46) {
-              while (1) switch (_context46.n) {
+            return _regenerator().w(function (_context43) {
+              while (1) switch (_context43.n) {
                 case 0:
                   l = _step18.value;
                   rar = rarityFor(l.itemName);
@@ -4881,110 +4381,110 @@ function _loadBazaar() {
                   });
                   list.appendChild(li);
                 case 1:
-                  return _context46.a(2);
+                  return _context43.a(2);
               }
-            }, _loop10);
+            }, _loop1);
           });
           _iterator18.s();
         case 5:
           if ((_step18 = _iterator18.n()).done) {
-            _context47.n = 7;
+            _context44.n = 7;
             break;
           }
-          return _context47.d(_regeneratorValues(_loop10()), 6);
+          return _context44.d(_regeneratorValues(_loop1()), 6);
         case 6:
-          _context47.n = 5;
+          _context44.n = 5;
           break;
         case 7:
-          _context47.n = 9;
+          _context44.n = 9;
           break;
         case 8:
-          _context47.p = 8;
-          _t44 = _context47.v;
-          _iterator18.e(_t44);
+          _context44.p = 8;
+          _t41 = _context44.v;
+          _iterator18.e(_t41);
         case 9:
-          _context47.p = 9;
+          _context44.p = 9;
           _iterator18.f();
-          return _context47.f(9);
+          return _context44.f(9);
         case 10:
-          _context47.n = 12;
+          _context44.n = 12;
           break;
         case 11:
-          _context47.p = 11;
-          _t45 = _context47.v;
-          list.innerHTML = '<li class="empty">' + esc(_t45.message) + '</li>';
+          _context44.p = 11;
+          _t42 = _context44.v;
+          list.innerHTML = '<li class="empty">' + esc(_t42.message) + '</li>';
         case 12:
-          return _context47.a(2);
+          return _context44.a(2);
       }
-    }, _callee44, null, [[4, 8, 9, 10], [1, 11]]);
+    }, _callee42, null, [[4, 8, 9, 10], [1, 11]]);
   }));
   return _loadBazaar.apply(this, arguments);
 }
-function buyListing(_x19) {
+function buyListing(_x14) {
   return _buyListing.apply(this, arguments);
 }
 function _buyListing() {
-  _buyListing = _asyncToGenerator(_regenerator().m(function _callee45(id) {
-    var _r9, _t46;
-    return _regenerator().w(function (_context48) {
-      while (1) switch (_context48.p = _context48.n) {
+  _buyListing = _asyncToGenerator(_regenerator().m(function _callee43(id) {
+    var _r9, _t43;
+    return _regenerator().w(function (_context45) {
+      while (1) switch (_context45.p = _context45.n) {
         case 0:
-          _context48.p = 0;
-          _context48.n = 1;
+          _context45.p = 0;
+          _context45.n = 1;
           return api('/bazaar/' + id + '/buy', {
             method: 'POST'
           });
         case 1:
-          _r9 = _context48.v;
+          _r9 = _context45.v;
           state = _r9.state;
           sfxBuy();
           toast('PURCHASE', 'Item added to your vault', null, '#7bdc78');
           if (_r9.newAch && _r9.newAch.length) showNewAch(_r9.newAch);
           renderVault();
           loadBazaar();
-          _context48.n = 3;
+          _context45.n = 3;
           break;
         case 2:
-          _context48.p = 2;
-          _t46 = _context48.v;
-          toast('OOPS', _t46.message, null, '#ff6b8a');
+          _context45.p = 2;
+          _t43 = _context45.v;
+          toast('OOPS', _t43.message, null, '#ff6b8a');
         case 3:
-          return _context48.a(2);
+          return _context45.a(2);
       }
-    }, _callee45, null, [[0, 2]]);
+    }, _callee43, null, [[0, 2]]);
   }));
   return _buyListing.apply(this, arguments);
 }
-function cancelListing(_x20) {
+function cancelListing(_x15) {
   return _cancelListing.apply(this, arguments);
 }
 function _cancelListing() {
-  _cancelListing = _asyncToGenerator(_regenerator().m(function _callee46(id) {
-    var _r0, _t47;
-    return _regenerator().w(function (_context49) {
-      while (1) switch (_context49.p = _context49.n) {
+  _cancelListing = _asyncToGenerator(_regenerator().m(function _callee44(id) {
+    var _r0, _t44;
+    return _regenerator().w(function (_context46) {
+      while (1) switch (_context46.p = _context46.n) {
         case 0:
-          _context49.p = 0;
-          _context49.n = 1;
+          _context46.p = 0;
+          _context46.n = 1;
           return api('/bazaar/' + id, {
             method: 'DELETE'
           });
         case 1:
-          _r0 = _context49.v;
+          _r0 = _context46.v;
           state = _r0.state;
           toast('CANCELLED', 'Item returned to your vault', null, '#ffb648');
           renderVault();
           loadBazaar();
-          _context49.n = 3;
+          _context46.n = 3;
           break;
         case 2:
-          _context49.p = 2;
-          _t47 = _context49.v;
-          toast('OOPS', _t47.message, null, '#ff6b8a');
+          _context46.p = 2;
+          _t44 = _context46.v;
+          toast('OOPS', _t44.message, null, '#ff6b8a');
         case 3:
-          return _context49.a(2);
+          return _context46.a(2);
       }
-    }, _callee46, null, [[0, 2]]);
+    }, _callee44, null, [[0, 2]]);
   }));
   return _cancelListing.apply(this, arguments);
 }
@@ -4999,8 +4499,8 @@ function renderSellList() {
   entries.sort(function (a, b) {
     return itemValueKey(b[0]) - itemValueKey(a[0]);
   });
-  var _loop8 = function _loop8() {
-    var _entries$_i = _slicedToArray(_entries[_i5], 2),
+  var _loop6 = function _loop6() {
+    var _entries$_i = _slicedToArray(_entries[_i3], 2),
       it = _entries$_i[0],
       count = _entries$_i[1];
     var rar = rarityFor(baseName(it));
@@ -5020,21 +4520,21 @@ function renderSellList() {
     });
     list.appendChild(li);
   };
-  for (var _i5 = 0, _entries = entries; _i5 < _entries.length; _i5++) {
-    _loop8();
+  for (var _i3 = 0, _entries = entries; _i3 < _entries.length; _i3++) {
+    _loop6();
   }
 }
-function listItem(_x21, _x22, _x23, _x24) {
+function listItem(_x16, _x17, _x18, _x19) {
   return _listItem.apply(this, arguments);
 }
 function _listItem() {
-  _listItem = _asyncToGenerator(_regenerator().m(function _callee47(itemKey, rar, quantity, price) {
-    var _r1, _t48;
-    return _regenerator().w(function (_context50) {
-      while (1) switch (_context50.p = _context50.n) {
+  _listItem = _asyncToGenerator(_regenerator().m(function _callee45(itemKey, rar, quantity, price) {
+    var _r1, _t45;
+    return _regenerator().w(function (_context47) {
+      while (1) switch (_context47.p = _context47.n) {
         case 0:
-          _context50.p = 0;
-          _context50.n = 1;
+          _context47.p = 0;
+          _context47.n = 1;
           return api('/bazaar', {
             method: 'POST',
             body: JSON.stringify({
@@ -5045,23 +4545,23 @@ function _listItem() {
             })
           });
         case 1:
-          _r1 = _context50.v;
+          _r1 = _context47.v;
           state = _r1.state;
           sfxBuy();
           toast('LISTED', baseName(itemKey) + ' x' + quantity + ' for $' + fmt(price), null, '#ffb648');
           renderVault();
           loadBazaar();
           document.querySelector('.tab[data-btab="browse"]').click();
-          _context50.n = 3;
+          _context47.n = 3;
           break;
         case 2:
-          _context50.p = 2;
-          _t48 = _context50.v;
-          toast('OOPS', _t48.message, null, '#ff6b8a');
+          _context47.p = 2;
+          _t45 = _context47.v;
+          toast('OOPS', _t45.message, null, '#ff6b8a');
         case 3:
-          return _context50.a(2);
+          return _context47.a(2);
       }
-    }, _callee47, null, [[0, 2]]);
+    }, _callee45, null, [[0, 2]]);
   }));
   return _listItem.apply(this, arguments);
 }
@@ -5078,54 +4578,558 @@ $('bazaarMutation').addEventListener('change', function () {
   bazaarMutation = $('bazaarMutation').value;
   loadBazaar();
 });
+var pendingTradeReqs = [];
+var activeTrade = null;
+var tradeDraft = {
+  items: {},
+  money: 0
+};
+var tradeDraftDirty = false;
+function openTrade() {
+  if (!inGame) return;
+  closeAllModals();
+  $('tradeModal').classList.remove('hidden');
+  $('tMoney').textContent = '$' + fmt(state.money);
+  if (activeTrade) {
+    $('tradeStart').classList.add('hidden');
+    $('tradeBuilder').classList.remove('hidden');
+    renderTrade();
+    return;
+  }
+  $('tradeStart').classList.remove('hidden');
+  $('tradeBuilder').classList.add('hidden');
+  renderPendingReqs();
+  loadOnline();
+}
+function renderTradeInventory() {
+  var list = $('tradeInventory');
+  if (!list) return;
+  list.innerHTML = '';
+  var counts = state.counts || {};
+  var entries = Object.entries(counts).sort(function (a, b) {
+    return itemValueKey(b[0]) - itemValueKey(a[0]);
+  });
+  if (entries.length === 0) {
+    list.innerHTML = '<li class="empty">No items in inventory</li>';
+    return;
+  }
+  var _iterator1 = _createForOfIteratorHelper(entries),
+    _step1;
+  try {
+    var _loop7 = function _loop7() {
+      var _step1$value = _slicedToArray(_step1.value, 2),
+        it = _step1$value[0],
+        count = _step1$value[1];
+      var rar = rarityFor(baseName(it));
+      var inDraft = tradeDraft.items[it] || 0;
+      var li = document.createElement('li');
+      li.className = 'offer-row';
+      li.innerHTML = '<span class="item-left"><span class="item-name">' + itemDisplayName(it) + '</span>' + mutBadge(it) + '<span class="rarity" style="color:' + rar.color + ';background:' + rar.color + '1f;border:1px solid ' + rar.color + '59">' + rar.name + '</span></span>' + '<span class="item-value">x' + count + '</span>' + '<div style="display:flex;align-items:center;gap:4px">' + '<button class="mini-btn" data-add="' + it + '" style="padding:4px 8px;font-size:11px">+</button>' + '<span style="font-size:12px;font-weight:700;min-width:20px;text-align:center">' + inDraft + '</span>' + '<button class="mini-btn ghost" data-remove="' + it + '" style="padding:4px 8px;font-size:11px">-</button>' + '</div>';
+      li.querySelector('[data-add]').addEventListener('click', function () {
+        if (inDraft < count) {
+          tradeDraft.items[it] = inDraft + 1;
+          tradeDraftDirty = true;
+          renderTradeInventory();
+        }
+      });
+      li.querySelector('[data-remove]').addEventListener('click', function () {
+        if (inDraft > 0) {
+          tradeDraft.items[it] = inDraft - 1;
+          if (tradeDraft.items[it] === 0) delete tradeDraft.items[it];
+          tradeDraftDirty = true;
+          renderTradeInventory();
+        }
+      });
+      list.appendChild(li);
+    };
+    for (_iterator1.s(); !(_step1 = _iterator1.n()).done;) {
+      _loop7();
+    }
+  } catch (err) {
+    _iterator1.e(err);
+  } finally {
+    _iterator1.f();
+  }
+}
+function loadOnline() {
+  return _loadOnline.apply(this, arguments);
+}
+function _loadOnline() {
+  _loadOnline = _asyncToGenerator(_regenerator().m(function _callee47() {
+    var _r10, _list, _iterator19, _step19, u, li, _list2, _t47, _t48;
+    return _regenerator().w(function (_context49) {
+      while (1) switch (_context49.p = _context49.n) {
+        case 0:
+          _context49.p = 0;
+          _context49.n = 1;
+          return api('/online');
+        case 1:
+          _r10 = _context49.v;
+          _list = $('onlineList');
+          if (_list) {
+            _context49.n = 2;
+            break;
+          }
+          return _context49.a(2);
+        case 2:
+          if (!(!_r10 || !_r10.online)) {
+            _context49.n = 3;
+            break;
+          }
+          _list.innerHTML = '<li class="empty">No online keepers</li>';
+          return _context49.a(2);
+        case 3:
+          _list.innerHTML = '';
+          _iterator19 = _createForOfIteratorHelper(_r10.online);
+          _context49.p = 4;
+          _iterator19.s();
+        case 5:
+          if ((_step19 = _iterator19.n()).done) {
+            _context49.n = 8;
+            break;
+          }
+          u = _step19.value;
+          if (!(u.id === me.id)) {
+            _context49.n = 6;
+            break;
+          }
+          return _context49.a(3, 7);
+        case 6:
+          li = document.createElement('li');
+          li.innerHTML = '<span class="name">' + esc(u.username) + '</span>' + '<button class="mini-btn" data-trade-user="' + u.id + '" data-trade-name="' + esc(u.username) + '">Request Trade</button>';
+          li.querySelector('[data-trade-user]').addEventListener('click', function () {
+            var _ref18 = _asyncToGenerator(_regenerator().m(function _callee46(e) {
+              var userId, username, _t46;
+              return _regenerator().w(function (_context48) {
+                while (1) switch (_context48.p = _context48.n) {
+                  case 0:
+                    userId = parseInt(e.target.dataset.tradeUser, 10);
+                    username = e.target.dataset.tradeName;
+                    _context48.p = 1;
+                    _context48.n = 2;
+                    return api('/trade/request', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        toUserId: userId
+                      })
+                    });
+                  case 2:
+                    toast('REQUEST SENT', 'Waiting for ' + username + ' to accept', null, '#4fd1ff');
+                    _context48.n = 4;
+                    break;
+                  case 3:
+                    _context48.p = 3;
+                    _t46 = _context48.v;
+                    toast('OOPS', _t46.message, null, '#ff6b8a');
+                  case 4:
+                    return _context48.a(2);
+                }
+              }, _callee46, null, [[1, 3]]);
+            }));
+            return function (_x36) {
+              return _ref18.apply(this, arguments);
+            };
+          }());
+          _list.appendChild(li);
+        case 7:
+          _context49.n = 5;
+          break;
+        case 8:
+          _context49.n = 10;
+          break;
+        case 9:
+          _context49.p = 9;
+          _t47 = _context49.v;
+          _iterator19.e(_t47);
+        case 10:
+          _context49.p = 10;
+          _iterator19.f();
+          return _context49.f(10);
+        case 11:
+          _context49.n = 13;
+          break;
+        case 12:
+          _context49.p = 12;
+          _t48 = _context49.v;
+          _list2 = $('onlineList');
+          if (_list2) _list2.innerHTML = '<li class="empty">Could not load online keepers</li>';
+        case 13:
+          return _context49.a(2);
+      }
+    }, _callee47, null, [[4, 9, 10, 11], [0, 12]]);
+  }));
+  return _loadOnline.apply(this, arguments);
+}
+function renderPendingReqs() {
+  var div = $('tradeRequests');
+  if (!div) return;
+  div.innerHTML = '';
+  if (!pendingTradeReqs.length) return;
+  var _iterator10 = _createForOfIteratorHelper(pendingTradeReqs),
+    _step10;
+  try {
+    var _loop8 = function _loop8() {
+      var req = _step10.value;
+      var p = document.createElement('div');
+      p.className = 'row';
+      p.innerHTML = '<span class="name">' + esc(req.fromName) + '</span>' + '<button class="mini-btn" data-accept="' + req.id + '">Accept</button>' + '<button class="mini-btn ghost" data-decline="' + req.id + '">Decline</button>';
+      p.querySelector('[data-accept]').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee6() {
+        var r, _t7;
+        return _regenerator().w(function (_context6) {
+          while (1) switch (_context6.p = _context6.n) {
+            case 0:
+              _context6.p = 0;
+              _context6.n = 1;
+              return api('/trade/request/' + req.id + '/accept', {
+                method: 'POST'
+              });
+            case 1:
+              r = _context6.v;
+              activeTrade = r.trade;
+              pendingTradeReqs = pendingTradeReqs.filter(function (x) {
+                return x.id !== req.id;
+              });
+              $('tradeStart').classList.add('hidden');
+              $('tradeBuilder').classList.remove('hidden');
+              renderTrade();
+              _context6.n = 3;
+              break;
+            case 2:
+              _context6.p = 2;
+              _t7 = _context6.v;
+              toast('OOPS', _t7.message, null, '#ff6b8a');
+            case 3:
+              return _context6.a(2);
+          }
+        }, _callee6, null, [[0, 2]]);
+      })));
+      p.querySelector('[data-decline]').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee7() {
+        var _t8;
+        return _regenerator().w(function (_context7) {
+          while (1) switch (_context7.p = _context7.n) {
+            case 0:
+              _context7.p = 0;
+              _context7.n = 1;
+              return api('/trade/request/' + req.id + '/decline', {
+                method: 'POST'
+              });
+            case 1:
+              pendingTradeReqs = pendingTradeReqs.filter(function (x) {
+                return x.id !== req.id;
+              });
+              renderPendingReqs();
+              _context7.n = 3;
+              break;
+            case 2:
+              _context7.p = 2;
+              _t8 = _context7.v;
+            case 3:
+              return _context7.a(2);
+          }
+        }, _callee7, null, [[0, 2]]);
+      })));
+      div.appendChild(p);
+    };
+    for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+      _loop8();
+    }
+  } catch (err) {
+    _iterator10.e(err);
+  } finally {
+    _iterator10.f();
+  }
+}
+$('tradeSend').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee8() {
+  var inp, username, r, _t9;
+  return _regenerator().w(function (_context8) {
+    while (1) switch (_context8.p = _context8.n) {
+      case 0:
+        inp = $('tradeUser');
+        username = (inp.value || '').trim();
+        if (username) {
+          _context8.n = 1;
+          break;
+        }
+        return _context8.a(2);
+      case 1:
+        _context8.p = 1;
+        _context8.n = 2;
+        return api('/trade/request', {
+          method: 'POST',
+          body: JSON.stringify({
+            toUsername: username
+          })
+        });
+      case 2:
+        r = _context8.v;
+        toast('REQUEST SENT', 'Waiting for ' + username + ' to accept', null, '#4fd1ff');
+        inp.value = '';
+        _context8.n = 4;
+        break;
+      case 3:
+        _context8.p = 3;
+        _t9 = _context8.v;
+        toast('OOPS', _t9.message, null, '#ff6b8a');
+      case 4:
+        return _context8.a(2);
+    }
+  }, _callee8, null, [[1, 3]]);
+})));
+function renderTrade() {
+  if (!activeTrade || !activeTrade.you) return;
+  var you = activeTrade.you;
+  var other = activeTrade.other || {};
+  var mine = $('tradeMine');
+  var theirs = $('tradeTheirs');
+  var draft = $('tradeDraft');
+  if (!mine || !theirs) return;
+  var html = '';
+  for (var _i4 = 0, _Object$entries = Object.entries(you.items || {}); _i4 < _Object$entries.length; _i4++) {
+    var _Object$entries$_i = _slicedToArray(_Object$entries[_i4], 2),
+      key = _Object$entries$_i[0],
+      qty = _Object$entries$_i[1];
+    var rar = rarityFor(baseName(key));
+    html += '<li class="row"><span class="item-left"><span class="item-name">' + itemDisplayName(key) + '</span>' + mutBadge(key) + '</span><span class="item-count">x' + qty + '</span></li>';
+  }
+  if (you.money > 0) html += '<li class="row"><span class="name">Money</span><span class="item-count">$' + fmt(you.money) + '</span></li>';
+  mine.innerHTML = html || '<li class="empty">Nothing offered</li>';
+  html = '';
+  for (var _i5 = 0, _Object$entries2 = Object.entries(other.items || {}); _i5 < _Object$entries2.length; _i5++) {
+    var _Object$entries2$_i = _slicedToArray(_Object$entries2[_i5], 2),
+      _key = _Object$entries2$_i[0],
+      _qty = _Object$entries2$_i[1];
+    var _rar = rarityFor(baseName(_key));
+    html += '<li class="row"><span class="item-left"><span class="item-name">' + itemDisplayName(_key) + '</span>' + mutBadge(_key) + '</span><span class="item-count">x' + _qty + '</span></li>';
+  }
+  if (other.money > 0) html += '<li class="row"><span class="name">Money</span><span class="item-count">$' + fmt(other.money) + '</span></li>';
+  theirs.innerHTML = html || '<li class="empty">Nothing offered</li>';
+  var status = $('tradeStatus');
+  if (status) {
+    var s = '';
+    if (you.locked && other.locked) s = "Both offers locked \u2014 confirm to complete";else if (you.locked) s = 'Your offer is locked. Waiting for them...';else if (other.locked) s = 'Their offer is locked. Lock yours to continue.';else s = 'Add items or money, then lock your offer.';
+    status.textContent = s;
+  }
+  var lockBtn = $('tradeLock');
+  var confirmBtn = $('tradeConfirm');
+  var moneyInput = $('tradeMoneyInput');
+  var updateBtn = $('tradeUpdateOffer');
+  if (lockBtn) {
+    lockBtn.textContent = you.locked ? 'UNLOCK OFFER' : 'LOCK OFFER';
+    lockBtn.disabled = false;
+  }
+  if (confirmBtn) {
+    confirmBtn.disabled = !(you.locked && other.locked);
+  }
+  if (draft) {
+    if (you.locked) {
+      draft.classList.add('hidden');
+    } else {
+      draft.classList.remove('hidden');
+      if (moneyInput) {
+        moneyInput.value = you.money || 0;
+        moneyInput.disabled = false;
+      }
+      if (updateBtn) {
+        updateBtn.disabled = false;
+      }
+      tradeDraft = {
+        items: Object.assign({}, you.items || {}),
+        money: you.money || 0
+      };
+      renderTradeInventory();
+    }
+  }
+}
+$('tradeUpdateOffer').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee9() {
+  var moneyInput, money, r, _t0;
+  return _regenerator().w(function (_context9) {
+    while (1) switch (_context9.p = _context9.n) {
+      case 0:
+        if (activeTrade) {
+          _context9.n = 1;
+          break;
+        }
+        return _context9.a(2);
+      case 1:
+        _context9.p = 1;
+        moneyInput = $('tradeMoneyInput');
+        money = Math.max(0, Math.floor(Number(moneyInput ? moneyInput.value : 0) || 0));
+        _context9.n = 2;
+        return api('/trade/' + activeTrade.id + '/offer', {
+          method: 'POST',
+          body: JSON.stringify({
+            items: tradeDraft.items,
+            money: money
+          })
+        });
+      case 2:
+        r = _context9.v;
+        activeTrade = r.trade;
+        tradeDraftDirty = false;
+        renderTrade();
+        toast('OFFER UPDATED', 'Your offer has been sent', null, '#4fd1ff');
+        _context9.n = 4;
+        break;
+      case 3:
+        _context9.p = 3;
+        _t0 = _context9.v;
+        toast('OOPS', _t0.message, null, '#ff6b8a');
+      case 4:
+        return _context9.a(2);
+    }
+  }, _callee9, null, [[1, 3]]);
+})));
+$('tradeLock').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee0() {
+  var locked, r, _t1;
+  return _regenerator().w(function (_context0) {
+    while (1) switch (_context0.p = _context0.n) {
+      case 0:
+        if (activeTrade) {
+          _context0.n = 1;
+          break;
+        }
+        return _context0.a(2);
+      case 1:
+        _context0.p = 1;
+        locked = !!(activeTrade.you || {}).locked;
+        _context0.n = 2;
+        return api('/trade/' + activeTrade.id + (locked ? '/unlock' : '/lock'), {
+          method: 'POST',
+          body: JSON.stringify({
+            items: (activeTrade.you || {}).items || {},
+            money: (activeTrade.you || {}).money || 0
+          })
+        });
+      case 2:
+        r = _context0.v;
+        activeTrade = r.trade;
+        renderTrade();
+        _context0.n = 4;
+        break;
+      case 3:
+        _context0.p = 3;
+        _t1 = _context0.v;
+        toast('OOPS', _t1.message, null, '#ff6b8a');
+      case 4:
+        return _context0.a(2);
+    }
+  }, _callee0, null, [[1, 3]]);
+})));
+$('tradeConfirm').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee1() {
+  var r, _t10;
+  return _regenerator().w(function (_context1) {
+    while (1) switch (_context1.p = _context1.n) {
+      case 0:
+        if (activeTrade) {
+          _context1.n = 1;
+          break;
+        }
+        return _context1.a(2);
+      case 1:
+        _context1.p = 1;
+        _context1.n = 2;
+        return api('/trade/' + activeTrade.id + '/confirm', {
+          method: 'POST'
+        });
+      case 2:
+        r = _context1.v;
+        state = r.state;
+        activeTrade = null;
+        toast('TRADE COMPLETE', 'Your trade was successful', null, '#7bdc78');
+        closeAllModals();
+        renderVault();
+        _context1.n = 4;
+        break;
+      case 3:
+        _context1.p = 3;
+        _t10 = _context1.v;
+        toast('OOPS', _t10.message, null, '#ff6b8a');
+      case 4:
+        return _context1.a(2);
+    }
+  }, _callee1, null, [[1, 3]]);
+})));
+$('tradeCancel').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee10() {
+  var _t11;
+  return _regenerator().w(function (_context10) {
+    while (1) switch (_context10.p = _context10.n) {
+      case 0:
+        if (activeTrade) {
+          _context10.n = 1;
+          break;
+        }
+        return _context10.a(2);
+      case 1:
+        _context10.p = 1;
+        _context10.n = 2;
+        return api('/trade/' + activeTrade.id + '/cancel', {
+          method: 'POST'
+        });
+      case 2:
+        activeTrade = null;
+        $('tradeStart').classList.remove('hidden');
+        $('tradeBuilder').classList.add('hidden');
+        renderPendingReqs();
+        loadOnline();
+        _context10.n = 4;
+        break;
+      case 3:
+        _context10.p = 3;
+        _t11 = _context10.v;
+        toast('OOPS', _t11.message, null, '#ff6b8a');
+      case 4:
+        return _context10.a(2);
+    }
+  }, _callee10, null, [[1, 3]]);
+})));
 function renderQuests() {
   return _renderQuests.apply(this, arguments);
 }
 function _renderQuests() {
   _renderQuests = _asyncToGenerator(_regenerator().m(function _callee48() {
-    var list, data, _iterator19, _step19, _loop11, _t49, _t50;
-    return _regenerator().w(function (_context52) {
-      while (1) switch (_context52.p = _context52.n) {
+    var list, data, _iterator20, _step20, _loop10, _t49, _t50;
+    return _regenerator().w(function (_context51) {
+      while (1) switch (_context51.p = _context51.n) {
         case 0:
           list = $('questList');
           if (list) {
-            _context52.n = 1;
+            _context51.n = 1;
             break;
           }
-          return _context52.a(2);
+          return _context51.a(2);
         case 1:
           list.innerHTML = '<li class="empty">Loading quests...</li>';
           data = null;
-          _context52.p = 2;
-          _context52.n = 3;
+          _context51.p = 2;
+          _context51.n = 3;
           return api('/daily');
         case 3:
-          data = _context52.v;
-          _context52.n = 5;
+          data = _context51.v;
+          _context51.n = 5;
           break;
         case 4:
-          _context52.p = 4;
-          _t49 = _context52.v;
+          _context51.p = 4;
+          _t49 = _context51.v;
           data = dailyData;
         case 5:
           if (data) {
-            _context52.n = 6;
+            _context51.n = 6;
             break;
           }
           list.innerHTML = '<li class="empty">Could not load quests.</li>';
-          return _context52.a(2);
+          return _context51.a(2);
         case 6:
           dailyData = data;
           $('questInfo').textContent = (data.claimed || []).length + ' / ' + (data.quests || []).length + ' claimed';
           list.innerHTML = '';
-          _iterator19 = _createForOfIteratorHelper(data.quests || []);
-          _context52.p = 7;
-          _loop11 = _regenerator().m(function _loop11() {
+          _iterator20 = _createForOfIteratorHelper(data.quests || []);
+          _context51.p = 7;
+          _loop10 = _regenerator().m(function _loop10() {
             var q, prog, done, claimed, pct, li, btn;
-            return _regenerator().w(function (_context51) {
-              while (1) switch (_context51.n) {
+            return _regenerator().w(function (_context50) {
+              while (1) switch (_context50.n) {
                 case 0:
-                  q = _step19.value;
+                  q = _step20.value;
                   prog = Number((data.prog || {})[q.id] || 0);
                   done = prog >= q.target;
                   claimed = (data.claimed || []).indexOf(q.id) !== -1;
@@ -5143,49 +5147,49 @@ function _renderQuests() {
                   li.appendChild(btn);
                   list.appendChild(li);
                 case 1:
-                  return _context51.a(2);
+                  return _context50.a(2);
               }
-            }, _loop11);
+            }, _loop10);
           });
-          _iterator19.s();
+          _iterator20.s();
         case 8:
-          if ((_step19 = _iterator19.n()).done) {
-            _context52.n = 10;
+          if ((_step20 = _iterator20.n()).done) {
+            _context51.n = 10;
             break;
           }
-          return _context52.d(_regeneratorValues(_loop11()), 9);
+          return _context51.d(_regeneratorValues(_loop10()), 9);
         case 9:
-          _context52.n = 8;
+          _context51.n = 8;
           break;
         case 10:
-          _context52.n = 12;
+          _context51.n = 12;
           break;
         case 11:
-          _context52.p = 11;
-          _t50 = _context52.v;
-          _iterator19.e(_t50);
+          _context51.p = 11;
+          _t50 = _context51.v;
+          _iterator20.e(_t50);
         case 12:
-          _context52.p = 12;
-          _iterator19.f();
-          return _context52.f(12);
+          _context51.p = 12;
+          _iterator20.f();
+          return _context51.f(12);
         case 13:
-          return _context52.a(2);
+          return _context51.a(2);
       }
     }, _callee48, null, [[7, 11, 12, 13], [2, 4]]);
   }));
   return _renderQuests.apply(this, arguments);
 }
-function claimQuest(_x25) {
+function claimQuest(_x20) {
   return _claimQuest.apply(this, arguments);
 }
 function _claimQuest() {
   _claimQuest = _asyncToGenerator(_regenerator().m(function _callee49(id) {
-    var _r10, _t51;
-    return _regenerator().w(function (_context53) {
-      while (1) switch (_context53.p = _context53.n) {
+    var _r11, _t51;
+    return _regenerator().w(function (_context52) {
+      while (1) switch (_context52.p = _context52.n) {
         case 0:
-          _context53.p = 0;
-          _context53.n = 1;
+          _context52.p = 0;
+          _context52.n = 1;
           return api('/daily/claim', {
             method: 'POST',
             body: JSON.stringify({
@@ -5193,21 +5197,21 @@ function _claimQuest() {
             })
           });
         case 1:
-          _r10 = _context53.v;
-          state = _r10.state;
-          dailyData = _r10.daily;
-          toast('QUEST COMPLETE', 'Reward claimed', '$' + fmt(_r10.reward), '#7bdc78');
+          _r11 = _context52.v;
+          state = _r11.state;
+          dailyData = _r11.daily;
+          toast('QUEST COMPLETE', 'Reward claimed', '$' + fmt(_r11.reward), '#7bdc78');
           sfxToast();
           renderVault();
           renderQuests();
-          _context53.n = 3;
+          _context52.n = 3;
           break;
         case 2:
-          _context53.p = 2;
-          _t51 = _context53.v;
+          _context52.p = 2;
+          _t51 = _context52.v;
           toast('OOPS', _t51.message, null, '#ff6b8a');
         case 3:
-          return _context53.a(2);
+          return _context52.a(2);
       }
     }, _callee49, null, [[0, 2]]);
   }));
@@ -5233,35 +5237,35 @@ function refreshBossPayout() {
 function _refreshBossPayout() {
   _refreshBossPayout = _asyncToGenerator(_regenerator().m(function _callee50() {
     var b, _t52;
-    return _regenerator().w(function (_context54) {
-      while (1) switch (_context54.p = _context54.n) {
+    return _regenerator().w(function (_context53) {
+      while (1) switch (_context53.p = _context53.n) {
         case 0:
           if (!(!inGame || !token)) {
-            _context54.n = 1;
+            _context53.n = 1;
             break;
           }
-          return _context54.a(2);
+          return _context53.a(2);
         case 1:
-          _context54.p = 1;
-          _context54.n = 2;
+          _context53.p = 1;
+          _context53.n = 2;
           return api('/boss');
         case 2:
-          b = _context54.v;
+          b = _context53.v;
           if (b) {
-            _context54.n = 3;
+            _context53.n = 3;
             break;
           }
-          return _context54.a(2);
+          return _context53.a(2);
         case 3:
           if (b.boss) onBoss(b.boss);
           setBossYou(b.you);
-          _context54.n = 5;
+          _context53.n = 5;
           break;
         case 4:
-          _context54.p = 4;
-          _t52 = _context54.v;
+          _context53.p = 4;
+          _t52 = _context53.v;
         case 5:
-          return _context54.a(2);
+          return _context53.a(2);
       }
     }, _callee50, null, [[1, 4]]);
   }));
@@ -5325,7 +5329,7 @@ var TUTORIAL = [{
 }, {
   info: true,
   title: "YOU\u2019RE READY, KEEPER",
-  text: 'Hoard, trade and keep leveling up. Rule the item empire.',
+  text: 'Hoard and keep leveling up. Rule the item empire.',
   delay: 4600
 }];
 function showTutStep() {
@@ -5422,18 +5426,18 @@ function saveNow() {
 function _saveNow() {
   _saveNow = _asyncToGenerator(_regenerator().m(function _callee51() {
     var body, _t53;
-    return _regenerator().w(function (_context55) {
-      while (1) switch (_context55.p = _context55.n) {
+    return _regenerator().w(function (_context54) {
+      while (1) switch (_context54.p = _context54.n) {
         case 0:
           if (!(!token || !state)) {
-            _context55.n = 1;
+            _context54.n = 1;
             break;
           }
-          return _context55.a(2);
+          return _context54.a(2);
         case 1:
-          _context55.p = 1;
+          _context54.p = 1;
           body = JSON.stringify(payload());
-          _context55.n = 2;
+          _context54.n = 2;
           return fetch('/api/save', {
             method: 'POST',
             headers: {
@@ -5444,13 +5448,13 @@ function _saveNow() {
             keepalive: true
           });
         case 2:
-          _context55.n = 4;
+          _context54.n = 4;
           break;
         case 3:
-          _context55.p = 3;
-          _t53 = _context55.v;
+          _context54.p = 3;
+          _t53 = _context54.v;
         case 4:
-          return _context55.a(2);
+          return _context54.a(2);
       }
     }, _callee51, null, [[1, 3]]);
   }));
@@ -5466,59 +5470,59 @@ window.addEventListener('beforeunload', function () {
     navigator.sendBeacon && navigator.sendBeacon('/api/save?token=' + encodeURIComponent(token), blob);
   } catch (e) {}
 });
-$('leaveBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee0() {
-  var _t1;
-  return _regenerator().w(function (_context0) {
-    while (1) switch (_context0.p = _context0.n) {
+$('leaveBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee11() {
+  var _t12;
+  return _regenerator().w(function (_context11) {
+    while (1) switch (_context11.p = _context11.n) {
       case 0:
-        _context0.n = 1;
+        _context11.n = 1;
         return saveNow();
       case 1:
         disconnectWS();
         closeAllModals();
         if (!(currentServer && token)) {
-          _context0.n = 5;
+          _context11.n = 5;
           break;
         }
-        _context0.p = 2;
-        _context0.n = 3;
+        _context11.p = 2;
+        _context11.n = 3;
         return api('/servers/' + currentServer.id + '/leave', {
           method: 'POST'
         });
       case 3:
-        _context0.n = 5;
+        _context11.n = 5;
         break;
       case 4:
-        _context0.p = 4;
-        _t1 = _context0.v;
+        _context11.p = 4;
+        _t12 = _context11.v;
       case 5:
         currentServer = null;
         mySlot = -1;
-        _context0.n = 6;
+        _context11.n = 6;
         return loadMe();
       case 6:
-        return _context0.a(2);
+        return _context11.a(2);
     }
-  }, _callee0, null, [[2, 4]]);
+  }, _callee11, null, [[2, 4]]);
 })));
 var bossBarEl = $('bossBar');
 if (bossBarEl) {
-  bossBarEl.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee1() {
-    return _regenerator().w(function (_context1) {
-      while (1) switch (_context1.n) {
+  bossBarEl.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee12() {
+    return _regenerator().w(function (_context12) {
+      while (1) switch (_context12.n) {
         case 0:
           if (inGame) {
-            _context1.n = 1;
+            _context12.n = 1;
             break;
           }
-          return _context1.a(2);
+          return _context12.a(2);
         case 1:
-          _context1.n = 2;
+          _context12.n = 2;
           return openBossModal();
         case 2:
-          return _context1.a(2);
+          return _context12.a(2);
       }
-    }, _callee1);
+    }, _callee12);
   })));
   bossBarEl.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -5548,28 +5552,28 @@ function loadBossLive() {
 function _loadBossLive() {
   _loadBossLive = _asyncToGenerator(_regenerator().m(function _callee52() {
     var panel, b, boss, html, i, c, _t54;
-    return _regenerator().w(function (_context56) {
-      while (1) switch (_context56.p = _context56.n) {
+    return _regenerator().w(function (_context55) {
+      while (1) switch (_context55.p = _context55.n) {
         case 0:
           panel = $('bossPanel-live');
           if (panel) {
-            _context56.n = 1;
+            _context55.n = 1;
             break;
           }
-          return _context56.a(2);
+          return _context55.a(2);
         case 1:
           panel.innerHTML = '<div class="empty-note">Loading boss information...</div>';
-          _context56.p = 2;
-          _context56.n = 3;
+          _context55.p = 2;
+          _context55.n = 3;
           return api('/boss');
         case 3:
-          b = _context56.v;
+          b = _context55.v;
           if (b) {
-            _context56.n = 4;
+            _context55.n = 4;
             break;
           }
           panel.innerHTML = '<div class="empty-note">No boss information available.</div>';
-          return _context56.a(2);
+          return _context55.a(2);
         case 4:
           boss = b.boss || null;
           if (boss) onBoss(boss);
@@ -5603,14 +5607,14 @@ function _loadBossLive() {
           }
           html += '</div>';
           panel.innerHTML = html;
-          _context56.n = 6;
+          _context55.n = 6;
           break;
         case 5:
-          _context56.p = 5;
-          _t54 = _context56.v;
+          _context55.p = 5;
+          _t54 = _context55.v;
           panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t54.message || 'Could not load boss info') + '</div>';
         case 6:
-          return _context56.a(2);
+          return _context55.a(2);
       }
     }, _callee52, null, [[2, 5]]);
   }));
@@ -5622,29 +5626,29 @@ function loadBossHistory() {
 function _loadBossHistory() {
   _loadBossHistory = _asyncToGenerator(_regenerator().m(function _callee53() {
     var panel, h, rows, html, _t55;
-    return _regenerator().w(function (_context57) {
-      while (1) switch (_context57.p = _context57.n) {
+    return _regenerator().w(function (_context56) {
+      while (1) switch (_context56.p = _context56.n) {
         case 0:
           panel = $('bossPanel-history');
           if (panel) {
-            _context57.n = 1;
+            _context56.n = 1;
             break;
           }
-          return _context57.a(2);
+          return _context56.a(2);
         case 1:
           panel.innerHTML = '<div class="empty-note">Loading boss history...</div>';
-          _context57.p = 2;
-          _context57.n = 3;
+          _context56.p = 2;
+          _context56.n = 3;
           return api('/boss/history');
         case 3:
-          h = _context57.v;
+          h = _context56.v;
           rows = h && h.history ? h.history : [];
           if (rows.length) {
-            _context57.n = 4;
+            _context56.n = 4;
             break;
           }
           panel.innerHTML = '<div class="empty-note">No defeated bosses yet.</div>';
-          return _context57.a(2);
+          return _context56.a(2);
         case 4:
           html = '<div class="boss-info">';
           html += '<h3 style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#9aa2cc; margin:4px 0 12px;">Last 20 Bosses</h3>';
@@ -5657,14 +5661,14 @@ function _loadBossHistory() {
           });
           html += '</ul></div>';
           panel.innerHTML = html;
-          _context57.n = 6;
+          _context56.n = 6;
           break;
         case 5:
-          _context57.p = 5;
-          _t55 = _context57.v;
+          _context56.p = 5;
+          _t55 = _context56.v;
           panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t55.message || 'Could not load boss history') + '</div>';
         case 6:
-          return _context57.a(2);
+          return _context56.a(2);
       }
     }, _callee53, null, [[2, 5]]);
   }));
@@ -5676,24 +5680,24 @@ function openBossModal() {
 function _openBossModal() {
   _openBossModal = _asyncToGenerator(_regenerator().m(function _callee54() {
     var content;
-    return _regenerator().w(function (_context58) {
-      while (1) switch (_context58.n) {
+    return _regenerator().w(function (_context57) {
+      while (1) switch (_context57.n) {
         case 0:
           closeAllModals();
           content = $('bossContent');
           if (content) {
-            _context58.n = 1;
+            _context57.n = 1;
             break;
           }
-          return _context58.a(2);
+          return _context57.a(2);
         case 1:
           content.innerHTML = '<div class="tabs">' + '<button class="tab active" data-boss-tab="live" type="button">Live</button>' + '<button class="tab" data-boss-tab="history" type="button">History</button>' + '</div>' + '<div id="bossPanel-live" class="panel active"><div class="empty-note">Loading boss information...</div></div>' + '<div id="bossPanel-history" class="panel"><div class="empty-note">Loading boss history...</div></div>';
           $('bossModal').classList.remove('hidden');
           bindBossTabs();
-          _context58.n = 2;
+          _context57.n = 2;
           return Promise.all([loadBossLive(), loadBossHistory()]);
         case 2:
-          return _context58.a(2);
+          return _context57.a(2);
       }
     }, _callee54);
   }));
@@ -5705,15 +5709,15 @@ function openAdminModal() {
 }
 function _openAdminModal() {
   _openAdminModal = _asyncToGenerator(_regenerator().m(function _callee55() {
-    return _regenerator().w(function (_context59) {
-      while (1) switch (_context59.n) {
+    return _regenerator().w(function (_context58) {
+      while (1) switch (_context58.n) {
         case 0:
           closeAllModals();
           $('adminModal').classList.remove('hidden');
-          _context59.n = 1;
+          _context58.n = 1;
           return Promise.all([loadAdminStats(), loadAdminUsers()]);
         case 1:
-          return _context59.a(2);
+          return _context58.a(2);
       }
     }, _callee55);
   }));
@@ -5725,30 +5729,30 @@ function loadAdminStats() {
 }
 function _loadAdminStats() {
   _loadAdminStats = _asyncToGenerator(_regenerator().m(function _callee56() {
-    var totalEl, onlineEl, _yield$api6, users, _t56;
-    return _regenerator().w(function (_context60) {
-      while (1) switch (_context60.p = _context60.n) {
+    var totalEl, onlineEl, _yield$api5, users, _t56;
+    return _regenerator().w(function (_context59) {
+      while (1) switch (_context59.p = _context59.n) {
         case 0:
           totalEl = $('adminTotalUsers');
           onlineEl = $('adminOnlineUsers');
-          _context60.p = 1;
-          _context60.n = 2;
+          _context59.p = 1;
+          _context59.n = 2;
           return api('/admin/users');
         case 2:
-          _yield$api6 = _context60.v;
-          users = _yield$api6.users;
+          _yield$api5 = _context59.v;
+          users = _yield$api5.users;
           if (totalEl) totalEl.textContent = users.length;
           if (onlineEl) onlineEl.textContent = users.filter(function (u) {
             return u.online;
           }).length;
-          _context60.n = 4;
+          _context59.n = 4;
           break;
         case 3:
-          _context60.p = 3;
-          _t56 = _context60.v;
+          _context59.p = 3;
+          _t56 = _context59.v;
           console.error('[admin stats]', _t56.message);
         case 4:
-          return _context60.a(2);
+          return _context59.a(2);
       }
     }, _callee56, null, [[1, 3]]);
   }));
@@ -5759,41 +5763,41 @@ function loadAdminUsers() {
 }
 function _loadAdminUsers() {
   _loadAdminUsers = _asyncToGenerator(_regenerator().m(function _callee57() {
-    var list, _yield$api7, users, _t57;
-    return _regenerator().w(function (_context61) {
-      while (1) switch (_context61.p = _context61.n) {
+    var list, _yield$api6, users, _t57;
+    return _regenerator().w(function (_context60) {
+      while (1) switch (_context60.p = _context60.n) {
         case 0:
           list = $('adminUsers');
           if (list) {
-            _context61.n = 1;
+            _context60.n = 1;
             break;
           }
-          return _context61.a(2);
+          return _context60.a(2);
         case 1:
           list.innerHTML = '<li class="empty">Loading...</li>';
-          _context61.p = 2;
-          _context61.n = 3;
+          _context60.p = 2;
+          _context60.n = 3;
           return api('/admin/users');
         case 3:
-          _yield$api7 = _context61.v;
-          users = _yield$api7.users;
+          _yield$api6 = _context60.v;
+          users = _yield$api6.users;
           adminUsersCache = users;
           if (users.length) {
-            _context61.n = 4;
+            _context60.n = 4;
             break;
           }
           list.innerHTML = '<li class="empty">No users found</li>';
-          return _context61.a(2);
+          return _context60.a(2);
         case 4:
           renderAdminUsers(users);
-          _context61.n = 6;
+          _context60.n = 6;
           break;
         case 5:
-          _context61.p = 5;
-          _t57 = _context61.v;
+          _context60.p = 5;
+          _t57 = _context60.v;
           list.innerHTML = '<li class="empty">' + esc(_t57.message) + '</li>';
         case 6:
-          return _context61.a(2);
+          return _context60.a(2);
       }
     }, _callee57, null, [[2, 5]]);
   }));
@@ -5803,11 +5807,11 @@ function renderAdminUsers(users) {
   var list = $('adminUsers');
   if (!list) return;
   list.innerHTML = '';
-  var _iterator10 = _createForOfIteratorHelper(users),
-    _step10;
+  var _iterator11 = _createForOfIteratorHelper(users),
+    _step11;
   try {
     var _loop9 = function _loop9() {
-      var u = _step10.value;
+      var u = _step11.value;
       var banned = u.bannedUntil && u.bannedUntil > Date.now();
       var muted = u.mutedUntil && u.mutedUntil > Date.now();
       var status = (banned ? '<span class="mod-ban">BANNED</span> ' : '') + (muted ? '<span class="mod-mute">MUTED</span>' : '');
@@ -5848,13 +5852,13 @@ function renderAdminUsers(users) {
       });
       list.appendChild(li);
     };
-    for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+    for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
       _loop9();
     }
   } catch (err) {
-    _iterator10.e(err);
+    _iterator11.e(err);
   } finally {
-    _iterator10.f();
+    _iterator11.f();
   }
 }
 if ($('adminUserSearch')) $('adminUserSearch').addEventListener('input', function (e) {
@@ -5886,27 +5890,27 @@ function adminDuration(selId) {
     label: 'for ' + (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent.toLowerCase() : minutes + ' minutes')
   };
 }
-if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee10() {
-  var username, amount, _t10;
-  return _regenerator().w(function (_context10) {
-    while (1) switch (_context10.p = _context10.n) {
+if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee13() {
+  var username, amount, _t13;
+  return _regenerator().w(function (_context13) {
+    while (1) switch (_context13.p = _context13.n) {
       case 0:
         username = $('adminGiveMoneyUser').value.trim();
         amount = parseInt($('adminGiveMoneyAmount').value, 10);
         if (username) {
-          _context10.n = 1;
+          _context13.n = 1;
           break;
         }
-        return _context10.a(2, toast('OOPS', 'Username required', null, '#ff6b8a'));
+        return _context13.a(2, toast('OOPS', 'Username required', null, '#ff6b8a'));
       case 1:
         if (!(isNaN(amount) || amount === 0)) {
-          _context10.n = 2;
+          _context13.n = 2;
           break;
         }
-        return _context10.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
+        return _context13.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
       case 2:
-        _context10.p = 2;
-        _context10.n = 3;
+        _context13.p = 2;
+        _context13.n = 3;
         return api('/admin/set-money', {
           method: 'POST',
           body: JSON.stringify({
@@ -5919,43 +5923,43 @@ if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', _as
         $('adminGiveMoneyUser').value = '';
         $('adminGiveMoneyAmount').value = '';
         loadAdminUsers();
-        _context10.n = 5;
+        _context13.n = 5;
         break;
       case 4:
-        _context10.p = 4;
-        _t10 = _context10.v;
-        toast('OOPS', _t10.message, null, '#ff6b8a');
+        _context13.p = 4;
+        _t13 = _context13.v;
+        toast('OOPS', _t13.message, null, '#ff6b8a');
       case 5:
-        return _context10.a(2);
+        return _context13.a(2);
     }
-  }, _callee10, null, [[2, 4]]);
+  }, _callee13, null, [[2, 4]]);
 })));
-function adminGiveAll(_x26) {
+function adminGiveAll(_x21) {
   return _adminGiveAll.apply(this, arguments);
 }
 function _adminGiveAll() {
   _adminGiveAll = _asyncToGenerator(_regenerator().m(function _callee58(scope) {
-    var item, quantity, mutation, _r11, _t58;
-    return _regenerator().w(function (_context62) {
-      while (1) switch (_context62.p = _context62.n) {
+    var item, quantity, mutation, _r12, _t58;
+    return _regenerator().w(function (_context61) {
+      while (1) switch (_context61.p = _context61.n) {
         case 0:
           item = $('adminGiveAllItem').value.trim();
           quantity = parseInt($('adminGiveAllQty').value, 10) || 1;
           mutation = $('adminGiveAllMutation').value.trim() || null;
           if (item) {
-            _context62.n = 1;
+            _context61.n = 1;
             break;
           }
-          return _context62.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context61.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 1:
           if (!(mutation && !MUT_BY_ID[mutation])) {
-            _context62.n = 2;
+            _context61.n = 2;
             break;
           }
-          return _context62.a(2, toast('OOPS', 'Invalid mutation', null, '#ff6b8a'));
+          return _context61.a(2, toast('OOPS', 'Invalid mutation', null, '#ff6b8a'));
         case 2:
-          _context62.p = 2;
-          _context62.n = 3;
+          _context61.p = 2;
+          _context61.n = 3;
           return api('/admin/give-all', {
             method: 'POST',
             body: JSON.stringify({
@@ -5966,19 +5970,19 @@ function _adminGiveAll() {
             })
           });
         case 3:
-          _r11 = _context62.v;
-          toast('ADMIN', 'Gave ' + quantity + 'x ' + item + (mutation ? ' (' + mutation + ')' : '') + ' to ' + _r11.updated + ' ' + (scope === 'online' ? 'online player' : 'player') + (_r11.updated === 1 ? '' : 's'), null, '#4fd1ff');
+          _r12 = _context61.v;
+          toast('ADMIN', 'Gave ' + quantity + 'x ' + item + (mutation ? ' (' + mutation + ')' : '') + ' to ' + _r12.updated + ' ' + (scope === 'online' ? 'online player' : 'player') + (_r12.updated === 1 ? '' : 's'), null, '#4fd1ff');
           $('adminGiveAllItem').value = '';
           $('adminGiveAllQty').value = '1';
           $('adminGiveAllMutation').value = '';
-          _context62.n = 5;
+          _context61.n = 5;
           break;
         case 4:
-          _context62.p = 4;
-          _t58 = _context62.v;
+          _context61.p = 4;
+          _t58 = _context61.v;
           toast('OOPS', _t58.message, null, '#ff6b8a');
         case 5:
-          return _context62.a(2);
+          return _context61.a(2);
       }
     }, _callee58, null, [[2, 4]]);
   }));
@@ -5990,17 +5994,17 @@ if ($('adminGiveAllBtn')) $('adminGiveAllBtn').addEventListener('click', functio
 if ($('adminGiveAllOnlineBtn')) $('adminGiveAllOnlineBtn').addEventListener('click', function () {
   return adminGiveAll('online');
 });
-function adminSetMoney(_x27, _x28) {
+function adminSetMoney(_x22, _x23) {
   return _adminSetMoney.apply(this, arguments);
 }
 function _adminSetMoney() {
   _adminSetMoney = _asyncToGenerator(_regenerator().m(function _callee59(username, amt) {
     var _t59;
-    return _regenerator().w(function (_context63) {
-      while (1) switch (_context63.p = _context63.n) {
+    return _regenerator().w(function (_context62) {
+      while (1) switch (_context62.p = _context62.n) {
         case 0:
-          _context63.p = 0;
-          _context63.n = 1;
+          _context62.p = 0;
+          _context62.n = 1;
           return api('/admin/set-money', {
             method: 'POST',
             body: JSON.stringify({
@@ -6011,29 +6015,61 @@ function _adminSetMoney() {
         case 1:
           toast('ADMIN', username + "\u2019s money updated", null, '#4fd1ff');
           loadAdminUsers();
-          _context63.n = 3;
+          _context62.n = 3;
           break;
         case 2:
-          _context63.p = 2;
-          _t59 = _context63.v;
+          _context62.p = 2;
+          _t59 = _context62.v;
           toast('OOPS', _t59.message, null, '#ff6b8a');
         case 3:
-          return _context63.a(2);
+          return _context62.a(2);
       }
     }, _callee59, null, [[0, 2]]);
   }));
   return _adminSetMoney.apply(this, arguments);
 }
-function adminGiveMoneyPrompt(_x29) {
+function adminGiveMoneyPrompt(_x24) {
   return _adminGiveMoneyPrompt.apply(this, arguments);
 }
 function _adminGiveMoneyPrompt() {
   _adminGiveMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee60(username) {
     var amount, amt;
-    return _regenerator().w(function (_context64) {
-      while (1) switch (_context64.n) {
+    return _regenerator().w(function (_context63) {
+      while (1) switch (_context63.n) {
         case 0:
           amount = prompt('Enter amount to give to ' + username + ' (negative to remove):', '1000');
+          if (!(amount == null)) {
+            _context63.n = 1;
+            break;
+          }
+          return _context63.a(2);
+        case 1:
+          amt = parseInt(amount, 10);
+          if (!(isNaN(amt) || amt === 0)) {
+            _context63.n = 2;
+            break;
+          }
+          return _context63.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
+        case 2:
+          _context63.n = 3;
+          return adminSetMoney(username, amt);
+        case 3:
+          return _context63.a(2);
+      }
+    }, _callee60);
+  }));
+  return _adminGiveMoneyPrompt.apply(this, arguments);
+}
+function adminSetMoneyPrompt(_x25) {
+  return _adminSetMoneyPrompt.apply(this, arguments);
+}
+function _adminSetMoneyPrompt() {
+  _adminSetMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee61(username) {
+    var amount, amt, _t60;
+    return _regenerator().w(function (_context64) {
+      while (1) switch (_context64.p = _context64.n) {
+        case 0:
+          amount = prompt('Set ' + username + "\u2019s money to:", '0');
           if (!(amount == null)) {
             _context64.n = 1;
             break;
@@ -6041,46 +6077,14 @@ function _adminGiveMoneyPrompt() {
           return _context64.a(2);
         case 1:
           amt = parseInt(amount, 10);
-          if (!(isNaN(amt) || amt === 0)) {
+          if (!(isNaN(amt) || amt < 0)) {
             _context64.n = 2;
             break;
           }
           return _context64.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
         case 2:
+          _context64.p = 2;
           _context64.n = 3;
-          return adminSetMoney(username, amt);
-        case 3:
-          return _context64.a(2);
-      }
-    }, _callee60);
-  }));
-  return _adminGiveMoneyPrompt.apply(this, arguments);
-}
-function adminSetMoneyPrompt(_x30) {
-  return _adminSetMoneyPrompt.apply(this, arguments);
-}
-function _adminSetMoneyPrompt() {
-  _adminSetMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee61(username) {
-    var amount, amt, _t60;
-    return _regenerator().w(function (_context65) {
-      while (1) switch (_context65.p = _context65.n) {
-        case 0:
-          amount = prompt('Set ' + username + "\u2019s money to:", '0');
-          if (!(amount == null)) {
-            _context65.n = 1;
-            break;
-          }
-          return _context65.a(2);
-        case 1:
-          amt = parseInt(amount, 10);
-          if (!(isNaN(amt) || amt < 0)) {
-            _context65.n = 2;
-            break;
-          }
-          return _context65.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
-        case 2:
-          _context65.p = 2;
-          _context65.n = 3;
           return api('/admin/set-money', {
             method: 'POST',
             body: JSON.stringify({
@@ -6091,14 +6095,14 @@ function _adminSetMoneyPrompt() {
         case 3:
           toast('ADMIN', username + ' money set', null, '#4fd1ff');
           loadAdminUsers();
-          _context65.n = 5;
+          _context64.n = 5;
           break;
         case 4:
-          _context65.p = 4;
-          _t60 = _context65.v;
+          _context64.p = 4;
+          _t60 = _context64.v;
           toast('OOPS', _t60.message, null, '#ff6b8a');
         case 5:
-          return _context65.a(2);
+          return _context64.a(2);
       }
     }, _callee61, null, [[2, 4]]);
   }));
@@ -6106,34 +6110,98 @@ function _adminSetMoneyPrompt() {
 }
 function allItemNames() {
   var allNames = [];
-  var _iterator11 = _createForOfIteratorHelper(RARITIES),
-    _step11;
+  var _iterator12 = _createForOfIteratorHelper(RARITIES),
+    _step12;
   try {
-    for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
-      var r = _step11.value;
+    for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
+      var r = _step12.value;
       (ITEMS_BY_RARITY[r.key] || []).forEach(function (it) {
         if (allNames.indexOf(it) === -1) allNames.push(it);
       });
     }
   } catch (err) {
-    _iterator11.e(err);
+    _iterator12.e(err);
   } finally {
-    _iterator11.f();
+    _iterator12.f();
   }
   allNames.sort();
   return allNames;
 }
-function adminGiveItemPrompt(_x31) {
+function adminGiveItemPrompt(_x26) {
   return _adminGiveItemPrompt.apply(this, arguments);
 }
 function _adminGiveItemPrompt() {
   _adminGiveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee62(username) {
     var allNames, itemSel, item, mutId, qty, _t61;
+    return _regenerator().w(function (_context65) {
+      while (1) switch (_context65.p = _context65.n) {
+        case 0:
+          allNames = allItemNames();
+          itemSel = prompt('Give item to ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
+          if (!(itemSel == null)) {
+            _context65.n = 1;
+            break;
+          }
+          return _context65.a(2);
+        case 1:
+          item = itemSel.trim();
+          if (item) {
+            _context65.n = 2;
+            break;
+          }
+          return _context65.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+        case 2:
+          mutId = prompt('Mutation (blank for none; valid: gold, diamond, electric)', '');
+          if (!(mutId == null)) {
+            _context65.n = 3;
+            break;
+          }
+          return _context65.a(2);
+        case 3:
+          qty = parseInt(prompt('Quantity', '1') || '1', 10);
+          if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
+            _context65.n = 4;
+            break;
+          }
+          return _context65.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+        case 4:
+          _context65.p = 4;
+          _context65.n = 5;
+          return api('/admin/give-item', {
+            method: 'POST',
+            body: JSON.stringify({
+              username: username,
+              item: item,
+              mutation: mutId.trim().toLowerCase() || null,
+              quantity: qty
+            })
+          });
+        case 5:
+          toast('ADMIN', 'Gave ' + qty + 'x ' + item + ' to ' + username, null, '#4fd1ff');
+          _context65.n = 7;
+          break;
+        case 6:
+          _context65.p = 6;
+          _t61 = _context65.v;
+          toast('OOPS', _t61.message, null, '#ff6b8a');
+        case 7:
+          return _context65.a(2);
+      }
+    }, _callee62, null, [[4, 6]]);
+  }));
+  return _adminGiveItemPrompt.apply(this, arguments);
+}
+function adminRemoveItemPrompt(_x27) {
+  return _adminRemoveItemPrompt.apply(this, arguments);
+}
+function _adminRemoveItemPrompt() {
+  _adminRemoveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee63(username) {
+    var allNames, itemSel, item, qty, _t62;
     return _regenerator().w(function (_context66) {
       while (1) switch (_context66.p = _context66.n) {
         case 0:
           allNames = allItemNames();
-          itemSel = prompt('Give item to ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
+          itemSel = prompt('Remove item from ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
             _context66.n = 1;
             break;
@@ -6147,57 +6215,49 @@ function _adminGiveItemPrompt() {
           }
           return _context66.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
-          mutId = prompt('Mutation (blank for none; valid: gold, diamond, electric)', '');
-          if (!(mutId == null)) {
+          qty = parseInt(prompt('Quantity to remove', '1') || '1', 10);
+          if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
             _context66.n = 3;
             break;
           }
-          return _context66.a(2);
-        case 3:
-          qty = parseInt(prompt('Quantity', '1') || '1', 10);
-          if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context66.n = 4;
-            break;
-          }
           return _context66.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
-        case 4:
-          _context66.p = 4;
-          _context66.n = 5;
-          return api('/admin/give-item', {
+        case 3:
+          _context66.p = 3;
+          _context66.n = 4;
+          return api('/admin/remove-item', {
             method: 'POST',
             body: JSON.stringify({
               username: username,
               item: item,
-              mutation: mutId.trim().toLowerCase() || null,
               quantity: qty
             })
           });
-        case 5:
-          toast('ADMIN', 'Gave ' + qty + 'x ' + item + ' to ' + username, null, '#4fd1ff');
-          _context66.n = 7;
+        case 4:
+          toast('ADMIN', 'Removed ' + qty + 'x ' + item + ' from ' + username, null, '#4fd1ff');
+          _context66.n = 6;
           break;
+        case 5:
+          _context66.p = 5;
+          _t62 = _context66.v;
+          toast('OOPS', _t62.message, null, '#ff6b8a');
         case 6:
-          _context66.p = 6;
-          _t61 = _context66.v;
-          toast('OOPS', _t61.message, null, '#ff6b8a');
-        case 7:
           return _context66.a(2);
       }
-    }, _callee62, null, [[4, 6]]);
+    }, _callee63, null, [[3, 5]]);
   }));
-  return _adminGiveItemPrompt.apply(this, arguments);
-}
-function adminRemoveItemPrompt(_x32) {
   return _adminRemoveItemPrompt.apply(this, arguments);
 }
-function _adminRemoveItemPrompt() {
-  _adminRemoveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee63(username) {
-    var allNames, itemSel, item, qty, _t62;
+function adminRemoveMutationPrompt(_x28) {
+  return _adminRemoveMutationPrompt.apply(this, arguments);
+}
+function _adminRemoveMutationPrompt() {
+  _adminRemoveMutationPrompt = _asyncToGenerator(_regenerator().m(function _callee64(username) {
+    var allNames, itemSel, item, mutId, qty, _t63;
     return _regenerator().w(function (_context67) {
       while (1) switch (_context67.p = _context67.n) {
         case 0:
           allNames = allItemNames();
-          itemSel = prompt('Remove item from ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
+          itemSel = prompt('Remove mutation from item for ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
             _context67.n = 1;
             break;
@@ -6211,78 +6271,22 @@ function _adminRemoveItemPrompt() {
           }
           return _context67.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
-          qty = parseInt(prompt('Quantity to remove', '1') || '1', 10);
-          if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
+          mutId = prompt('Mutation to remove (valid: gold, diamond, electric)', '');
+          if (!(mutId == null)) {
             _context67.n = 3;
             break;
           }
-          return _context67.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
-        case 3:
-          _context67.p = 3;
-          _context67.n = 4;
-          return api('/admin/remove-item', {
-            method: 'POST',
-            body: JSON.stringify({
-              username: username,
-              item: item,
-              quantity: qty
-            })
-          });
-        case 4:
-          toast('ADMIN', 'Removed ' + qty + 'x ' + item + ' from ' + username, null, '#4fd1ff');
-          _context67.n = 6;
-          break;
-        case 5:
-          _context67.p = 5;
-          _t62 = _context67.v;
-          toast('OOPS', _t62.message, null, '#ff6b8a');
-        case 6:
           return _context67.a(2);
-      }
-    }, _callee63, null, [[3, 5]]);
-  }));
-  return _adminRemoveItemPrompt.apply(this, arguments);
-}
-function adminRemoveMutationPrompt(_x33) {
-  return _adminRemoveMutationPrompt.apply(this, arguments);
-}
-function _adminRemoveMutationPrompt() {
-  _adminRemoveMutationPrompt = _asyncToGenerator(_regenerator().m(function _callee64(username) {
-    var allNames, itemSel, item, mutId, qty, _t63;
-    return _regenerator().w(function (_context68) {
-      while (1) switch (_context68.p = _context68.n) {
-        case 0:
-          allNames = allItemNames();
-          itemSel = prompt('Remove mutation from item for ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
-          if (!(itemSel == null)) {
-            _context68.n = 1;
-            break;
-          }
-          return _context68.a(2);
-        case 1:
-          item = itemSel.trim();
-          if (item) {
-            _context68.n = 2;
-            break;
-          }
-          return _context68.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
-        case 2:
-          mutId = prompt('Mutation to remove (valid: gold, diamond, electric)', '');
-          if (!(mutId == null)) {
-            _context68.n = 3;
-            break;
-          }
-          return _context68.a(2);
         case 3:
           qty = parseInt(prompt('Quantity', '1') || '1', 10);
           if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context68.n = 4;
+            _context67.n = 4;
             break;
           }
-          return _context68.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+          return _context67.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
         case 4:
-          _context68.p = 4;
-          _context68.n = 5;
+          _context67.p = 4;
+          _context67.n = 5;
           return api('/admin/remove-mutation', {
             method: 'POST',
             body: JSON.stringify({
@@ -6294,30 +6298,30 @@ function _adminRemoveMutationPrompt() {
           });
         case 5:
           toast('ADMIN', 'Removed mutation from ' + qty + 'x ' + item + ' for ' + username, null, '#4fd1ff');
-          _context68.n = 7;
+          _context67.n = 7;
           break;
         case 6:
-          _context68.p = 6;
-          _t63 = _context68.v;
+          _context67.p = 6;
+          _t63 = _context67.v;
           toast('OOPS', _t63.message, null, '#ff6b8a');
         case 7:
-          return _context68.a(2);
+          return _context67.a(2);
       }
     }, _callee64, null, [[4, 6]]);
   }));
   return _adminRemoveMutationPrompt.apply(this, arguments);
 }
-function adminSetLevel(_x34, _x35) {
+function adminSetLevel(_x29, _x30) {
   return _adminSetLevel.apply(this, arguments);
 }
 function _adminSetLevel() {
   _adminSetLevel = _asyncToGenerator(_regenerator().m(function _callee65(username, level) {
     var _t64;
-    return _regenerator().w(function (_context69) {
-      while (1) switch (_context69.p = _context69.n) {
+    return _regenerator().w(function (_context68) {
+      while (1) switch (_context68.p = _context68.n) {
         case 0:
-          _context69.p = 0;
-          _context69.n = 1;
+          _context68.p = 0;
+          _context68.n = 1;
           return api('/admin/set-level', {
             method: 'POST',
             body: JSON.stringify({
@@ -6328,36 +6332,36 @@ function _adminSetLevel() {
         case 1:
           toast('ADMIN', username + ' is now level ' + level, null, '#4fd1ff');
           loadAdminUsers();
-          _context69.n = 3;
+          _context68.n = 3;
           break;
         case 2:
-          _context69.p = 2;
-          _t64 = _context69.v;
+          _context68.p = 2;
+          _t64 = _context68.v;
           toast('OOPS', _t64.message, null, '#ff6b8a');
         case 3:
-          return _context69.a(2);
+          return _context68.a(2);
       }
     }, _callee65, null, [[0, 2]]);
   }));
   return _adminSetLevel.apply(this, arguments);
 }
-function adminClearItems(_x36) {
+function adminClearItems(_x31) {
   return _adminClearItems.apply(this, arguments);
 }
 function _adminClearItems() {
   _adminClearItems = _asyncToGenerator(_regenerator().m(function _callee66(username) {
     var _t65;
-    return _regenerator().w(function (_context70) {
-      while (1) switch (_context70.p = _context70.n) {
+    return _regenerator().w(function (_context69) {
+      while (1) switch (_context69.p = _context69.n) {
         case 0:
           if (confirm('Clear all items for ' + username + '?')) {
-            _context70.n = 1;
+            _context69.n = 1;
             break;
           }
-          return _context70.a(2);
+          return _context69.a(2);
         case 1:
-          _context70.p = 1;
-          _context70.n = 2;
+          _context69.p = 1;
+          _context69.n = 2;
           return api('/admin/clear-items', {
             method: 'POST',
             body: JSON.stringify({
@@ -6367,36 +6371,36 @@ function _adminClearItems() {
         case 2:
           toast('ADMIN', username + "\u2019s items cleared", null, '#4fd1ff');
           loadAdminUsers();
-          _context70.n = 4;
+          _context69.n = 4;
           break;
         case 3:
-          _context70.p = 3;
-          _t65 = _context70.v;
+          _context69.p = 3;
+          _t65 = _context69.v;
           toast('OOPS', _t65.message, null, '#ff6b8a');
         case 4:
-          return _context70.a(2);
+          return _context69.a(2);
       }
     }, _callee66, null, [[1, 3]]);
   }));
   return _adminClearItems.apply(this, arguments);
 }
-function adminResetProgress(_x37) {
+function adminResetProgress(_x32) {
   return _adminResetProgress.apply(this, arguments);
 }
 function _adminResetProgress() {
   _adminResetProgress = _asyncToGenerator(_regenerator().m(function _callee67(username) {
     var _t66;
-    return _regenerator().w(function (_context71) {
-      while (1) switch (_context71.p = _context71.n) {
+    return _regenerator().w(function (_context70) {
+      while (1) switch (_context70.p = _context70.n) {
         case 0:
           if (confirm('Reset ALL progress for ' + username + '? This cannot be undone.')) {
-            _context71.n = 1;
+            _context70.n = 1;
             break;
           }
-          return _context71.a(2);
+          return _context70.a(2);
         case 1:
-          _context71.p = 1;
-          _context71.n = 2;
+          _context70.p = 1;
+          _context70.n = 2;
           return api('/admin/reset-progress', {
             method: 'POST',
             body: JSON.stringify({
@@ -6406,36 +6410,36 @@ function _adminResetProgress() {
         case 2:
           toast('ADMIN', username + ' reset', null, '#4fd1ff');
           loadAdminUsers();
-          _context71.n = 4;
+          _context70.n = 4;
           break;
         case 3:
-          _context71.p = 3;
-          _t66 = _context71.v;
+          _context70.p = 3;
+          _t66 = _context70.v;
           toast('OOPS', _t66.message, null, '#ff6b8a');
         case 4:
-          return _context71.a(2);
+          return _context70.a(2);
       }
     }, _callee67, null, [[1, 3]]);
   }));
   return _adminResetProgress.apply(this, arguments);
 }
-function adminKick(_x38) {
+function adminKick(_x33) {
   return _adminKick.apply(this, arguments);
 }
 function _adminKick() {
   _adminKick = _asyncToGenerator(_regenerator().m(function _callee68(username) {
     var _t67;
-    return _regenerator().w(function (_context72) {
-      while (1) switch (_context72.p = _context72.n) {
+    return _regenerator().w(function (_context71) {
+      while (1) switch (_context71.p = _context71.n) {
         case 0:
           if (confirm('Kick ' + username + ' out of their world?')) {
-            _context72.n = 1;
+            _context71.n = 1;
             break;
           }
-          return _context72.a(2);
+          return _context71.a(2);
         case 1:
-          _context72.p = 1;
-          _context72.n = 2;
+          _context71.p = 1;
+          _context71.n = 2;
           return api('/admin/kick', {
             method: 'POST',
             body: JSON.stringify({
@@ -6445,31 +6449,31 @@ function _adminKick() {
         case 2:
           toast('ADMIN', username + ' kicked', null, '#ffb648');
           loadAdminUsers();
-          _context72.n = 4;
+          _context71.n = 4;
           break;
         case 3:
-          _context72.p = 3;
-          _t67 = _context72.v;
+          _context71.p = 3;
+          _t67 = _context71.v;
           toast('OOPS', _t67.message, null, '#ff6b8a');
         case 4:
-          return _context72.a(2);
+          return _context71.a(2);
       }
     }, _callee68, null, [[1, 3]]);
   }));
   return _adminKick.apply(this, arguments);
 }
-function adminMute(_x39) {
+function adminMute(_x34) {
   return _adminMute.apply(this, arguments);
 }
 function _adminMute() {
   _adminMute = _asyncToGenerator(_regenerator().m(function _callee69(username) {
-    var d, _r12, _t68;
-    return _regenerator().w(function (_context73) {
-      while (1) switch (_context73.p = _context73.n) {
+    var d, _r13, _t68;
+    return _regenerator().w(function (_context72) {
+      while (1) switch (_context72.p = _context72.n) {
         case 0:
           d = adminDuration('adminMuteDur');
-          _context73.p = 1;
-          _context73.n = 2;
+          _context72.p = 1;
+          _context72.n = 2;
           return api('/admin/mute', {
             method: 'POST',
             body: JSON.stringify({
@@ -6479,34 +6483,34 @@ function _adminMute() {
             })
           });
         case 2:
-          _r12 = _context73.v;
-          toast('ADMIN', username + (_r12.muted ? ' muted ' + d.label : ' unmuted'), null, '#ffb648');
+          _r13 = _context72.v;
+          toast('ADMIN', username + (_r13.muted ? ' muted ' + d.label : ' unmuted'), null, '#ffb648');
           loadAdminUsers();
-          _context73.n = 4;
+          _context72.n = 4;
           break;
         case 3:
-          _context73.p = 3;
-          _t68 = _context73.v;
+          _context72.p = 3;
+          _t68 = _context72.v;
           toast('OOPS', _t68.message, null, '#ff6b8a');
         case 4:
-          return _context73.a(2);
+          return _context72.a(2);
       }
     }, _callee69, null, [[1, 3]]);
   }));
   return _adminMute.apply(this, arguments);
 }
-function adminBan(_x40) {
+function adminBan(_x35) {
   return _adminBan.apply(this, arguments);
 }
 function _adminBan() {
   _adminBan = _asyncToGenerator(_regenerator().m(function _callee70(username) {
-    var d, _r13, _t69;
-    return _regenerator().w(function (_context74) {
-      while (1) switch (_context74.p = _context74.n) {
+    var d, _r14, _t69;
+    return _regenerator().w(function (_context73) {
+      while (1) switch (_context73.p = _context73.n) {
         case 0:
           d = adminDuration('adminBanDur');
-          _context74.p = 1;
-          _context74.n = 2;
+          _context73.p = 1;
+          _context73.n = 2;
           return api('/admin/ban', {
             method: 'POST',
             body: JSON.stringify({
@@ -6516,17 +6520,17 @@ function _adminBan() {
             })
           });
         case 2:
-          _r13 = _context74.v;
-          toast('ADMIN', username + (_r13.banned ? ' banned ' + d.label : ' unbanned'), null, _r13.banned ? '#ff5c8a' : '#7bdc78');
+          _r14 = _context73.v;
+          toast('ADMIN', username + (_r14.banned ? ' banned ' + d.label : ' unbanned'), null, _r14.banned ? '#ff5c8a' : '#7bdc78');
           loadAdminUsers();
-          _context74.n = 4;
+          _context73.n = 4;
           break;
         case 3:
-          _context74.p = 3;
-          _t69 = _context74.v;
+          _context73.p = 3;
+          _t69 = _context73.v;
           toast('OOPS', _t69.message, null, '#ff6b8a');
         case 4:
-          return _context74.a(2);
+          return _context73.a(2);
       }
     }, _callee70, null, [[1, 3]]);
   }));
@@ -6538,19 +6542,19 @@ function adminAnnounce() {
 function _adminAnnounce() {
   _adminAnnounce = _asyncToGenerator(_regenerator().m(function _callee71() {
     var inp, text, _t70;
-    return _regenerator().w(function (_context75) {
-      while (1) switch (_context75.p = _context75.n) {
+    return _regenerator().w(function (_context74) {
+      while (1) switch (_context74.p = _context74.n) {
         case 0:
           inp = $('adminAnnounceInp');
           text = inp.value.trim();
           if (text) {
-            _context75.n = 1;
+            _context74.n = 1;
             break;
           }
-          return _context75.a(2);
+          return _context74.a(2);
         case 1:
-          _context75.p = 1;
-          _context75.n = 2;
+          _context74.p = 1;
+          _context74.n = 2;
           return api('/admin/announce', {
             method: 'POST',
             body: JSON.stringify({
@@ -6560,14 +6564,14 @@ function _adminAnnounce() {
         case 2:
           inp.value = '';
           toast('ADMIN', 'Announcement sent', null, '#4fd1ff');
-          _context75.n = 4;
+          _context74.n = 4;
           break;
         case 3:
-          _context75.p = 3;
-          _t70 = _context75.v;
+          _context74.p = 3;
+          _t70 = _context74.v;
           toast('OOPS', _t70.message, null, '#ff6b8a');
         case 4:
-          return _context75.a(2);
+          return _context74.a(2);
       }
     }, _callee71, null, [[1, 3]]);
   }));
@@ -6612,34 +6616,34 @@ resize();
 setAuthMode('login');
 requestAnimationFrame(frame);
 (function () {
-  var _boot = _asyncToGenerator(_regenerator().m(function _callee11() {
-    var _t11;
-    return _regenerator().w(function (_context11) {
-      while (1) switch (_context11.p = _context11.n) {
+  var _boot = _asyncToGenerator(_regenerator().m(function _callee14() {
+    var _t14;
+    return _regenerator().w(function (_context14) {
+      while (1) switch (_context14.p = _context14.n) {
         case 0:
           if (token) {
-            _context11.n = 1;
+            _context14.n = 1;
             break;
           }
           showScreen('auth');
-          return _context11.a(2);
+          return _context14.a(2);
         case 1:
-          _context11.p = 1;
-          _context11.n = 2;
+          _context14.p = 1;
+          _context14.n = 2;
           return loadMe();
         case 2:
-          _context11.n = 4;
+          _context14.n = 4;
           break;
         case 3:
-          _context11.p = 3;
-          _t11 = _context11.v;
+          _context14.p = 3;
+          _t14 = _context14.v;
           token = null;
           localStorage.removeItem('vaultoria_token');
           showScreen('auth');
         case 4:
-          return _context11.a(2);
+          return _context14.a(2);
       }
-    }, _callee11, null, [[1, 3]]);
+    }, _callee14, null, [[1, 3]]);
   }));
   function boot() {
     return _boot.apply(this, arguments);
