@@ -625,10 +625,44 @@
   }
   body.christmas .btn.ghost { background: rgba(255,255,255,0.06); box-shadow: none; }
   body.christmas .auth-tab.active, body.christmas .tab.active { background: linear-gradient(135deg, #dc2626, #16a34a); }
+  body.rush-week { background: #140b05; }
+  body.rush-week::before {
+    background:
+      radial-gradient(38% 38% at 22% 26%, rgba(255,140,0,0.24), transparent 62%),
+      radial-gradient(34% 34% at 78% 74%, rgba(255,61,129,0.20), transparent 62%),
+      radial-gradient(30% 30% at 66% 16%, rgba(255,215,0,0.14), transparent 62%);
+  }
+  body.rush-week::after {
+    content: ""; position: fixed; inset: -20%; z-index: 1; pointer-events: none;
+    background: repeating-linear-gradient(100deg, transparent 0 56px, rgba(255,159,28,0.08) 56px 58px);
+    animation: rushStreaks 3s linear infinite;
+  }
+  @keyframes rushStreaks { from { transform: translate3d(-8%, 0, 0); } to { transform: translate3d(8%, 0, 0); } }
+  body.rush-week #authScreen,
+  body.rush-week #dashScreen {
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,140,0,0.26), transparent 55%),
+      radial-gradient(circle at 75% 80%, rgba(255,61,129,0.2), transparent 55%),
+      #140b05;
+  }
+  body.rush-week .brand { text-shadow: 0 0 24px #ff9f1c, 0 0 60px #ff3d81; }
+  body.rush-week .auth-card, body.rush-week .dash-card, body.rush-week .dash-panel, body.rush-week .modal-card {
+    background: rgba(20, 12, 6, 0.9);
+    border-color: rgba(255,159,28,0.22);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 44px rgba(255,140,0,0.14);
+  }
+  body.rush-week .dash-card:hover { border-color: rgba(255,159,28,0.6); box-shadow: 0 24px 60px rgba(255,140,0,0.32); }
+  body.rush-week .play-card { background: linear-gradient(160deg, rgba(255,140,0,0.32), rgba(20,12,6,0.92)); border-color: rgba(255,159,28,0.4); }
+  body.rush-week .btn, body.rush-week #gen, body.rush-week .sell-btn, body.rush-week .mini-btn, body.rush-week .buy {
+    background: linear-gradient(135deg, #ff8c00, #ff3d81);
+    box-shadow: 0 8px 24px rgba(255,140,0,0.4);
+  }
+  body.rush-week .btn.ghost { background: rgba(255,255,255,0.06); box-shadow: none; }
+  body.rush-week .auth-tab.active, body.rush-week .tab.active { background: linear-gradient(135deg, #ff8c00, #ff3d81); }
   .event-card { position: relative; }
-  .event-card .dc-icon { color: #ff6b6b; text-shadow: 0 0 20px #ff5c5c; }
-  .event-badge { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; background: #dc2626; padding: 3px 9px; border-radius: 10px; }
-  .event-banner { padding: 16px 18px; margin-bottom: 18px; border-radius: 16px; background: linear-gradient(135deg, rgba(220,38,38,0.22), rgba(34,197,94,0.2)); border: 1px solid rgba(255,255,255,0.14); }
+  .event-card .dc-icon { color: #ffb648; text-shadow: 0 0 20px #ff9f1c; }
+  .event-badge { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; background: #ff8c00; padding: 3px 9px; border-radius: 10px; }
+  .event-banner { padding: 16px 18px; margin-bottom: 18px; border-radius: 16px; background: linear-gradient(135deg, rgba(255,159,28,0.2), rgba(255,61,129,0.16)); border: 1px solid rgba(255,255,255,0.14); }
   .event-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px; }
   .event-desc { font-size: 13px; color: #c3c8e6; line-height: 1.6; }
   .event-subtitle { margin: 0 0 12px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; }
@@ -730,9 +764,9 @@
       </button>
       <button class="dash-card event-card" id="eventBtn" type="button">
         <span class="event-badge hidden" id="eventBadge">LIVE</span>
-        <div class="dc-icon">&#10052;</div>
+        <div class="dc-icon">&#10024;</div>
         <div class="dc-title">Event</div>
-        <div class="dc-desc" id="eventCardDesc">Check back December 1&ndash;25 for the Christmas event.</div>
+        <div class="dc-desc" id="eventCardDesc">Seasonal events bring limited items and special rewards.</div>
       </button>
       <details class="dash-card rules-card">
         <summary>
@@ -1185,7 +1219,8 @@ const RARITIES = [
   { key: 'celestial',  name: 'Celestial',  color: '#5a7bff', weight: 800 },
   { key: 'eternal',    name: 'Eternal',    color: '#ff4fd8', weight: 400 },
   { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 200 },
-  { key: 'christmas',  name: 'Christmas',  color: '#ff6b6b', weight: 0 }
+  { key: 'rush',       name: 'Rush',       color: '#ff9f1c', weight: 0, eventKey: 'rush' },
+  { key: 'christmas',  name: 'Christmas',  color: '#ff6b6b', weight: 0, eventKey: 'christmas' }
 ];
 const ITEMS_BY_RARITY = {
   common: ["Iron Scrap","Cracked Stone","Copper Wire","Coal Chunk","Rusty Bolt","Glass Shard","Faded Circuit","Dust Crystal","Scrap Metal","Empty Power Cell"],
@@ -1198,6 +1233,7 @@ const ITEMS_BY_RARITY = {
   celestial: ["Nebula Heart","Galaxy Engine","Starborn Relic","Cosmic Prism","Astral Crown","Blackstar Core","Universe Fragment","Event Horizon Lens","Multiverse Battery","Celestial Throne"],
   eternal: ["Infinity Heart","Eternal Singularity","Timebreak Relic","Unending Engine","Immortal Prism","Endlessness Core","Absolute Chrono Gear","Evernight Crystal","Eternal Crown","Last Light of Time"],
   omniversal: ["Omniversal Seed","Reality's Last Spark","Infinite Paradox","The First Singularity","Multiverse Heart","Absolute Infinity","The Unwritten World","Omniscient Core","The Final Constant","The Omniversal"],
+  rush: ["Rushlight Capacitor","Velocity Core","Blitz Circuit","Hyperdrive Prism","Tempest Rush Engine"],
   christmas: ["Candy Cane Shard","Frosted Circuit","Jingle Bell Alloy","Gingerbread Core","Snowglobe Prism","Tinsel Power Cell","Reindeer Flux Drive","North Star Fragment","Santa's Sigil","Christmas Miracle"]
 };
 const ITEM_BASE = {
@@ -1211,19 +1247,37 @@ const ITEM_BASE = {
   "Nebula Heart": 10000000, "Galaxy Engine": 12500000, "Starborn Relic": 15000000, "Cosmic Prism": 20000000, "Astral Crown": 25000000, "Blackstar Core": 35000000, "Universe Fragment": 50000000, "Event Horizon Lens": 65000000, "Multiverse Battery": 85000000, "Celestial Throne": 100000000,
   "Infinity Heart": 150000000, "Eternal Singularity": 200000000, "Timebreak Relic": 250000000, "Unending Engine": 300000000, "Immortal Prism": 400000000, "Endlessness Core": 500000000, "Absolute Chrono Gear": 650000000, "Evernight Crystal": 800000000, "Eternal Crown": 1000000000, "Last Light of Time": 1500000000,
   "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000,
+  "Rushlight Capacitor": 50, "Velocity Core": 250, "Blitz Circuit": 1500, "Hyperdrive Prism": 12000, "Tempest Rush Engine": 150000,
   "Candy Cane Shard": 25, "Frosted Circuit": 60, "Jingle Bell Alloy": 150, "Gingerbread Core": 400, "Snowglobe Prism": 1000, "Tinsel Power Cell": 3000, "Reindeer Flux Drive": 10000, "North Star Fragment": 50000, "Santa's Sigil": 250000, "Christmas Miracle": 1000000
 };
-const CHRISTMAS_ITEMS = ITEMS_BY_RARITY.christmas;
-function isChristmasEvent(date = new Date()) {
-  return date.getUTCMonth() === 11 && date.getUTCDate() >= 1 && date.getUTCDate() <= 25;
+const EVENTS = [
+  { key: 'rush', name: 'Rush Week', startMonth: 11, startDay: 20, endMonth: 11, endDay: 30, color: '#ff9f1c', theme: 'rush-week', items: ITEMS_BY_RARITY.rush, desc: 'Limited Rush items drop from the generator, and every generate has a 5% chance to roll the Rush mutation on any item.' },
+  { key: 'christmas', name: 'Christmas Event', startMonth: 12, startDay: 1, endMonth: 12, endDay: 25, color: '#ff6b6b', theme: 'christmas', items: ITEMS_BY_RARITY.christmas, desc: 'Limited holiday items drop from the generator, and the world gets a festive new look.' }
+];
+function eventWindowActive(ev, date = new Date()) {
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate();
+  return (m > ev.startMonth || (m === ev.startMonth && d >= ev.startDay)) &&
+    (m < ev.endMonth || (m === ev.endMonth && d <= ev.endDay));
 }
-function applyChristmasTheme() {
-  document.body.classList.toggle('christmas', isChristmasEvent());
+function activeEvent(date = new Date()) {
+  return EVENTS.find(ev => eventWindowActive(ev, date)) || null;
+}
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function eventRangeText(ev) {
+  const start = MONTH_NAMES[ev.startMonth - 1] + ' ' + ev.startDay;
+  const end = (ev.startMonth === ev.endMonth ? '' : MONTH_NAMES[ev.endMonth - 1] + ' ') + ev.endDay;
+  return start + '\u2013' + end;
+}
+function applyEventTheme() {
+  const current = activeEvent();
+  document.body.classList.toggle('christmas', !!(current && current.theme === 'christmas'));
+  document.body.classList.toggle('rush-week', !!(current && current.theme === 'rush-week'));
   if ($('eventBtn')) {
-    $('eventBadge').classList.toggle('hidden', !isChristmasEvent());
-    $('eventCardDesc').textContent = isChristmasEvent()
-      ? 'Christmas is here! Explore exclusive holiday items.'
-      : 'Check back December 1\u201325 for the Christmas event.';
+    $('eventBadge').classList.toggle('hidden', !current);
+    $('eventCardDesc').textContent = current
+      ? current.name + ' is live \u2014 limited items and special rewards await.'
+      : 'Seasonal events bring limited items and special rewards.';
   }
   if ($('panel-codex') && $('panel-codex').classList.contains('active')) renderCodex();
   if (!$('dashPanel').classList.contains('hidden') && $('dashPanel').dataset.panel === 'event') renderEventPanel();
@@ -1296,7 +1350,8 @@ const MUT_SEP = '\u241F';
 const MUTATIONS = [
   { id: 'gold',     name: 'Gold',     mult: 2, color: '#ffd24a' },
   { id: 'diamond',  name: 'Diamond',  mult: 3, color: '#7be0ff' },
-  { id: 'electric', name: 'Electric', mult: 4, color: '#c77bff' }
+  { id: 'electric', name: 'Electric', mult: 4, color: '#c77bff' },
+  { id: 'rush',     name: 'Rush',     mult: 5, color: '#ff9f1c' }
 ];
 const MUT_BY_ID = {};
 MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
@@ -1407,8 +1462,8 @@ let dailyData = null;
 let bossState = null;
 let lastMoneyShown = null;
 
-applyChristmasTheme();
-setInterval(applyChristmasTheme, 60000);
+applyEventTheme();
+setInterval(applyEventTheme, 60000);
 
 /* =============================================================
  * FX
@@ -1843,7 +1898,7 @@ function renderDash() {
   $('dashWho').textContent = 'Signed in as ' + me.username;
   $('dashMoney').textContent = '$' + fmt(state.money);
   $('dashLevel').textContent = 'Lv ' + state.level;
-  applyChristmasTheme();
+  applyEventTheme();
 }
 function openDashPanel(which) {
   const p = $('dashPanel');
@@ -1865,25 +1920,26 @@ $('customizeBtn').addEventListener('click', () => openDashPanel('customize'));
 
 function renderEventPanel() {
   const p = $('dashPanel');
+  const current = activeEvent();
   p.classList.remove('hidden');
   let html = '<h3>Event</h3>';
-  if (isChristmasEvent()) {
+  if (current) {
     html +=
       '<div class="event-banner">' +
-        '<div class="event-title">&#10052; Christmas Event</div>' +
-        '<div class="event-desc">December 1&ndash;25 &middot; festive items can drop from the generator during the holiday season. Collect them all in the Christmas codex category.</div>' +
+        '<div class="event-title" style="color:' + current.color + '">' + esc(current.name) + '</div>' +
+        '<div class="event-desc">' + esc(eventRangeText(current)) + ' &middot; ' + esc(current.desc) + '</div>' +
       '</div>' +
-      '<h4 class="event-subtitle">Christmas Items</h4>' +
+      '<h4 class="event-subtitle">Limited Items</h4>' +
       '<div class="event-items">';
-    CHRISTMAS_ITEMS.forEach(name => {
+    current.items.forEach(name => {
       html += '<div class="event-item">' +
-        '<span class="event-name" style="color:#ff6b6b">' + esc(name) + '</span>' +
+        '<span class="event-name" style="color:' + current.color + '">' + esc(name) + '</span>' +
         '<span class="event-value">$' + fmt(Math.round(ITEM_BASE[name] * SELL_MULT)) + '</span>' +
       '</div>';
     });
     html += '</div>';
   } else {
-    html += '<div class="empty-note" style="padding:8px 4px 14px">No event is live right now. The Christmas event runs every year from December 1 to December 25.</div>';
+    html += '<div class="empty-note" style="padding:8px 4px 14px">No event is live right now. Seasonal events bring limited items and special mutations. Check back soon.</div>';
   }
   p.innerHTML = html;
 }
@@ -3130,7 +3186,8 @@ function renderCodex() {
     const base = baseName(key);
     owned[base] = (owned[base] || 0) + Math.max(0, Number(state.counts[key]) || 0);
   }
-  const shownRarities = RARITIES.filter(rar => rar.key !== 'christmas' || isChristmasEvent());
+  const currentEvent = activeEvent();
+  const shownRarities = RARITIES.filter(rar => !rar.eventKey || (currentEvent && rar.eventKey === currentEvent.key));
   let discoveredTotal = 0;
   let totalItems = 0;
   list.innerHTML = '';
@@ -3186,8 +3243,8 @@ function renderCodex() {
     totalItems += names.length;
   });
   $('codexInfo').textContent = 'Discovered ' + discoveredTotal + ' / ' + totalItems;
-  $('codexSummary').textContent = isChristmasEvent()
-    ? 'Tap a discovered item to see its value. Christmas items can drop from the generator until December 25.'
+  $('codexSummary').textContent = currentEvent
+    ? 'Tap a discovered item to see its value. ' + currentEvent.name + ' items can drop from the generator during the event.'
     : 'Tap a discovered item to see its value. Unknown items unlock when you generate or own them.';
 }
 

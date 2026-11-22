@@ -46,7 +46,8 @@ const RARITIES = [
   { key: 'celestial',  name: 'Celestial',  color: '#5a7bff', weight: 800 },
   { key: 'eternal',    name: 'Eternal',    color: '#ff4fd8', weight: 400 },
   { key: 'omniversal', name: 'Omniversal', color: '#8affd8', weight: 200 },
-  { key: 'christmas',  name: 'Christmas',  color: '#ff6b6b', weight: 0 }
+  { key: 'rush',       name: 'Rush',       color: '#ff9f1c', weight: 0, eventKey: 'rush' },
+  { key: 'christmas',  name: 'Christmas',  color: '#ff6b6b', weight: 0, eventKey: 'christmas' }
 ];
 const ITEMS_BY_RARITY = {
   common: ["Iron Scrap","Cracked Stone","Copper Wire","Coal Chunk","Rusty Bolt","Glass Shard","Faded Circuit","Dust Crystal","Scrap Metal","Empty Power Cell"],
@@ -59,6 +60,7 @@ const ITEMS_BY_RARITY = {
   celestial: ["Nebula Heart","Galaxy Engine","Starborn Relic","Cosmic Prism","Astral Crown","Blackstar Core","Universe Fragment","Event Horizon Lens","Multiverse Battery","Celestial Throne"],
   eternal: ["Infinity Heart","Eternal Singularity","Timebreak Relic","Unending Engine","Immortal Prism","Endlessness Core","Absolute Chrono Gear","Evernight Crystal","Eternal Crown","Last Light of Time"],
   omniversal: ["Omniversal Seed","Reality's Last Spark","Infinite Paradox","The First Singularity","Multiverse Heart","Absolute Infinity","The Unwritten World","Omniscient Core","The Final Constant","The Omniversal"],
+  rush: ["Rushlight Capacitor","Velocity Core","Blitz Circuit","Hyperdrive Prism","Tempest Rush Engine"],
   christmas: ["Candy Cane Shard","Frosted Circuit","Jingle Bell Alloy","Gingerbread Core","Snowglobe Prism","Tinsel Power Cell","Reindeer Flux Drive","North Star Fragment","Santa's Sigil","Christmas Miracle"]
 };
 // Per-item base value in currency. Sell value = base * mutation multiplier.
@@ -73,6 +75,7 @@ const ITEM_BASE = {
   "Nebula Heart": 10000000, "Galaxy Engine": 12500000, "Starborn Relic": 15000000, "Cosmic Prism": 20000000, "Astral Crown": 25000000, "Blackstar Core": 35000000, "Universe Fragment": 50000000, "Event Horizon Lens": 65000000, "Multiverse Battery": 85000000, "Celestial Throne": 100000000,
   "Infinity Heart": 150000000, "Eternal Singularity": 200000000, "Timebreak Relic": 250000000, "Unending Engine": 300000000, "Immortal Prism": 400000000, "Endlessness Core": 500000000, "Absolute Chrono Gear": 650000000, "Evernight Crystal": 800000000, "Eternal Crown": 1000000000, "Last Light of Time": 1500000000,
   "Omniversal Seed": 2000000000, "Reality's Last Spark": 3000000000, "Infinite Paradox": 5000000000, "The First Singularity": 7500000000, "Multiverse Heart": 10000000000, "Absolute Infinity": 15000000000, "The Unwritten World": 20000000000, "Omniscient Core": 30000000000, "The Final Constant": 50000000000, "The Omniversal": 100000000000,
+  "Rushlight Capacitor": 50, "Velocity Core": 250, "Blitz Circuit": 1500, "Hyperdrive Prism": 12000, "Tempest Rush Engine": 150000,
   "Candy Cane Shard": 25, "Frosted Circuit": 60, "Jingle Bell Alloy": 150, "Gingerbread Core": 400, "Snowglobe Prism": 1000, "Tinsel Power Cell": 3000, "Reindeer Flux Drive": 10000, "North Star Fragment": 50000, "Santa's Sigil": 250000, "Christmas Miracle": 1000000
 };
 const ITEM_RARITY = {};
@@ -81,10 +84,20 @@ RARITIES.forEach((r, i) => (ITEMS_BY_RARITY[r.key] || []).forEach(it => { ITEM_R
 const SELL_MULT = 1.25;
 const MAX_LEVEL = luck.MAX_LEVEL;
 const GEN_GRACE = 250;
-const CHRISTMAS_DROP_CHANCE = 0.08;
-const CHRISTMAS_RARITY_INDEX = RARITIES.findIndex(r => r.key === 'christmas');
-function isChristmasEvent(date = new Date()) {
-  return date.getUTCMonth() === 11 && date.getUTCDate() >= 1 && date.getUTCDate() <= 25;
+const EVENTS = [
+  { key: 'rush', rarityKey: 'rush', startMonth: 11, startDay: 20, endMonth: 11, endDay: 30, dropChance: 0.06, rushMutation: true },
+  { key: 'christmas', rarityKey: 'christmas', startMonth: 12, startDay: 1, endMonth: 12, endDay: 25, dropChance: 0.08, rushMutation: false }
+];
+EVENTS.forEach(ev => { ev.rarityIndex = RARITIES.findIndex(r => r.key === ev.rarityKey); });
+const LAST_NORMAL_RARITY_INDEX = RARITIES.findIndex(r => r.key === 'omniversal');
+function eventWindowActive(ev, date = new Date()) {
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate();
+  return (m > ev.startMonth || (m === ev.startMonth && d >= ev.startDay)) &&
+    (m < ev.endMonth || (m === ev.endMonth && d <= ev.endDay));
+}
+function activeEvent(date = new Date()) {
+  return EVENTS.find(ev => eventWindowActive(ev, date)) || null;
 }
 
 function genCost(level) {
@@ -102,13 +115,15 @@ function genCost(level) {
  * ------------------------------------------------------------- */
 const MUT_SEP = '\u241F';
 const MUTATION_CHANCE = 0.08;
+const RUSH_MUTATION_CHANCE = 0.05;
 const MUTATIONS = [
   { id: 'gold',     name: 'Gold',     mult: 2, weight: 60 },
-  { id: 'diamond',  name: 'Diamond',  mult: 3, weight: 30 }
+  { id: 'diamond',  name: 'Diamond',  mult: 3, weight: 30 },
+  { id: 'rush',     name: 'Rush',     mult: 5, weight: 0 }
 ];
 const MUT_BY_ID = {};
 MUTATIONS.forEach(m => { MUT_BY_ID[m.id] = m; });
-const ROLLABLE_MUTATIONS = MUTATIONS;
+const ROLLABLE_MUTATIONS = MUTATIONS.filter(m => m.id !== 'rush');
 
 function splitKey(key) {
   const s = String(key);
@@ -126,7 +141,8 @@ function itemValueFor(key) {
   const m = MUT_BY_ID[mut];
   return Math.round((ITEM_BASE[item] || 0) * (m ? m.mult : 1) * SELL_MULT);
 }
-function rollMutation() {
+function rollMutation(allowRush) {
+  if (allowRush && Math.random() < RUSH_MUTATION_CHANCE) return MUT_BY_ID.rush;
   if (Math.random() >= MUTATION_CHANCE) return null;
   const pool = ROLLABLE_MUTATIONS;
   let roll = Math.random() * pool.reduce((a, b) => a + b.weight, 0);
@@ -829,13 +845,13 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
       return res.status(400).json({ error: 'Vault full \u2014 sell items to make room' });
     }
     const level = Number(st.level || 1);
-    const festive = isChristmasEvent();
-    const ri = festive && Math.random() < CHRISTMAS_DROP_CHANCE
-      ? CHRISTMAS_RARITY_INDEX
+    const currentEvent = activeEvent();
+    const ri = currentEvent && Math.random() < currentEvent.dropChance
+      ? currentEvent.rarityIndex
       : luck.pickRarityIndex(level);
     const itemPool = ITEMS_BY_RARITY[RARITIES[ri].key];
     const item = itemPool[Math.floor(Math.random() * itemPool.length)];
-    const mut = rollMutation();
+    const mut = rollMutation(!!(currentEvent && currentEvent.rushMutation));
     const key = makeKey(item, mut);
     const value = itemValueFor(key);
 
@@ -845,10 +861,10 @@ app.post('/api/generate', dbReady, auth, rateLimit('generate', 10, 60000), async
     stats.ig = (stats.ig || 0) + 1;
     if (stats.seen.indexOf(item) === -1) stats.seen.push(item);
     if (stats.best == null) stats.best = -1;
-    if (ri < CHRISTMAS_RARITY_INDEX && ri > stats.best) stats.best = ri;
+    if (ri <= LAST_NORMAL_RARITY_INDEX && ri > stats.best) stats.best = ri;
 
     // Every generated item also hits the world boss and feeds its pool.
-    const bossTier = Math.min(ri + 1, CHRISTMAS_RARITY_INDEX);
+    const bossTier = Math.min(ri + 1, LAST_NORMAL_RARITY_INDEX + 1);
     const bossRes = await contributeToBoss(client, req.user.id, bossTier, value);
 
     const daily = dailyOf(st);

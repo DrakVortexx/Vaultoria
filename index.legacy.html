@@ -625,10 +625,44 @@
   }
   body.christmas .btn.ghost { background: rgba(255,255,255,0.06); box-shadow: none; }
   body.christmas .auth-tab.active, body.christmas .tab.active { background: linear-gradient(135deg, #dc2626, #16a34a); }
+  body.rush-week { background: #140b05; }
+  body.rush-week::before {
+    background:
+      radial-gradient(38% 38% at 22% 26%, rgba(255,140,0,0.24), transparent 62%),
+      radial-gradient(34% 34% at 78% 74%, rgba(255,61,129,0.20), transparent 62%),
+      radial-gradient(30% 30% at 66% 16%, rgba(255,215,0,0.14), transparent 62%);
+  }
+  body.rush-week::after {
+    content: ""; position: fixed; inset: -20%; z-index: 1; pointer-events: none;
+    background: repeating-linear-gradient(100deg, transparent 0 56px, rgba(255,159,28,0.08) 56px 58px);
+    animation: rushStreaks 3s linear infinite;
+  }
+  @keyframes rushStreaks { from { transform: translate3d(-8%, 0, 0); } to { transform: translate3d(8%, 0, 0); } }
+  body.rush-week #authScreen,
+  body.rush-week #dashScreen {
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,140,0,0.26), transparent 55%),
+      radial-gradient(circle at 75% 80%, rgba(255,61,129,0.2), transparent 55%),
+      #140b05;
+  }
+  body.rush-week .brand { text-shadow: 0 0 24px #ff9f1c, 0 0 60px #ff3d81; }
+  body.rush-week .auth-card, body.rush-week .dash-card, body.rush-week .dash-panel, body.rush-week .modal-card {
+    background: rgba(20, 12, 6, 0.9);
+    border-color: rgba(255,159,28,0.22);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 44px rgba(255,140,0,0.14);
+  }
+  body.rush-week .dash-card:hover { border-color: rgba(255,159,28,0.6); box-shadow: 0 24px 60px rgba(255,140,0,0.32); }
+  body.rush-week .play-card { background: linear-gradient(160deg, rgba(255,140,0,0.32), rgba(20,12,6,0.92)); border-color: rgba(255,159,28,0.4); }
+  body.rush-week .btn, body.rush-week #gen, body.rush-week .sell-btn, body.rush-week .mini-btn, body.rush-week .buy {
+    background: linear-gradient(135deg, #ff8c00, #ff3d81);
+    box-shadow: 0 8px 24px rgba(255,140,0,0.4);
+  }
+  body.rush-week .btn.ghost { background: rgba(255,255,255,0.06); box-shadow: none; }
+  body.rush-week .auth-tab.active, body.rush-week .tab.active { background: linear-gradient(135deg, #ff8c00, #ff3d81); }
   .event-card { position: relative; }
-  .event-card .dc-icon { color: #ff6b6b; text-shadow: 0 0 20px #ff5c5c; }
-  .event-badge { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; background: #dc2626; padding: 3px 9px; border-radius: 10px; }
-  .event-banner { padding: 16px 18px; margin-bottom: 18px; border-radius: 16px; background: linear-gradient(135deg, rgba(220,38,38,0.22), rgba(34,197,94,0.2)); border: 1px solid rgba(255,255,255,0.14); }
+  .event-card .dc-icon { color: #ffb648; text-shadow: 0 0 20px #ff9f1c; }
+  .event-badge { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; background: #ff8c00; padding: 3px 9px; border-radius: 10px; }
+  .event-banner { padding: 16px 18px; margin-bottom: 18px; border-radius: 16px; background: linear-gradient(135deg, rgba(255,159,28,0.2), rgba(255,61,129,0.16)); border: 1px solid rgba(255,255,255,0.14); }
   .event-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px; }
   .event-desc { font-size: 13px; color: #c3c8e6; line-height: 1.6; }
   .event-subtitle { margin: 0 0 12px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; }
@@ -731,9 +765,9 @@
       </button>
       <button class="dash-card event-card" id="eventBtn" type="button">
         <span class="event-badge hidden" id="eventBadge">LIVE</span>
-        <div class="dc-icon">&#10052;</div>
+        <div class="dc-icon">&#10024;</div>
         <div class="dc-title">Event</div>
-        <div class="dc-desc" id="eventCardDesc">Check back December 1&ndash;25 for the Christmas event.</div>
+        <div class="dc-desc" id="eventCardDesc">Seasonal events bring limited items and special rewards.</div>
       </button>
       <details class="dash-card rules-card">
         <summary>
