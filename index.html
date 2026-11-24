@@ -1285,7 +1285,6 @@ function applyEventTheme() {
       : 'Seasonal events bring limited items and special rewards.';
   }
   if ($('panel-codex') && $('panel-codex').classList.contains('active')) renderCodex();
-  if (!$('dashPanel').classList.contains('hidden') && $('dashPanel').dataset.panel === 'event') renderEventPanel();
 }
 const MAX_LEVEL = 100;
 const SUF = ["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","UDc","DDc","TDc","QaDc","QiDc","SxDc"];
@@ -1908,143 +1907,13 @@ function renderDash() {
   $('dashLevel').textContent = 'Lv ' + state.level;
   applyEventTheme();
 }
-function openDashPanel(which) {
-  const p = $('dashPanel');
-  p.classList.remove('hidden');
-  p.dataset.panel = which;
-  p.innerHTML = '<div class="spinner">Loading...</div>';
-  if (which === 'event') renderEventPanel();
-  else if (which === 'servers') renderServersPanel();
-  else if (which === 'friends') renderFriendsPanel();
-  else if (which === 'settings') renderSettingsPanel();
-  else if (which === 'customize') renderCustomizePanel();
-}
 $('playBtn').addEventListener('click', play);
-$('eventBtn').addEventListener('click', () => openDashPanel('event'));
-$('serversBtn').addEventListener('click', () => openDashPanel('servers'));
-$('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
-$('settingsBtn').addEventListener('click', () => openDashPanel('settings'));
-$('customizeBtn').addEventListener('click', () => openDashPanel('customize'));
+$('eventBtn').addEventListener('click', () => { window.location.href = '/event'; });
+$('serversBtn').addEventListener('click', () => { window.location.href = '/servers'; });
+$('friendsBtn').addEventListener('click', () => { window.location.href = '/friends'; });
+$('settingsBtn').addEventListener('click', () => { window.location.href = '/settings'; });
+$('customizeBtn').addEventListener('click', () => { window.location.href = '/customize'; });
 $('storeBtn').addEventListener('click', () => { window.location.href = '/store'; });
-
-function renderEventPanel() {
-  const p = $('dashPanel');
-  const current = activeEvent();
-  p.classList.remove('hidden');
-  let html = '<h3>Event</h3>';
-  if (current) {
-    html +=
-      '<div class="event-banner">' +
-        '<div class="event-title" style="color:' + current.color + '">' + esc(current.name) + '</div>' +
-        '<div class="event-desc">' + esc(eventRangeText(current)) + ' &middot; ' + esc(current.desc) + '</div>' +
-      '</div>' +
-      '<h4 class="event-subtitle">Limited Items</h4>' +
-      '<div class="event-items">';
-    current.items.forEach(name => {
-      html += '<div class="event-item">' +
-        '<span class="event-name" style="color:' + current.color + '">' + esc(name) + '</span>' +
-        '<span class="event-value">$' + fmt(Math.round(ITEM_BASE[name] * SELL_MULT)) + '</span>' +
-      '</div>';
-    });
-    html += '</div>';
-  } else {
-    html += '<div class="empty-note" style="padding:8px 4px 14px">No event is live right now. Seasonal events bring limited items and special mutations. Check back soon.</div>';
-  }
-  p.innerHTML = html;
-}
-
-function renderSettingsPanel() {
-  const p = $('dashPanel');
-  p.classList.remove('hidden');
-  p.innerHTML =
-    '<h3 style="margin:0 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">SETTINGS</h3>' +
-    '<div style="font-size:13px;color:#8b93bd">No settings available at this time.</div>';
-}
-
-function renderCustomizePanel() {
-  const p = $('dashPanel');
-  p.classList.remove('hidden');
-  const money = Number(state.money || 0);
-
-  p.innerHTML =
-    '<h3 style="margin:0 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">CHARACTER COLOR</h3>' +
-    '<div class="customize-grid" id="colorGrid"></div>' +
-    '<h3 style="margin:20px 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">TRAIL EFFECT</h3>' +
-    '<div class="customize-grid" id="trailGrid"></div>' +
-    '<h3 style="margin:20px 0 10px;color:#9aa2cc;letter-spacing:2px;font-size:13px">GLOW EFFECT</h3>' +
-    '<div class="customize-grid" id="glowGrid"></div>';
-
-  const colors = [
-    { id: '47', name: 'Default', price: 0 },
-    { id: '0', name: 'Red', price: 5000 },
-    { id: '120', name: 'Green', price: 5000 },
-    { id: '200', name: 'Blue', price: 5000 },
-    { id: '280', name: 'Purple', price: 10000 },
-    { id: '60', name: 'Gold', price: 25000 },
-    { id: '180', name: 'Cyan', price: 50000 },
-    { id: '300', name: 'Magenta', price: 100000 },
-  ];
-
-  const trails = [
-    { id: 'none', name: 'None', price: 0 },
-    { id: 'sparkle', name: 'Sparkle', price: 25000 },
-    { id: 'fire', name: 'Fire', price: 100000 },
-    { id: 'rainbow', name: 'Rainbow', price: 500000 },
-    { id: 'golden', name: 'Golden Sparkle', price: 0, store: true },
-  ];
-
-  const glows = [
-    { id: 'none', name: 'None', price: 0 },
-    { id: 'soft', name: 'Soft Glow', price: 50000 },
-    { id: 'bright', name: 'Bright Glow', price: 250000 },
-    { id: 'pulsing', name: 'Pulsing Glow', price: 1000000 },
-  ];
-
-  function renderOption(type, options, containerId, current) {
-    const container = $(containerId);
-    container.innerHTML = '';
-    options.forEach(opt => {
-      const storeOwned = opt.store ? ownedProducts.indexOf('golden-sparkle') !== -1 : false;
-      const owned = (opt.price === 0 && !opt.store) || current === opt.id || storeOwned;
-      const canAfford = money >= opt.price;
-      const selected = current === opt.id;
-
-      const btn = document.createElement('button');
-      btn.className = 'customize-option' + (selected ? ' selected' : '');
-      btn.style.backgroundColor = type === 'color' ? 'hsl(' + opt.id + ', 70%, 50%)' : '#2a2d3e';
-      btn.innerHTML =
-        '<div class="co-name">' + opt.name + '</div>' +
-        '<div class="co-price">' + (owned ? 'OWNED' : opt.store ? '$2.99' : '$' + fmt(opt.price)) + '</div>';
-
-      if (!owned && opt.store) {
-        btn.classList.add('disabled');
-        btn.title = 'Available in the Store';
-        btn.addEventListener('click', () => { window.location.href = '/store'; });
-      } else if (!owned && !canAfford) {
-        btn.classList.add('disabled');
-      } else if (!selected) {
-        btn.addEventListener('click', async () => {
-          try {
-            btn.classList.add('loading');
-            const r = await api('/customize', { method: 'POST', body: JSON.stringify({ type, id: opt.id }) });
-            state = r.state;
-            renderCustomizePanel();
-            toast('CUSTOMIZED', opt.name + ' applied!', null, '#7bdc78');
-          } catch (err) {
-            toast('OOPS', err.message, null, '#ff6b8a');
-            btn.classList.remove('loading');
-          }
-        });
-      }
-
-      container.appendChild(btn);
-    });
-  }
-
-  renderOption('color', colors, 'colorGrid', state.customColor || '47');
-  renderOption('trail', trails, 'trailGrid', state.customTrail || 'none');
-  renderOption('glow', glows, 'glowGrid', state.customGlow || 'none');
-}
 
 /* =============================================================
  * STORE
@@ -2071,76 +1940,6 @@ async function play() {
   }
 }
 
-async function renderServersPanel() {
-  const p = $('dashPanel');
-  try {
-    const { servers } = await api('/servers');
-    let html = '<h3>Open Servers</h3>' +
-      '<div class="inline-form"><input id="newServerName" maxlength="40" placeholder="New world name"><button class="btn green" id="createServerBtn" type="button">Create World</button></div>';
-    if (!servers.length) html += '<div class="empty-note">No open servers yet. Create one!</div>';
-    for (const s of servers) {
-      const full = s.members >= s.capacity;
-      html += '<div class="row"><div><div class="name">World ' + s.id + '</div>' +
-        '<div class="meta">' + s.members + ' / ' + s.capacity + ' keepers</div></div>' +
-        '<button class="btn ' + (full ? 'ghost' : 'green') + '" data-join="' + s.id + '" ' + (full ? 'disabled' : '') + '>' +
-        (full ? 'Full' : 'Join') + '</button></div>';
-    }
-    p.innerHTML = html;
-    p.querySelector('#createServerBtn').addEventListener('click', async () => {
-      const name = (p.querySelector('#newServerName').value || '').trim() || 'My World';
-      try { await api('/servers', { method: 'POST', body: JSON.stringify({ name }) }); renderServersPanel(); }
-      catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
-    });
-    p.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => {
-      enterServer(parseInt(b.dataset.join, 10), 'World ' + b.dataset.join);
-    }));
-  } catch (err) {
-    p.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
-  }
-}
-
-async function renderFriendsPanel() {
-  const p = $('dashPanel');
-  try {
-    const data = await api('/friends');
-    let html = '<h3>Friends</h3>' +
-      '<div class="inline-form"><input id="friendName" maxlength="20" placeholder="Add by username"><button class="btn" id="addFriendBtn" type="button">Send Request</button></div>';
-    if (data.incoming.length) {
-      html += '<h3 style="margin-top:18px">Requests to you</h3>';
-      for (const f of data.incoming) {
-        html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div><div class="meta">wants to be friends</div></div>' +
-          '<span><button class="btn green" data-accept="' + f.id + '" type="button">Accept</button> <button class="btn ghost" data-remove="' + f.id + '" type="button">Decline</button></span></div>';
-      }
-    }
-    if (data.outgoing.length) {
-      html += '<h3 style="margin-top:18px">Sent</h3>';
-      for (const f of data.outgoing) {
-        html += '<div class="row"><div class="name">' + esc(f.username) + '</div><span class="pill off">pending</span></div>';
-      }
-    }
-    html += '<h3 style="margin-top:18px">Your Friends</h3>';
-    if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
-    for (const f of data.friends) {
-      html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div>' +
-        '<div class="meta"><span class="status-dot ' + (f.online ? 'on' : 'off') + '"></span>' + (f.online ? 'Online now' : 'Offline') + '</div></div>' +
-        '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + f.id + '" type="button">Remove</button></span></div>';
-    }
-    p.innerHTML = html;
-    p.querySelector('#addFriendBtn').addEventListener('click', async () => {
-      const username = (p.querySelector('#friendName').value || '').trim();
-      try { await api('/friends/request', { method: 'POST', body: JSON.stringify({ username }) }); toast('REQUEST SENT', username, null, '#4fd1ff'); renderFriendsPanel(); }
-      catch (err) { toast('OOPS', err.message, null, '#ff6b8a'); }
-    });
-    p.querySelectorAll('[data-accept]').forEach(b => b.addEventListener('click', async () => {
-      try { await api('/friends/' + b.dataset.accept + '/accept', { method: 'POST' }); renderFriendsPanel(); } catch (e) {}
-    }));
-    p.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', async () => {
-      try { await api('/friends/' + b.dataset.remove, { method: 'DELETE' }); renderFriendsPanel(); } catch (e) {}
-    }));
-  } catch (err) {
-    p.innerHTML = '<div class="empty-note">' + esc(err.message) + '</div>';
-  }
-}
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
 /* =============================================================
@@ -4734,6 +4533,12 @@ requestAnimationFrame(frame);
   if (!token) { showScreen('auth'); return; }
   try {
     await loadMe();
+    const pendingJoin = localStorage.getItem('vaultoria_pending_join');
+    if (pendingJoin) {
+      localStorage.removeItem('vaultoria_pending_join');
+      const sid = parseInt(pendingJoin, 10);
+      if (sid) enterServer(sid, 'World ' + sid);
+    }
   } catch (e) {
     token = null; localStorage.removeItem('vaultoria_token');
     showScreen('auth');

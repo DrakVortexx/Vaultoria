@@ -2708,6 +2708,8 @@ app.get('/api/boss', dbReady, auth, async (req, res) => {
 app.use(express.static(path.join(__dirname, 'assets')));
 app.get('/healthz', (req, res) => res.json({ ok: true, db: !!DATABASE_URL }));
 app.get('/store', (req, res) => res.sendFile(path.join(__dirname, 'store.html')));
+app.get(['/servers', '/friends', '/settings', '/customize', '/event'], (req, res) =>
+  res.sendFile(path.join(__dirname, 'panel.html')));
 const INDEX_HTML = path.join(__dirname, 'index.html');
 const LEGACY_INDEX_HTML = path.join(__dirname, 'index.legacy.html');
 function indexFor(req) {
