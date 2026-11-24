@@ -42,6 +42,26 @@
     margin: 0 0 6px; color: #ffd76a; text-shadow: 0 0 26px rgba(255,215,90,0.45); }
   .sub { text-align: center; color: #8b93bd; font-size: 13px; letter-spacing: 1px;
     text-transform: uppercase; margin-bottom: 28px; }
+  .tabs { display: flex; gap: 6px; padding: 6px; border-radius: 14px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 18px; }
+  .tab { flex: 1; font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing: 1px;
+    padding: 11px 12px; border: none; border-radius: 10px; background: transparent; color: #8b93bd;
+    cursor: pointer; transition: all 0.2s; }
+  .tab:hover { color: #cfd4f5; }
+  .tab.active { color: #fff; background: linear-gradient(135deg, #6d4dff, #b14dff);
+    box-shadow: 0 6px 24px rgba(124,92,255,0.45); }
+  .panel { display: none; width: 100%; }
+  .panel.active { display: block; animation: fadeUp 0.35s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } }
+  .product-wrap + .product-wrap { margin-top: 16px; }
+  .soon-tag { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #c3c8e6;
+    padding: 7px 12px; border-radius: 20px; background: rgba(109,77,255,0.14);
+    border: 1px solid rgba(109,77,255,0.45); white-space: nowrap; }
+  .tier-row { display: flex; gap: 10px; margin-top: 20px; }
+  .tier { flex: 1; text-align: center; padding: 14px 8px; border-radius: 12px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+  .tier-icon { font-size: 22px; opacity: 0.7; }
+  .tier-label { font-size: 11px; color: #8b93bd; margin-top: 6px; letter-spacing: 1px; }
   .product {
     background: rgba(11,13,29,0.9); border: 1px solid rgba(255,215,90,0.25);
     border-radius: 22px; padding: 26px 24px;
@@ -85,7 +105,31 @@
   <div class="wrap">
     <h1>STORE</h1>
     <div class="sub">Exclusive items for real keepers</div>
-    <div id="storeBody"><div class="spinner">Loading store...</div></div>
+    <div class="tabs" role="tablist" aria-label="Store sections">
+      <button class="tab active" type="button" role="tab" aria-selected="true" aria-controls="cosmeticsPanel" data-tab="cosmetics">COSMETICS</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="passPanel" data-tab="pass">BATTLE PASS</button>
+    </div>
+    <div class="msg" id="storeMsg"></div>
+    <section class="panel active" id="cosmeticsPanel" role="tabpanel">
+      <div id="storeBody"><div class="spinner">Loading store...</div></div>
+    </section>
+    <section class="panel" id="passPanel" role="tabpanel">
+      <div class="product">
+        <div class="p-head">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div class="p-icon">&#127942;</div>
+            <div><div class="p-name">Battle Pass</div>
+            <div class="p-desc">Seasons, tiers, and exclusive rewards are on the way. Check back soon.</div></div>
+          </div>
+          <span class="soon-tag">COMING SOON</span>
+        </div>
+        <div class="tier-row">
+          <div class="tier"><div class="tier-icon">&#128176;</div><div class="tier-label">FREE TIERS</div></div>
+          <div class="tier"><div class="tier-icon">&#10024;</div><div class="tier-label">PREMIUM TIERS</div></div>
+          <div class="tier"><div class="tier-icon">&#127775;</div><div class="tier-label">EXCLUSIVE REWARDS</div></div>
+        </div>
+      </div>
+    </section>
     <div class="note">Secure checkout by <b>Stripe</b>. All sales are final. Items are delivered to your account instantly.</div>
   </div>
 
@@ -112,9 +156,25 @@ function esc(s) {
 function money(cents) { return '$' + (cents / 100).toFixed(2); }
 
 var body = document.getElementById('storeBody');
+var tabs = document.querySelectorAll('.tab');
+
+function selectTab(name) {
+  for (var i = 0; i < tabs.length; i++) {
+    var selected = tabs[i].getAttribute('data-tab') === name;
+    tabs[i].classList.toggle('active', selected);
+    tabs[i].setAttribute('aria-selected', selected ? 'true' : 'false');
+  }
+  document.getElementById('cosmeticsPanel').classList.toggle('active', name === 'cosmetics');
+  document.getElementById('passPanel').classList.toggle('active', name === 'pass');
+}
+for (var i = 0; i < tabs.length; i++) {
+  tabs[i].addEventListener('click', function () { selectTab(this.getAttribute('data-tab')); });
+}
 
 function renderProduct(prod, stripeReady) {
-  var html =
+  var wrap = document.createElement('div');
+  wrap.className = 'product-wrap';
+  wrap.innerHTML =
     '<div class="product">' +
       '<div class="p-head">' +
         '<div style="display:flex;gap:14px;align-items:flex-start">' +
@@ -126,13 +186,11 @@ function renderProduct(prod, stripeReady) {
       '</div>' +
       '<div class="p-foot">' +
         (prod.owned
-          ? '<span class="owned-tag">OWNED</span><button class="btn ghost" id="backToGame" type="button">BACK TO GAME</button>'
-          : '<span></span><button class="btn" id="buyBtn" type="button"' + (stripeReady ? '' : ' disabled') + '>BUY NOW</button>') +
+          ? '<span class="owned-tag">OWNED</span><button class="btn ghost backBtn" type="button">BACK TO GAME</button>'
+          : '<span></span><button class="btn buyBtn" type="button"' + (stripeReady ? '' : ' disabled') + '>BUY NOW</button>') +
       '</div>' +
-      '<div class="msg" id="storeMsg"></div>' +
     '</div>';
-  body.innerHTML = html;
-  var buy = document.getElementById('buyBtn');
+  var buy = wrap.querySelector('.buyBtn');
   if (buy) {
     buy.addEventListener('click', function () {
       buy.disabled = true;
@@ -146,8 +204,9 @@ function renderProduct(prod, stripeReady) {
         });
     });
   }
-  var back = document.getElementById('backToGame');
+  var back = wrap.querySelector('.backBtn');
   if (back) back.addEventListener('click', function () { window.location.href = '/'; });
+  body.appendChild(wrap);
 }
 
 function showMsg(text, isErr) {
@@ -167,7 +226,8 @@ function load() {
       body.innerHTML = '<div class="spinner">No products available right now.</div>';
       return;
     }
-    renderProduct(r.products[0], r.stripeReady);
+    body.innerHTML = '';
+    for (var i = 0; i < r.products.length; i++) renderProduct(r.products[i], r.stripeReady);
   }).catch(function (e) {
     body.innerHTML = '<div class="spinner">' + esc(e.message || 'Could not load store') + '</div>';
   });
