@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaultoria Store</title>
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: #e8eaf2;
+    background: #05060f;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  body::before {
+    content: ""; position: fixed; inset: -25%; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(38% 38% at 22% 26%, rgba(109,77,255,0.20), transparent 62%),
+      radial-gradient(34% 34% at 78% 74%, rgba(79,209,255,0.15), transparent 62%),
+      radial-gradient(30% 30% at 66% 16%, rgba(255,215,90,0.10), transparent 62%);
+    animation: aurora 26s ease-in-out infinite alternate;
+  }
+  @keyframes aurora {
+    from { transform: translate3d(-3%, -2%, 0) scale(1) rotate(-1deg); }
+    to   { transform: translate3d(3%, 2%, 0) scale(1.12) rotate(1deg); }
+  }
+  .topbar {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .brand { font-size: 22px; font-weight: 800; letter-spacing: 6px; color: #fff;
+    text-shadow: 0 0 18px #4fd1ff, 0 0 44px #6d4dff; text-decoration: none; }
+  .back { font-size: 13px; font-weight: 700; letter-spacing: 1px; color: #8b93bd;
+    text-decoration: none; padding: 8px 16px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); }
+  .back:hover { color: #fff; background: rgba(255,255,255,0.12); }
+  .wrap { width: min(560px, 92vw); margin: 48px auto 64px; }
+  h1 { text-align: center; font-size: 30px; font-weight: 800; letter-spacing: 4px;
+    margin: 0 0 6px; color: #ffd76a; text-shadow: 0 0 26px rgba(255,215,90,0.45); }
+  .sub { text-align: center; color: #8b93bd; font-size: 13px; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 28px; }
+  .product {
+    background: rgba(11,13,29,0.9); border: 1px solid rgba(255,215,90,0.25);
+    border-radius: 22px; padding: 26px 24px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 50px rgba(255,215,90,0.10);
+  }
+  .p-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+  .p-icon { font-size: 42px; filter: drop-shadow(0 0 18px rgba(255,215,90,0.8)); }
+  .p-name { font-size: 22px; font-weight: 800; color: #fff; }
+  .p-desc { font-size: 13px; color: #8b93bd; margin-top: 6px; line-height: 1.5; }
+  .p-price { font-size: 26px; font-weight: 800; color: #7bdc78; white-space: nowrap; }
+  .p-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 20px; flex-wrap: wrap; }
+  .owned-tag { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: #7bdc78;
+    padding: 6px 14px; border-radius: 20px; background: rgba(123,220,120,0.12);
+    border: 1px solid rgba(123,220,120,0.4); }
+  .btn {
+    font-family: inherit; font-weight: 800; letter-spacing: 1px; cursor: pointer;
+    border: none; border-radius: 12px; color: #fff; padding: 13px 26px; font-size: 15px;
+    background: linear-gradient(135deg, #ffd76a, #ff9d4d);
+    box-shadow: 0 8px 24px rgba(255,190,80,0.4);
+    transition: transform 0.15s ease, box-shadow 0.2s;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255,190,80,0.6); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .btn.ghost { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); box-shadow: none; color: #c3c8e6; }
+  .note { margin-top: 16px; font-size: 12px; color: #5a6188; text-align: center; line-height: 1.6; }
+  .note b { color: #8b93bd; }
+  .msg { margin-top: 18px; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    text-align: center; display: none; }
+  .msg.ok { display: block; color: #7bdc78; background: rgba(123,220,120,0.1); border: 1px solid rgba(123,220,120,0.35); }
+  .msg.err { display: block; color: #ff6b8a; background: rgba(255,107,138,0.1); border: 1px solid rgba(255,107,138,0.35); }
+  .spinner { color: #8b93bd; font-size: 14px; text-align: center; padding: 40px 0; }
+  .login-note { text-align: center; color: #8b93bd; font-size: 13px; margin-top: 10px; }
+  .login-note a { color: #4fd1ff; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="/">VAULTORIA</a>
+    <a class="back" href="/">&larr; Back to Game</a>
+  </div>
+  <div class="wrap">
+    <h1>STORE</h1>
+    <div class="sub">Exclusive items for real keepers</div>
+    <div id="storeBody"><div class="spinner">Loading store...</div></div>
+    <div class="note">Secure checkout by <b>Stripe</b>. All sales are final. Items are delivered to your account instantly.</div>
+  </div>
+
+<script>
+'use strict';
+var token = localStorage.getItem('vaultoria_token') || null;
+
+function api(path, opts) {
+  opts = opts || {};
+  var headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = 'Bearer ' + token;
+  return fetch('/api' + path, Object.assign({}, opts, { headers: headers })).then(function (res) {
+    return res.json().then(function (data) {
+      if (!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
+      return data;
+    });
+  });
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function money(cents) { return '$' + (cents / 100).toFixed(2); }
+
+var body = document.getElementById('storeBody');
+
+function renderProduct(prod, stripeReady) {
+  var html =
+    '<div class="product">' +
+      '<div class="p-head">' +
+        '<div style="display:flex;gap:14px;align-items:flex-start">' +
+          '<div class="p-icon">&#10024;</div>' +
+          '<div><div class="p-name">' + esc(prod.name) + '</div>' +
+          '<div class="p-desc">' + esc(prod.description) + '</div></div>' +
+        '</div>' +
+        '<div class="p-price">' + money(prod.priceCents) + '</div>' +
+      '</div>' +
+      '<div class="p-foot">' +
+        (prod.owned
+          ? '<span class="owned-tag">OWNED</span><button class="btn ghost" id="backToGame" type="button">BACK TO GAME</button>'
+          : '<span></span><button class="btn" id="buyBtn" type="button"' + (stripeReady ? '' : ' disabled') + '>BUY NOW</button>') +
+      '</div>' +
+      '<div class="msg" id="storeMsg"></div>' +
+    '</div>';
+  body.innerHTML = html;
+  var buy = document.getElementById('buyBtn');
+  if (buy) {
+    buy.addEventListener('click', function () {
+      buy.disabled = true;
+      buy.textContent = 'REDIRECTING...';
+      api('/store/checkout', { method: 'POST', body: JSON.stringify({ productId: prod.id }) })
+        .then(function (r) { if (r.url) window.location.href = r.url; else throw new Error('No checkout URL'); })
+        .catch(function (e) {
+          showMsg(e.message, true);
+          buy.disabled = false;
+          buy.textContent = 'BUY NOW';
+        });
+    });
+  }
+  var back = document.getElementById('backToGame');
+  if (back) back.addEventListener('click', function () { window.location.href = '/'; });
+}
+
+function showMsg(text, isErr) {
+  var m = document.getElementById('storeMsg');
+  if (!m) return;
+  m.textContent = text;
+  m.className = 'msg ' + (isErr ? 'err' : 'ok');
+}
+
+function load() {
+  if (!token) {
+    body.innerHTML = '<div class="spinner">You need to be signed in to visit the store.<div class="login-note"><a href="/">Sign in to Vaultoria</a> first.</div></div>';
+    return;
+  }
+  api('/store').then(function (r) {
+    if (!r.products || !r.products.length) {
+      body.innerHTML = '<div class="spinner">No products available right now.</div>';
+      return;
+    }
+    renderProduct(r.products[0], r.stripeReady);
+  }).catch(function (e) {
+    body.innerHTML = '<div class="spinner">' + esc(e.message || 'Could not load store') + '</div>';
+  });
+}
+
+// Returning from Stripe Checkout: verify the session and grant the item.
+var params = new URLSearchParams(window.location.search);
+if (params.get('purchase') === 'success') {
+  var sessionId = params.get('session_id');
+  params.delete('purchase'); params.delete('session_id');
+  var qs = params.toString();
+  history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+  if (token && sessionId) {
+    body.innerHTML = '<div class="spinner">Confirming your purchase...</div>';
+    api('/store/verify?session_id=' + encodeURIComponent(sessionId)).then(function () {
+      showMsg('Purchase complete! Your item is ready in game.', false);
+      load();
+    }).catch(function (e) {
+      body.innerHTML = '<div class="spinner">' + esc(e.message || 'Could not verify purchase') + '</div>';
+      load();
+    });
+  }
+}
+
+load();
+</script>
+</body>
+</html>

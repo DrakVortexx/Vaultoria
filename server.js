@@ -1519,7 +1519,6 @@ app.post('/api/store/checkout', dbReady, auth, rateLimit('store_checkout', 10, 6
   const productId = String((req.body || {}).productId || '');
   const product = STORE_PRODUCTS[productId];
   if (!product) return res.status(400).json({ error: 'Unknown product' });
-  const promo = String((req.body || {}).promoCode || '').trim().toUpperCase();
   const origin = String(req.headers.origin || req.headers.referer || '').replace(/\/$/, '').split('/').slice(0, 3).join('/');
   const base = origin || ('https://' + (req.headers.host || 'localhost:' + PORT));
   try {
@@ -1536,14 +1535,11 @@ app.post('/api/store/checkout', dbReady, auth, rateLimit('store_checkout', 10, 6
       }],
       metadata: { userId: String(req.user.id), productId: product.id },
       payment_intent_data: { metadata: { userId: String(req.user.id), productId: product.id } },
-      success_url: base + '/?purchase=success&session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: base + '/'
+      // Promo codes (e.g. FRIENDSAREW) are entered inside Stripe Checkout only.
+      allow_promotion_codes: true,
+      success_url: base + '/store?purchase=success&session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: base + '/store'
     };
-    if (promo === PROMO_CODE) {
-      sessionParams.discounts = [{ coupon: await ensurePromoCoupon() }];
-    } else {
-      sessionParams.allow_promotion_codes = true;
-    }
     const session = await stripe.checkout.sessions.create(sessionParams);
     res.json({ url: session.url });
   } catch (e) {
@@ -2711,6 +2707,7 @@ app.get('/api/boss', dbReady, auth, async (req, res) => {
  * ------------------------------------------------------------- */
 app.use(express.static(path.join(__dirname, 'assets')));
 app.get('/healthz', (req, res) => res.json({ ok: true, db: !!DATABASE_URL }));
+app.get('/store', (req, res) => res.sendFile(path.join(__dirname, 'store.html')));
 const INDEX_HTML = path.join(__dirname, 'index.html');
 const LEGACY_INDEX_HTML = path.join(__dirname, 'index.legacy.html');
 function indexFor(req) {

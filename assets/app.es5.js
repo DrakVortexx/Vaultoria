@@ -866,7 +866,6 @@ function _loadMe() {
           renderVault();
           showScreen('dash');
           refreshEvent();
-          checkPurchaseReturn();
           if (data.login && data.login.isNew) {
             setTimeout(function () {
               return toast("DAILY REWARD \xB7 DAY " + data.login.day, data.login.streak + ' day streak', '$' + fmt(data.login.reward), '#ffb648');
@@ -1316,7 +1315,7 @@ function openDashPanel(which) {
   p.classList.remove('hidden');
   p.dataset.panel = which;
   p.innerHTML = '<div class="spinner">Loading...</div>';
-  if (which === 'event') renderEventPanel();else if (which === 'servers') renderServersPanel();else if (which === 'friends') renderFriendsPanel();else if (which === 'settings') renderSettingsPanel();else if (which === 'customize') renderCustomizePanel();else if (which === 'store') renderStorePanel();
+  if (which === 'event') renderEventPanel();else if (which === 'servers') renderServersPanel();else if (which === 'friends') renderFriendsPanel();else if (which === 'settings') renderSettingsPanel();else if (which === 'customize') renderCustomizePanel();
 }
 $('playBtn').addEventListener('click', play);
 $('eventBtn').addEventListener('click', function () {
@@ -1335,7 +1334,7 @@ $('customizeBtn').addEventListener('click', function () {
   return openDashPanel('customize');
 });
 $('storeBtn').addEventListener('click', function () {
-  return openDashPanel('store');
+  window.location.href = '/store';
 });
 function renderEventPanel() {
   var p = $('dashPanel');
@@ -1451,7 +1450,7 @@ function renderCustomizePanel() {
         btn.classList.add('disabled');
         btn.title = 'Available in the Store';
         btn.addEventListener('click', function () {
-          return openDashPanel('store');
+          window.location.href = '/store';
         });
       } else if (!owned && !canAfford) {
         btn.classList.add('disabled');
@@ -1496,206 +1495,33 @@ function renderCustomizePanel() {
   renderOption('trail', trails, 'trailGrid', state.customTrail || 'none');
   renderOption('glow', glows, 'glowGrid', state.customGlow || 'none');
 }
-function renderStorePanel() {
-  return _renderStorePanel.apply(this, arguments);
-}
-function _renderStorePanel() {
-  _renderStorePanel = _asyncToGenerator(_regenerator().m(function _callee24() {
-    var p, r, html, _iterator13, _step13, prod, _t21;
-    return _regenerator().w(function (_context24) {
-      while (1) switch (_context24.p = _context24.n) {
-        case 0:
-          p = $('dashPanel');
-          p.classList.remove('hidden');
-          p.innerHTML = '<div class="spinner">Loading store...</div>';
-          _context24.p = 1;
-          _context24.n = 2;
-          return api('/store');
-        case 2:
-          r = _context24.v;
-          if (r.stripeReady) {
-            _context24.n = 3;
-            break;
-          }
-          p.innerHTML = '<h3>Store</h3><div class="empty-note" style="padding:8px 4px 14px">The store is not configured on the server yet.</div>';
-          return _context24.a(2);
-        case 3:
-          html = '<h3>Store</h3><div style="width:100%;display:flex;flex-direction:column;gap:12px">';
-          _iterator13 = _createForOfIteratorHelper(r.products);
-          try {
-            for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
-              prod = _step13.value;
-              html += '<div class="quest" style="display:flex;flex-direction:column;gap:8px">' + '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' + '<div><div style="font-weight:800;font-size:15px;color:#ffd76a">&#10024; ' + esc(prod.name) + '</div>' + '<div style="font-size:12px;color:#8b93bd;margin-top:3px">' + esc(prod.description) + '</div></div>' + '<div style="font-weight:800;font-size:18px;color:#7bdc78;white-space:nowrap">$' + (prod.priceCents / 100).toFixed(2) + '</div>' + '</div>' + '<div class="inline-form" style="margin:0">' + '<input id="promoInput" maxlength="24" autocomplete="off" placeholder="Promo code (optional)" style="flex:1;min-width:140px">' + (prod.owned ? '<button class="btn green" data-equip="' + prod.id + '" type="button">EQUIP</button>' : '<button class="btn" data-buy="' + prod.id + '" type="button">BUY</button>') + '</div>' + (prod.owned ? '<div style="font-size:11px;color:#7bdc78;font-weight:700;letter-spacing:1px">OWNED</div>' : '') + '</div>';
-            }
-          } catch (err) {
-            _iterator13.e(err);
-          } finally {
-            _iterator13.f();
-          }
-          html += '</div><div class="empty-note" style="padding:10px 4px 0">Secure checkout by Stripe. Promo code <b>FRIENDSAREW</b> makes it free!</div>';
-          p.innerHTML = html;
-          p.querySelectorAll('[data-buy]').forEach(function (btn) {
-            return btn.addEventListener('click', function () {
-              return buyProduct(btn.dataset.buy);
-            });
-          });
-          p.querySelectorAll('[data-equip]').forEach(function (btn) {
-            return btn.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee23() {
-              var r2, _t20;
-              return _regenerator().w(function (_context23) {
-                while (1) switch (_context23.p = _context23.n) {
-                  case 0:
-                    _context23.p = 0;
-                    _context23.n = 1;
-                    return api('/customize', {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        type: 'trail',
-                        id: 'golden'
-                      })
-                    });
-                  case 1:
-                    r2 = _context23.v;
-                    state = r2.state;
-                    toast('EQUIPPED', 'Golden Sparkle is now active', null, '#ffd76a');
-                    renderStorePanel();
-                    _context23.n = 3;
-                    break;
-                  case 2:
-                    _context23.p = 2;
-                    _t20 = _context23.v;
-                    toast('OOPS', _t20.message, null, '#ff6b8a');
-                  case 3:
-                    return _context23.a(2);
-                }
-              }, _callee23, null, [[0, 2]]);
-            })));
-          });
-          _context24.n = 5;
-          break;
-        case 4:
-          _context24.p = 4;
-          _t21 = _context24.v;
-          p.innerHTML = '<h3>Store</h3><div class="empty-note" style="padding:8px 4px 14px">' + esc(_t21.message || 'Could not load store') + '</div>';
-        case 5:
-          return _context24.a(2);
-      }
-    }, _callee24, null, [[1, 4]]);
-  }));
-  return _renderStorePanel.apply(this, arguments);
-}
-function buyProduct(_x5) {
-  return _buyProduct.apply(this, arguments);
-}
-function _buyProduct() {
-  _buyProduct = _asyncToGenerator(_regenerator().m(function _callee25(productId) {
-    var promoInput, promoCode, r, _t22;
-    return _regenerator().w(function (_context25) {
-      while (1) switch (_context25.p = _context25.n) {
-        case 0:
-          promoInput = $('promoInput');
-          promoCode = promoInput ? promoInput.value.trim() : '';
-          _context25.p = 1;
-          _context25.n = 2;
-          return api('/store/checkout', {
-            method: 'POST',
-            body: JSON.stringify({
-              productId: productId,
-              promoCode: promoCode
-            })
-          });
-        case 2:
-          r = _context25.v;
-          if (r.url) window.location.href = r.url;
-          _context25.n = 4;
-          break;
-        case 3:
-          _context25.p = 3;
-          _t22 = _context25.v;
-          toast('OOPS', _t22.message, null, '#ff6b8a');
-        case 4:
-          return _context25.a(2);
-      }
-    }, _callee25, null, [[1, 3]]);
-  }));
-  return _buyProduct.apply(this, arguments);
-}
-function checkPurchaseReturn() {
-  return _checkPurchaseReturn.apply(this, arguments);
-}
-function _checkPurchaseReturn() {
-  _checkPurchaseReturn = _asyncToGenerator(_regenerator().m(function _callee26() {
-    var params, sessionId, qs, r, _t23;
-    return _regenerator().w(function (_context26) {
-      while (1) switch (_context26.p = _context26.n) {
-        case 0:
-          params = new URLSearchParams(window.location.search);
-          if (!(params.get('purchase') !== 'success')) {
-            _context26.n = 1;
-            break;
-          }
-          return _context26.a(2);
-        case 1:
-          sessionId = params.get('session_id');
-          params.delete('purchase');
-          params.delete('session_id');
-          qs = params.toString();
-          history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
-          if (sessionId) {
-            _context26.n = 2;
-            break;
-          }
-          return _context26.a(2);
-        case 2:
-          _context26.p = 2;
-          _context26.n = 3;
-          return api('/store/verify?session_id=' + encodeURIComponent(sessionId));
-        case 3:
-          r = _context26.v;
-          state = r.state;
-          ownedProducts = r.ownedProducts || ownedProducts;
-          renderDash();
-          toast('PURCHASE COMPLETE', "Golden Sparkle unlocked \u2014 check Customize to equip it", null, '#ffd76a');
-          _context26.n = 5;
-          break;
-        case 4:
-          _context26.p = 4;
-          _t23 = _context26.v;
-          toast('OOPS', _t23.message || 'Could not verify purchase', null, '#ff6b8a');
-        case 5:
-          return _context26.a(2);
-      }
-    }, _callee26, null, [[2, 4]]);
-  }));
-  return _checkPurchaseReturn.apply(this, arguments);
-}
 function play() {
   return _play.apply(this, arguments);
 }
 function _play() {
-  _play = _asyncToGenerator(_regenerator().m(function _callee27() {
-    var p, _yield$api, servers, target, created, _t24;
-    return _regenerator().w(function (_context27) {
-      while (1) switch (_context27.p = _context27.n) {
+  _play = _asyncToGenerator(_regenerator().m(function _callee23() {
+    var p, _yield$api, servers, target, created, _t20;
+    return _regenerator().w(function (_context23) {
+      while (1) switch (_context23.p = _context23.n) {
         case 0:
-          _context27.p = 0;
+          _context23.p = 0;
           p = $('dashPanel');
           p.classList.remove('hidden');
           p.innerHTML = '<div class="spinner">Finding an open world...</div>';
-          _context27.n = 1;
+          _context23.n = 1;
           return api('/servers');
         case 1:
-          _yield$api = _context27.v;
+          _yield$api = _context23.v;
           servers = _yield$api.servers;
           target = servers.find(function (s) {
             return s.members < s.capacity;
           });
           if (!target && servers.length) target = servers[0];
           if (target) {
-            _context27.n = 3;
+            _context23.n = 3;
             break;
           }
-          _context27.n = 2;
+          _context23.n = 2;
           return api('/servers', {
             method: 'POST',
             body: JSON.stringify({
@@ -1703,23 +1529,23 @@ function _play() {
             })
           });
         case 2:
-          created = _context27.v;
+          created = _context23.v;
           target = created.server;
         case 3:
-          _context27.n = 4;
+          _context23.n = 4;
           return enterServer(target.id, 'World ' + target.id);
         case 4:
           refreshEvent();
-          _context27.n = 6;
+          _context23.n = 6;
           break;
         case 5:
-          _context27.p = 5;
-          _t24 = _context27.v;
-          toast('OOPS', _t24.message, null, '#ff6b8a');
+          _context23.p = 5;
+          _t20 = _context23.v;
+          toast('OOPS', _t20.message, null, '#ff6b8a');
         case 6:
-          return _context27.a(2);
+          return _context23.a(2);
       }
-    }, _callee27, null, [[0, 5]]);
+    }, _callee23, null, [[0, 5]]);
   }));
   return _play.apply(this, arguments);
 }
@@ -1727,41 +1553,41 @@ function renderServersPanel() {
   return _renderServersPanel.apply(this, arguments);
 }
 function _renderServersPanel() {
-  _renderServersPanel = _asyncToGenerator(_regenerator().m(function _callee29() {
-    var p, _yield$api2, servers, html, _iterator14, _step14, s, full, _t26;
-    return _regenerator().w(function (_context29) {
-      while (1) switch (_context29.p = _context29.n) {
+  _renderServersPanel = _asyncToGenerator(_regenerator().m(function _callee25() {
+    var p, _yield$api2, servers, html, _iterator13, _step13, s, full, _t22;
+    return _regenerator().w(function (_context25) {
+      while (1) switch (_context25.p = _context25.n) {
         case 0:
           p = $('dashPanel');
-          _context29.p = 1;
-          _context29.n = 2;
+          _context25.p = 1;
+          _context25.n = 2;
           return api('/servers');
         case 2:
-          _yield$api2 = _context29.v;
+          _yield$api2 = _context25.v;
           servers = _yield$api2.servers;
           html = '<h3>Open Servers</h3>' + '<div class="inline-form"><input id="newServerName" maxlength="40" placeholder="New world name"><button class="btn green" id="createServerBtn" type="button">Create World</button></div>';
           if (!servers.length) html += '<div class="empty-note">No open servers yet. Create one!</div>';
-          _iterator14 = _createForOfIteratorHelper(servers);
+          _iterator13 = _createForOfIteratorHelper(servers);
           try {
-            for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
-              s = _step14.value;
+            for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+              s = _step13.value;
               full = s.members >= s.capacity;
               html += '<div class="row"><div><div class="name">World ' + s.id + '</div>' + '<div class="meta">' + s.members + ' / ' + s.capacity + ' keepers</div></div>' + '<button class="btn ' + (full ? 'ghost' : 'green') + '" data-join="' + s.id + '" ' + (full ? 'disabled' : '') + '>' + (full ? 'Full' : 'Join') + '</button></div>';
             }
           } catch (err) {
-            _iterator14.e(err);
+            _iterator13.e(err);
           } finally {
-            _iterator14.f();
+            _iterator13.f();
           }
           p.innerHTML = html;
-          p.querySelector('#createServerBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee28() {
-            var name, _t25;
-            return _regenerator().w(function (_context28) {
-              while (1) switch (_context28.p = _context28.n) {
+          p.querySelector('#createServerBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee24() {
+            var name, _t21;
+            return _regenerator().w(function (_context24) {
+              while (1) switch (_context24.p = _context24.n) {
                 case 0:
                   name = (p.querySelector('#newServerName').value || '').trim() || 'My World';
-                  _context28.p = 1;
-                  _context28.n = 2;
+                  _context24.p = 1;
+                  _context24.n = 2;
                   return api('/servers', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -1770,21 +1596,168 @@ function _renderServersPanel() {
                   });
                 case 2:
                   renderServersPanel();
-                  _context28.n = 4;
+                  _context24.n = 4;
                   break;
                 case 3:
-                  _context28.p = 3;
-                  _t25 = _context28.v;
-                  toast('OOPS', _t25.message, null, '#ff6b8a');
+                  _context24.p = 3;
+                  _t21 = _context24.v;
+                  toast('OOPS', _t21.message, null, '#ff6b8a');
                 case 4:
-                  return _context28.a(2);
+                  return _context24.a(2);
               }
-            }, _callee28, null, [[1, 3]]);
+            }, _callee24, null, [[1, 3]]);
           })));
           p.querySelectorAll('[data-join]').forEach(function (b) {
             return b.addEventListener('click', function () {
               enterServer(parseInt(b.dataset.join, 10), 'World ' + b.dataset.join);
             });
+          });
+          _context25.n = 4;
+          break;
+        case 3:
+          _context25.p = 3;
+          _t22 = _context25.v;
+          p.innerHTML = '<div class="empty-note">' + esc(_t22.message) + '</div>';
+        case 4:
+          return _context25.a(2);
+      }
+    }, _callee25, null, [[1, 3]]);
+  }));
+  return _renderServersPanel.apply(this, arguments);
+}
+function renderFriendsPanel() {
+  return _renderFriendsPanel.apply(this, arguments);
+}
+function _renderFriendsPanel() {
+  _renderFriendsPanel = _asyncToGenerator(_regenerator().m(function _callee29() {
+    var p, data, html, _iterator14, _step14, f, _iterator15, _step15, _f, _iterator16, _step16, _f2, _t26;
+    return _regenerator().w(function (_context29) {
+      while (1) switch (_context29.p = _context29.n) {
+        case 0:
+          p = $('dashPanel');
+          _context29.p = 1;
+          _context29.n = 2;
+          return api('/friends');
+        case 2:
+          data = _context29.v;
+          html = '<h3>Friends</h3>' + '<div class="inline-form"><input id="friendName" maxlength="20" placeholder="Add by username"><button class="btn" id="addFriendBtn" type="button">Send Request</button></div>';
+          if (data.incoming.length) {
+            html += '<h3 style="margin-top:18px">Requests to you</h3>';
+            _iterator14 = _createForOfIteratorHelper(data.incoming);
+            try {
+              for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
+                f = _step14.value;
+                html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div><div class="meta">wants to be friends</div></div>' + '<span><button class="btn green" data-accept="' + f.id + '" type="button">Accept</button> <button class="btn ghost" data-remove="' + f.id + '" type="button">Decline</button></span></div>';
+              }
+            } catch (err) {
+              _iterator14.e(err);
+            } finally {
+              _iterator14.f();
+            }
+          }
+          if (data.outgoing.length) {
+            html += '<h3 style="margin-top:18px">Sent</h3>';
+            _iterator15 = _createForOfIteratorHelper(data.outgoing);
+            try {
+              for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
+                _f = _step15.value;
+                html += '<div class="row"><div class="name">' + esc(_f.username) + '</div><span class="pill off">pending</span></div>';
+              }
+            } catch (err) {
+              _iterator15.e(err);
+            } finally {
+              _iterator15.f();
+            }
+          }
+          html += '<h3 style="margin-top:18px">Your Friends</h3>';
+          if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
+          _iterator16 = _createForOfIteratorHelper(data.friends);
+          try {
+            for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
+              _f2 = _step16.value;
+              html += '<div class="row"><div><div class="name">' + esc(_f2.username) + '</div>' + '<div class="meta"><span class="status-dot ' + (_f2.online ? 'on' : 'off') + '"></span>' + (_f2.online ? 'Online now' : 'Offline') + '</div></div>' + '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + _f2.id + '" type="button">Remove</button></span></div>';
+            }
+          } catch (err) {
+            _iterator16.e(err);
+          } finally {
+            _iterator16.f();
+          }
+          p.innerHTML = html;
+          p.querySelector('#addFriendBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee26() {
+            var username, _t23;
+            return _regenerator().w(function (_context26) {
+              while (1) switch (_context26.p = _context26.n) {
+                case 0:
+                  username = (p.querySelector('#friendName').value || '').trim();
+                  _context26.p = 1;
+                  _context26.n = 2;
+                  return api('/friends/request', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      username: username
+                    })
+                  });
+                case 2:
+                  toast('REQUEST SENT', username, null, '#4fd1ff');
+                  renderFriendsPanel();
+                  _context26.n = 4;
+                  break;
+                case 3:
+                  _context26.p = 3;
+                  _t23 = _context26.v;
+                  toast('OOPS', _t23.message, null, '#ff6b8a');
+                case 4:
+                  return _context26.a(2);
+              }
+            }, _callee26, null, [[1, 3]]);
+          })));
+          p.querySelectorAll('[data-accept]').forEach(function (b) {
+            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee27() {
+              var _t24;
+              return _regenerator().w(function (_context27) {
+                while (1) switch (_context27.p = _context27.n) {
+                  case 0:
+                    _context27.p = 0;
+                    _context27.n = 1;
+                    return api('/friends/' + b.dataset.accept + '/accept', {
+                      method: 'POST'
+                    });
+                  case 1:
+                    renderFriendsPanel();
+                    _context27.n = 3;
+                    break;
+                  case 2:
+                    _context27.p = 2;
+                    _t24 = _context27.v;
+                  case 3:
+                    return _context27.a(2);
+                }
+              }, _callee27, null, [[0, 2]]);
+            })));
+          });
+          p.querySelectorAll('[data-remove]').forEach(function (b) {
+            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee28() {
+              var _t25;
+              return _regenerator().w(function (_context28) {
+                while (1) switch (_context28.p = _context28.n) {
+                  case 0:
+                    _context28.p = 0;
+                    _context28.n = 1;
+                    return api('/friends/' + b.dataset.remove, {
+                      method: 'DELETE'
+                    });
+                  case 1:
+                    renderFriendsPanel();
+                    _context28.n = 3;
+                    break;
+                  case 2:
+                    _context28.p = 2;
+                    _t25 = _context28.v;
+                  case 3:
+                    return _context28.a(2);
+                }
+              }, _callee28, null, [[0, 2]]);
+            })));
           });
           _context29.n = 4;
           break;
@@ -1796,153 +1769,6 @@ function _renderServersPanel() {
           return _context29.a(2);
       }
     }, _callee29, null, [[1, 3]]);
-  }));
-  return _renderServersPanel.apply(this, arguments);
-}
-function renderFriendsPanel() {
-  return _renderFriendsPanel.apply(this, arguments);
-}
-function _renderFriendsPanel() {
-  _renderFriendsPanel = _asyncToGenerator(_regenerator().m(function _callee33() {
-    var p, data, html, _iterator15, _step15, f, _iterator16, _step16, _f, _iterator17, _step17, _f2, _t30;
-    return _regenerator().w(function (_context33) {
-      while (1) switch (_context33.p = _context33.n) {
-        case 0:
-          p = $('dashPanel');
-          _context33.p = 1;
-          _context33.n = 2;
-          return api('/friends');
-        case 2:
-          data = _context33.v;
-          html = '<h3>Friends</h3>' + '<div class="inline-form"><input id="friendName" maxlength="20" placeholder="Add by username"><button class="btn" id="addFriendBtn" type="button">Send Request</button></div>';
-          if (data.incoming.length) {
-            html += '<h3 style="margin-top:18px">Requests to you</h3>';
-            _iterator15 = _createForOfIteratorHelper(data.incoming);
-            try {
-              for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
-                f = _step15.value;
-                html += '<div class="row"><div><div class="name">' + esc(f.username) + '</div><div class="meta">wants to be friends</div></div>' + '<span><button class="btn green" data-accept="' + f.id + '" type="button">Accept</button> <button class="btn ghost" data-remove="' + f.id + '" type="button">Decline</button></span></div>';
-              }
-            } catch (err) {
-              _iterator15.e(err);
-            } finally {
-              _iterator15.f();
-            }
-          }
-          if (data.outgoing.length) {
-            html += '<h3 style="margin-top:18px">Sent</h3>';
-            _iterator16 = _createForOfIteratorHelper(data.outgoing);
-            try {
-              for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
-                _f = _step16.value;
-                html += '<div class="row"><div class="name">' + esc(_f.username) + '</div><span class="pill off">pending</span></div>';
-              }
-            } catch (err) {
-              _iterator16.e(err);
-            } finally {
-              _iterator16.f();
-            }
-          }
-          html += '<h3 style="margin-top:18px">Your Friends</h3>';
-          if (!data.friends.length) html += '<div class="empty-note">No friends yet. Add someone above.</div>';
-          _iterator17 = _createForOfIteratorHelper(data.friends);
-          try {
-            for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
-              _f2 = _step17.value;
-              html += '<div class="row"><div><div class="name">' + esc(_f2.username) + '</div>' + '<div class="meta"><span class="status-dot ' + (_f2.online ? 'on' : 'off') + '"></span>' + (_f2.online ? 'Online now' : 'Offline') + '</div></div>' + '<span><span class="pill on">friend</span> <button class="btn ghost" data-remove="' + _f2.id + '" type="button">Remove</button></span></div>';
-            }
-          } catch (err) {
-            _iterator17.e(err);
-          } finally {
-            _iterator17.f();
-          }
-          p.innerHTML = html;
-          p.querySelector('#addFriendBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee30() {
-            var username, _t27;
-            return _regenerator().w(function (_context30) {
-              while (1) switch (_context30.p = _context30.n) {
-                case 0:
-                  username = (p.querySelector('#friendName').value || '').trim();
-                  _context30.p = 1;
-                  _context30.n = 2;
-                  return api('/friends/request', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      username: username
-                    })
-                  });
-                case 2:
-                  toast('REQUEST SENT', username, null, '#4fd1ff');
-                  renderFriendsPanel();
-                  _context30.n = 4;
-                  break;
-                case 3:
-                  _context30.p = 3;
-                  _t27 = _context30.v;
-                  toast('OOPS', _t27.message, null, '#ff6b8a');
-                case 4:
-                  return _context30.a(2);
-              }
-            }, _callee30, null, [[1, 3]]);
-          })));
-          p.querySelectorAll('[data-accept]').forEach(function (b) {
-            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee31() {
-              var _t28;
-              return _regenerator().w(function (_context31) {
-                while (1) switch (_context31.p = _context31.n) {
-                  case 0:
-                    _context31.p = 0;
-                    _context31.n = 1;
-                    return api('/friends/' + b.dataset.accept + '/accept', {
-                      method: 'POST'
-                    });
-                  case 1:
-                    renderFriendsPanel();
-                    _context31.n = 3;
-                    break;
-                  case 2:
-                    _context31.p = 2;
-                    _t28 = _context31.v;
-                  case 3:
-                    return _context31.a(2);
-                }
-              }, _callee31, null, [[0, 2]]);
-            })));
-          });
-          p.querySelectorAll('[data-remove]').forEach(function (b) {
-            return b.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee32() {
-              var _t29;
-              return _regenerator().w(function (_context32) {
-                while (1) switch (_context32.p = _context32.n) {
-                  case 0:
-                    _context32.p = 0;
-                    _context32.n = 1;
-                    return api('/friends/' + b.dataset.remove, {
-                      method: 'DELETE'
-                    });
-                  case 1:
-                    renderFriendsPanel();
-                    _context32.n = 3;
-                    break;
-                  case 2:
-                    _context32.p = 2;
-                    _t29 = _context32.v;
-                  case 3:
-                    return _context32.a(2);
-                }
-              }, _callee32, null, [[0, 2]]);
-            })));
-          });
-          _context33.n = 4;
-          break;
-        case 3:
-          _context33.p = 3;
-          _t30 = _context33.v;
-          p.innerHTML = '<div class="empty-note">' + esc(_t30.message) + '</div>';
-        case 4:
-          return _context33.a(2);
-      }
-    }, _callee33, null, [[1, 3]]);
   }));
   return _renderFriendsPanel.apply(this, arguments);
 }
@@ -1957,22 +1783,22 @@ function esc(s) {
     }[c];
   });
 }
-function enterServer(_x6, _x7) {
+function enterServer(_x5, _x6) {
   return _enterServer.apply(this, arguments);
 }
 function _enterServer() {
-  _enterServer = _asyncToGenerator(_regenerator().m(function _callee34(sid, name) {
-    var r, savedOk, b, _t31, _t32;
-    return _regenerator().w(function (_context34) {
-      while (1) switch (_context34.p = _context34.n) {
+  _enterServer = _asyncToGenerator(_regenerator().m(function _callee30(sid, name) {
+    var r, savedOk, b, _t27, _t28;
+    return _regenerator().w(function (_context30) {
+      while (1) switch (_context30.p = _context30.n) {
         case 0:
-          _context34.p = 0;
-          _context34.n = 1;
+          _context30.p = 0;
+          _context30.n = 1;
           return api('/servers/' + sid + '/join', {
             method: 'POST'
           });
         case 1:
-          r = _context34.v;
+          r = _context30.v;
           mySlot = r.slot;
           currentServer = {
             id: sid
@@ -1995,31 +1821,31 @@ function _enterServer() {
           renderVault();
           addChat('sys', 'You joined World ' + currentServer.id + ' (slot ' + (mySlot + 1) + '/8).');
           refreshEvent();
-          _context34.p = 2;
-          _context34.n = 3;
+          _context30.p = 2;
+          _context30.n = 3;
           return api('/boss');
         case 3:
-          b = _context34.v;
+          b = _context30.v;
           if (b) {
             if (b.boss) onBoss(b.boss);
             setBossYou(b.you);
           }
-          _context34.n = 5;
+          _context30.n = 5;
           break;
         case 4:
-          _context34.p = 4;
-          _t31 = _context34.v;
+          _context30.p = 4;
+          _t27 = _context30.v;
         case 5:
-          _context34.n = 7;
+          _context30.n = 7;
           break;
         case 6:
-          _context34.p = 6;
-          _t32 = _context34.v;
-          toast('OOPS', _t32.message, null, '#ff6b8a');
+          _context30.p = 6;
+          _t28 = _context30.v;
+          toast('OOPS', _t28.message, null, '#ff6b8a');
         case 7:
-          return _context34.a(2);
+          return _context30.a(2);
       }
-    }, _callee34, null, [[2, 4], [0, 6]]);
+    }, _callee30, null, [[2, 4], [0, 6]]);
   }));
   return _enterServer.apply(this, arguments);
 }
@@ -2121,7 +1947,7 @@ function connectWS() {
         }
       }, _callee3, null, [[8, 10], [3, 5]]);
     }));
-    return function (_x8) {
+    return function (_x7) {
       return _ref3.apply(this, arguments);
     };
   }());
@@ -2495,10 +2321,10 @@ function drawFloor() {
   }
   ctx.strokeStyle = 'rgba(124,92,255,0.06)';
   ctx.lineWidth = 1;
-  for (var _x9 = 0; _x9 <= WORLD_W; _x9 += 80) {
+  for (var _x8 = 0; _x8 <= WORLD_W; _x8 += 80) {
     ctx.beginPath();
-    ctx.moveTo(_x9, 0);
-    ctx.lineTo(_x9, WORLD_H);
+    ctx.moveTo(_x8, 0);
+    ctx.lineTo(_x8, WORLD_H);
     ctx.stroke();
   }
   for (var _y = 0; _y <= WORLD_H; _y += 80) {
@@ -3585,28 +3411,28 @@ function finishGen() {
   return _finishGen.apply(this, arguments);
 }
 function _finishGen() {
-  _finishGen = _asyncToGenerator(_regenerator().m(function _callee35() {
-    var r, rar, mut, color, idx, el, _t33;
-    return _regenerator().w(function (_context35) {
-      while (1) switch (_context35.p = _context35.n) {
+  _finishGen = _asyncToGenerator(_regenerator().m(function _callee31() {
+    var r, rar, mut, color, idx, el, _t29;
+    return _regenerator().w(function (_context31) {
+      while (1) switch (_context31.p = _context31.n) {
         case 0:
           if (!genBusy) {
-            _context35.n = 1;
+            _context31.n = 1;
             break;
           }
-          return _context35.a(2);
+          return _context31.a(2);
         case 1:
           genBusy = true;
           generating = false;
           $('generator').classList.remove('charging');
           $('gen').disabled = true;
-          _context35.p = 2;
-          _context35.n = 3;
+          _context31.p = 2;
+          _context31.n = 3;
           return api('/generate', {
             method: 'POST'
           });
         case 3:
-          r = _context35.v;
+          r = _context31.v;
           state = r.state;
           rar = RARITIES.find(function (x) {
             return x.key === r.rarity;
@@ -3636,21 +3462,21 @@ function _finishGen() {
           if (r.bossDefeated) onBossDefeated(r.bossDefeated);
           renderVault();
           refreshTutorial();
-          _context35.n = 5;
+          _context31.n = 5;
           break;
         case 4:
-          _context35.p = 4;
-          _t33 = _context35.v;
-          toast('OOPS', _t33.message, null, '#ff6b8a');
+          _context31.p = 4;
+          _t29 = _context31.v;
+          toast('OOPS', _t29.message, null, '#ff6b8a');
         case 5:
-          _context35.p = 5;
+          _context31.p = 5;
           genBusy = false;
           $('gen').disabled = false;
-          return _context35.f(5);
+          return _context31.f(5);
         case 6:
-          return _context35.a(2);
+          return _context31.a(2);
       }
-    }, _callee35, null, [[2, 4, 5, 6]]);
+    }, _callee31, null, [[2, 4, 5, 6]]);
   }));
   return _finishGen.apply(this, arguments);
 }
@@ -3668,24 +3494,24 @@ setInterval(function () {
     }
   }
 }, 100);
-function sellItem(_x0, _x1) {
+function sellItem(_x9, _x0) {
   return _sellItem.apply(this, arguments);
 }
 function _sellItem() {
-  _sellItem = _asyncToGenerator(_regenerator().m(function _callee36(item, ev) {
-    var box, _r, _t34;
-    return _regenerator().w(function (_context36) {
-      while (1) switch (_context36.p = _context36.n) {
+  _sellItem = _asyncToGenerator(_regenerator().m(function _callee32(item, ev) {
+    var box, _r, _t30;
+    return _regenerator().w(function (_context32) {
+      while (1) switch (_context32.p = _context32.n) {
         case 0:
           if (state.counts[item]) {
-            _context36.n = 1;
+            _context32.n = 1;
             break;
           }
-          return _context36.a(2);
+          return _context32.a(2);
         case 1:
           box = (ev && (ev.currentTarget || ev.target)).getBoundingClientRect();
-          _context36.p = 2;
-          _context36.n = 3;
+          _context32.p = 2;
+          _context32.n = 3;
           return api('/sell', {
             method: 'POST',
             body: JSON.stringify({
@@ -3693,7 +3519,7 @@ function _sellItem() {
             })
           });
         case 3:
-          _r = _context36.v;
+          _r = _context32.v;
           state = _r.state;
           salesCount++;
           sfxSell();
@@ -3701,38 +3527,38 @@ function _sellItem() {
           if (_r.newAch && _r.newAch.length) showNewAch(_r.newAch);
           if (_r.daily) dailyData = Object.assign({}, dailyData, _r.daily);
           renderVault();
-          _context36.n = 5;
+          _context32.n = 5;
           break;
         case 4:
-          _context36.p = 4;
-          _t34 = _context36.v;
-          toast('OOPS', _t34.message, null, '#ff6b8a');
+          _context32.p = 4;
+          _t30 = _context32.v;
+          toast('OOPS', _t30.message, null, '#ff6b8a');
         case 5:
-          return _context36.a(2);
+          return _context32.a(2);
       }
-    }, _callee36, null, [[2, 4]]);
+    }, _callee32, null, [[2, 4]]);
   }));
   return _sellItem.apply(this, arguments);
 }
-function sellAllItems(_x10) {
+function sellAllItems(_x1) {
   return _sellAllItems.apply(this, arguments);
 }
 function _sellAllItems() {
-  _sellAllItems = _asyncToGenerator(_regenerator().m(function _callee37(srcEl) {
-    var src, box, _r2, _t35;
-    return _regenerator().w(function (_context37) {
-      while (1) switch (_context37.p = _context37.n) {
+  _sellAllItems = _asyncToGenerator(_regenerator().m(function _callee33(srcEl) {
+    var src, box, _r2, _t31;
+    return _regenerator().w(function (_context33) {
+      while (1) switch (_context33.p = _context33.n) {
         case 0:
           if (!(!state || !Object.keys(state.counts || {}).length)) {
-            _context37.n = 1;
+            _context33.n = 1;
             break;
           }
-          return _context37.a(2);
+          return _context33.a(2);
         case 1:
           src = srcEl || $('sellAll');
           box = src.getBoundingClientRect();
-          _context37.p = 2;
-          _context37.n = 3;
+          _context33.p = 2;
+          _context33.n = 3;
           return api('/sell', {
             method: 'POST',
             body: JSON.stringify({
@@ -3740,7 +3566,7 @@ function _sellAllItems() {
             })
           });
         case 3:
-          _r2 = _context37.v;
+          _r2 = _context33.v;
           state = _r2.state;
           salesCount++;
           sfxSell();
@@ -3752,16 +3578,16 @@ function _sellAllItems() {
           if (_r2.newAch && _r2.newAch.length) showNewAch(_r2.newAch);
           if (_r2.daily) dailyData = Object.assign({}, dailyData, _r2.daily);
           renderVault();
-          _context37.n = 5;
+          _context33.n = 5;
           break;
         case 4:
-          _context37.p = 4;
-          _t35 = _context37.v;
-          toast('OOPS', _t35.message, null, '#ff6b8a');
+          _context33.p = 4;
+          _t31 = _context33.v;
+          toast('OOPS', _t31.message, null, '#ff6b8a');
         case 5:
-          return _context37.a(2);
+          return _context33.a(2);
       }
-    }, _callee37, null, [[2, 4]]);
+    }, _callee33, null, [[2, 4]]);
   }));
   return _sellAllItems.apply(this, arguments);
 }
@@ -3894,18 +3720,18 @@ function doRebirth() {
   return _doRebirth.apply(this, arguments);
 }
 function _doRebirth() {
-  _doRebirth = _asyncToGenerator(_regenerator().m(function _callee38() {
-    var _r3, _t36;
-    return _regenerator().w(function (_context38) {
-      while (1) switch (_context38.p = _context38.n) {
+  _doRebirth = _asyncToGenerator(_regenerator().m(function _callee34() {
+    var _r3, _t32;
+    return _regenerator().w(function (_context34) {
+      while (1) switch (_context34.p = _context34.n) {
         case 0:
-          _context38.p = 0;
-          _context38.n = 1;
+          _context34.p = 0;
+          _context34.n = 1;
           return api('/rebirth', {
             method: 'POST'
           });
         case 1:
-          _r3 = _context38.v;
+          _r3 = _context34.v;
           state = _r3.state;
           sfxBuy();
           toast('REBIRTH', 'Rebirth ' + _r3.rebirths + " \u2014 the vault resets but grows", null, '#8affd8');
@@ -3913,16 +3739,16 @@ function _doRebirth() {
           if (_r3.newAch && _r3.newAch.length) showNewAch(_r3.newAch);
           renderVault();
           refreshTutorial();
-          _context38.n = 3;
+          _context34.n = 3;
           break;
         case 2:
-          _context38.p = 2;
-          _t36 = _context38.v;
-          toast('OOPS', _t36.message, null, '#ff6b8a');
+          _context34.p = 2;
+          _t32 = _context34.v;
+          toast('OOPS', _t32.message, null, '#ff6b8a');
         case 3:
-          return _context38.a(2);
+          return _context34.a(2);
       }
-    }, _callee38, null, [[0, 2]]);
+    }, _callee34, null, [[0, 2]]);
   }));
   return _doRebirth.apply(this, arguments);
 }
@@ -3930,23 +3756,23 @@ function renderOffline() {
   return _renderOffline.apply(this, arguments);
 }
 function _renderOffline() {
-  _renderOffline = _asyncToGenerator(_regenerator().m(function _callee39() {
-    var list, _r4, ol, claimLi, claimBtn, _t37;
-    return _regenerator().w(function (_context39) {
-      while (1) switch (_context39.p = _context39.n) {
+  _renderOffline = _asyncToGenerator(_regenerator().m(function _callee35() {
+    var list, _r4, ol, claimLi, claimBtn, _t33;
+    return _regenerator().w(function (_context35) {
+      while (1) switch (_context35.p = _context35.n) {
         case 0:
           list = $('offlineList');
           if (list) {
-            _context39.n = 1;
+            _context35.n = 1;
             break;
           }
-          return _context39.a(2);
+          return _context35.a(2);
         case 1:
-          _context39.p = 1;
-          _context39.n = 2;
+          _context35.p = 1;
+          _context35.n = 2;
           return api('/offline');
         case 2:
-          _r4 = _context39.v;
+          _r4 = _context35.v;
           ol = _r4.offlineLevel || 0;
           $('offlineInfo').textContent = 'Offline Level ' + ol + ' / ' + _r4.available.length;
           list.innerHTML = '';
@@ -3980,49 +3806,49 @@ function _renderOffline() {
             claimLi.appendChild(claimBtn);
             list.appendChild(claimLi);
           }
-          _context39.n = 4;
+          _context35.n = 4;
           break;
         case 3:
-          _context39.p = 3;
-          _t37 = _context39.v;
-          toast('OOPS', _t37.message, null, '#ff6b8a');
+          _context35.p = 3;
+          _t33 = _context35.v;
+          toast('OOPS', _t33.message, null, '#ff6b8a');
         case 4:
-          return _context39.a(2);
+          return _context35.a(2);
       }
-    }, _callee39, null, [[1, 3]]);
+    }, _callee35, null, [[1, 3]]);
   }));
   return _renderOffline.apply(this, arguments);
 }
-function doOfflineUpgrade(_x11) {
+function doOfflineUpgrade(_x10) {
   return _doOfflineUpgrade.apply(this, arguments);
 }
 function _doOfflineUpgrade() {
-  _doOfflineUpgrade = _asyncToGenerator(_regenerator().m(function _callee40(level) {
-    var _r5, _t38;
-    return _regenerator().w(function (_context40) {
-      while (1) switch (_context40.p = _context40.n) {
+  _doOfflineUpgrade = _asyncToGenerator(_regenerator().m(function _callee36(level) {
+    var _r5, _t34;
+    return _regenerator().w(function (_context36) {
+      while (1) switch (_context36.p = _context36.n) {
         case 0:
-          _context40.p = 0;
-          _context40.n = 1;
+          _context36.p = 0;
+          _context36.n = 1;
           return api('/offline/upgrade', {
             method: 'POST'
           });
         case 1:
-          _r5 = _context40.v;
+          _r5 = _context36.v;
           state = _r5.state;
           sfxBuy();
           toast('UPGRADED', 'Offline rewards upgraded to level ' + _r5.level, null, '#8affd8');
           renderOffline();
-          _context40.n = 3;
+          _context36.n = 3;
           break;
         case 2:
-          _context40.p = 2;
-          _t38 = _context40.v;
-          toast('OOPS', _t38.message, null, '#ff6b8a');
+          _context36.p = 2;
+          _t34 = _context36.v;
+          toast('OOPS', _t34.message, null, '#ff6b8a');
         case 3:
-          return _context40.a(2);
+          return _context36.a(2);
       }
-    }, _callee40, null, [[0, 2]]);
+    }, _callee36, null, [[0, 2]]);
   }));
   return _doOfflineUpgrade.apply(this, arguments);
 }
@@ -4030,32 +3856,32 @@ function doOfflineClaim() {
   return _doOfflineClaim.apply(this, arguments);
 }
 function _doOfflineClaim() {
-  _doOfflineClaim = _asyncToGenerator(_regenerator().m(function _callee41() {
-    var _r6, _t39;
-    return _regenerator().w(function (_context41) {
-      while (1) switch (_context41.p = _context41.n) {
+  _doOfflineClaim = _asyncToGenerator(_regenerator().m(function _callee37() {
+    var _r6, _t35;
+    return _regenerator().w(function (_context37) {
+      while (1) switch (_context37.p = _context37.n) {
         case 0:
-          _context41.p = 0;
-          _context41.n = 1;
+          _context37.p = 0;
+          _context37.n = 1;
           return api('/offline/claim', {
             method: 'POST'
           });
         case 1:
-          _r6 = _context41.v;
+          _r6 = _context37.v;
           state = _r6.state;
           sfxBuy();
           toast('EARNINGS', 'Claimed $' + fmt(_r6.earnings) + ' from ' + _r6.hours.toFixed(1) + ' hours offline', null, '#7bdc78');
           renderOffline();
-          _context41.n = 3;
+          _context37.n = 3;
           break;
         case 2:
-          _context41.p = 2;
-          _t39 = _context41.v;
-          toast('OOPS', _t39.message, null, '#ff6b8a');
+          _context37.p = 2;
+          _t35 = _context37.v;
+          toast('OOPS', _t35.message, null, '#ff6b8a');
         case 3:
-          return _context41.a(2);
+          return _context37.a(2);
       }
-    }, _callee41, null, [[0, 2]]);
+    }, _callee37, null, [[0, 2]]);
   }));
   return _doOfflineClaim.apply(this, arguments);
 }
@@ -4342,34 +4168,34 @@ function renderMarket() {
   return _renderMarket.apply(this, arguments);
 }
 function _renderMarket() {
-  _renderMarket = _asyncToGenerator(_regenerator().m(function _callee42() {
-    var list, _iterator18, _step18, _loop0, _t40, _t41;
-    return _regenerator().w(function (_context43) {
-      while (1) switch (_context43.p = _context43.n) {
+  _renderMarket = _asyncToGenerator(_regenerator().m(function _callee38() {
+    var list, _iterator17, _step17, _loop0, _t36, _t37;
+    return _regenerator().w(function (_context39) {
+      while (1) switch (_context39.p = _context39.n) {
         case 0:
           list = $('marketList');
           if (state) {
-            _context43.n = 1;
+            _context39.n = 1;
             break;
           }
-          return _context43.a(2);
+          return _context39.a(2);
         case 1:
           $('mMoney').textContent = '$' + fmt(state.money);
           list.innerHTML = '<li class="empty">Loading Market...</li>';
-          _context43.p = 2;
-          _context43.n = 3;
+          _context39.p = 2;
+          _context39.n = 3;
           return api('/market');
         case 3:
-          marketData = _context43.v;
+          marketData = _context39.v;
           list.innerHTML = '';
-          _iterator18 = _createForOfIteratorHelper(marketData.items || []);
-          _context43.p = 4;
+          _iterator17 = _createForOfIteratorHelper(marketData.items || []);
+          _context39.p = 4;
           _loop0 = _regenerator().m(function _loop0() {
             var it, li, extra, btn;
-            return _regenerator().w(function (_context42) {
-              while (1) switch (_context42.n) {
+            return _regenerator().w(function (_context38) {
+              while (1) switch (_context38.n) {
                 case 0:
-                  it = _step18.value;
+                  it = _step17.value;
                   li = document.createElement('li');
                   li.className = 'ach';
                   extra = '';
@@ -4382,56 +4208,56 @@ function _renderMarket() {
                   });
                   list.appendChild(li);
                 case 1:
-                  return _context42.a(2);
+                  return _context38.a(2);
               }
             }, _loop0);
           });
-          _iterator18.s();
+          _iterator17.s();
         case 5:
-          if ((_step18 = _iterator18.n()).done) {
-            _context43.n = 7;
+          if ((_step17 = _iterator17.n()).done) {
+            _context39.n = 7;
             break;
           }
-          return _context43.d(_regeneratorValues(_loop0()), 6);
+          return _context39.d(_regeneratorValues(_loop0()), 6);
         case 6:
-          _context43.n = 5;
+          _context39.n = 5;
           break;
         case 7:
-          _context43.n = 9;
+          _context39.n = 9;
           break;
         case 8:
-          _context43.p = 8;
-          _t40 = _context43.v;
-          _iterator18.e(_t40);
+          _context39.p = 8;
+          _t36 = _context39.v;
+          _iterator17.e(_t36);
         case 9:
-          _context43.p = 9;
-          _iterator18.f();
-          return _context43.f(9);
+          _context39.p = 9;
+          _iterator17.f();
+          return _context39.f(9);
         case 10:
-          _context43.n = 12;
+          _context39.n = 12;
           break;
         case 11:
-          _context43.p = 11;
-          _t41 = _context43.v;
-          list.innerHTML = '<li class="empty">' + esc(_t41.message) + '</li>';
+          _context39.p = 11;
+          _t37 = _context39.v;
+          list.innerHTML = '<li class="empty">' + esc(_t37.message) + '</li>';
         case 12:
-          return _context43.a(2);
+          return _context39.a(2);
       }
-    }, _callee42, null, [[4, 8, 9, 10], [2, 11]]);
+    }, _callee38, null, [[4, 8, 9, 10], [2, 11]]);
   }));
   return _renderMarket.apply(this, arguments);
 }
-function buyMarketItem(_x12) {
+function buyMarketItem(_x11) {
   return _buyMarketItem.apply(this, arguments);
 }
 function _buyMarketItem() {
-  _buyMarketItem = _asyncToGenerator(_regenerator().m(function _callee43(id) {
-    var _r7, _t42;
-    return _regenerator().w(function (_context44) {
-      while (1) switch (_context44.p = _context44.n) {
+  _buyMarketItem = _asyncToGenerator(_regenerator().m(function _callee39(id) {
+    var _r7, _t38;
+    return _regenerator().w(function (_context40) {
+      while (1) switch (_context40.p = _context40.n) {
         case 0:
-          _context44.p = 0;
-          _context44.n = 1;
+          _context40.p = 0;
+          _context40.n = 1;
           return api('/market/buy', {
             method: 'POST',
             body: JSON.stringify({
@@ -4439,23 +4265,23 @@ function _buyMarketItem() {
             })
           });
         case 1:
-          _r7 = _context44.v;
+          _r7 = _context40.v;
           state = _r7.state;
           sfxBuy();
           toast('PURCHASED', 'Breach added to your arsenal', '$' + fmt(_r7.price), '#ffb648');
           renderVault();
           renderMarket();
           renderBreachTargets();
-          _context44.n = 3;
+          _context40.n = 3;
           break;
         case 2:
-          _context44.p = 2;
-          _t42 = _context44.v;
-          toast('OOPS', _t42.message, null, '#ff6b8a');
+          _context40.p = 2;
+          _t38 = _context40.v;
+          toast('OOPS', _t38.message, null, '#ff6b8a');
         case 3:
-          return _context44.a(2);
+          return _context40.a(2);
       }
-    }, _callee43, null, [[0, 2]]);
+    }, _callee39, null, [[0, 2]]);
   }));
   return _buyMarketItem.apply(this, arguments);
 }
@@ -4506,17 +4332,17 @@ function renderBreachTargets() {
     _iterator9.f();
   }
 }
-function useBreach(_x13, _x14) {
+function useBreach(_x12, _x13) {
   return _useBreach.apply(this, arguments);
 }
 function _useBreach() {
-  _useBreach = _asyncToGenerator(_regenerator().m(function _callee44(userId, name) {
-    var _r8, got, _t43;
-    return _regenerator().w(function (_context45) {
-      while (1) switch (_context45.p = _context45.n) {
+  _useBreach = _asyncToGenerator(_regenerator().m(function _callee40(userId, name) {
+    var _r8, got, _t39;
+    return _regenerator().w(function (_context41) {
+      while (1) switch (_context41.p = _context41.n) {
         case 0:
-          _context45.p = 0;
-          _context45.n = 1;
+          _context41.p = 0;
+          _context41.n = 1;
           return api('/breach', {
             method: 'POST',
             body: JSON.stringify({
@@ -4524,7 +4350,7 @@ function _useBreach() {
             })
           });
         case 1:
-          _r8 = _context45.v;
+          _r8 = _context41.v;
           state = _r8.state;
           got = [];
           if (_r8.stolen.item) got.push(itemDisplayName(makeKey(_r8.stolen.item.name, _r8.stolen.item.mutation ? MUT_BY_ID[_r8.stolen.item.mutation] || null : null)) + ' x' + _r8.stolen.item.qty);
@@ -4533,16 +4359,16 @@ function _useBreach() {
           toast('BREACH SUCCESS', 'Raided ' + name + (got.length ? " \u2014 took " + got.join(' + ') : " \u2014 they were flat broke"), null, '#ff6b8a');
           renderVault();
           renderBreachTargets();
-          _context45.n = 3;
+          _context41.n = 3;
           break;
         case 2:
-          _context45.p = 2;
-          _t43 = _context45.v;
-          toast('OOPS', _t43.message, null, '#ff6b8a');
+          _context41.p = 2;
+          _t39 = _context41.v;
+          toast('OOPS', _t39.message, null, '#ff6b8a');
         case 3:
-          return _context45.a(2);
+          return _context41.a(2);
       }
-    }, _callee44, null, [[0, 2]]);
+    }, _callee40, null, [[0, 2]]);
   }));
   return _useBreach.apply(this, arguments);
 }
@@ -4563,31 +4389,31 @@ function loadLeaders() {
   return _loadLeaders.apply(this, arguments);
 }
 function _loadLeaders() {
-  _loadLeaders = _asyncToGenerator(_regenerator().m(function _callee45() {
-    var list, _yield$api3, leaders, total, _t44;
-    return _regenerator().w(function (_context46) {
-      while (1) switch (_context46.p = _context46.n) {
+  _loadLeaders = _asyncToGenerator(_regenerator().m(function _callee41() {
+    var list, _yield$api3, leaders, total, _t40;
+    return _regenerator().w(function (_context42) {
+      while (1) switch (_context42.p = _context42.n) {
         case 0:
           list = $('leaderList');
           list.innerHTML = '<li class="empty">Loading leaderboard...</li>';
-          _context46.p = 1;
-          _context46.n = 2;
+          _context42.p = 1;
+          _context42.n = 2;
           return api('/leaderboard');
         case 2:
-          _yield$api3 = _context46.v;
+          _yield$api3 = _context42.v;
           leaders = _yield$api3.leaders;
           total = _yield$api3.total;
           renderLeaders(leaders, total);
-          _context46.n = 4;
+          _context42.n = 4;
           break;
         case 3:
-          _context46.p = 3;
-          _t44 = _context46.v;
-          list.innerHTML = '<li class="empty">' + esc(_t44.message) + '</li>';
+          _context42.p = 3;
+          _t40 = _context42.v;
+          list.innerHTML = '<li class="empty">' + esc(_t40.message) + '</li>';
         case 4:
-          return _context46.a(2);
+          return _context42.a(2);
       }
-    }, _callee45, null, [[1, 3]]);
+    }, _callee41, null, [[1, 3]]);
   }));
   return _loadLeaders.apply(this, arguments);
 }
@@ -4671,37 +4497,37 @@ function loadBazaar() {
   return _loadBazaar.apply(this, arguments);
 }
 function _loadBazaar() {
-  _loadBazaar = _asyncToGenerator(_regenerator().m(function _callee46() {
-    var list, _yield$api4, listings, filtered, _iterator19, _step19, _loop1, _t45, _t46;
-    return _regenerator().w(function (_context48) {
-      while (1) switch (_context48.p = _context48.n) {
+  _loadBazaar = _asyncToGenerator(_regenerator().m(function _callee42() {
+    var list, _yield$api4, listings, filtered, _iterator18, _step18, _loop1, _t41, _t42;
+    return _regenerator().w(function (_context44) {
+      while (1) switch (_context44.p = _context44.n) {
         case 0:
           list = $('browseList');
           initBazaarFilters();
           list.innerHTML = '<li class="empty">Loading bazaar...</li>';
-          _context48.p = 1;
-          _context48.n = 2;
+          _context44.p = 1;
+          _context44.n = 2;
           return api('/bazaar' + (bazaarQuery ? '?q=' + encodeURIComponent(bazaarQuery) : ''));
         case 2:
-          _yield$api4 = _context48.v;
+          _yield$api4 = _context44.v;
           listings = _yield$api4.listings;
           filtered = bazaarFiltered(listings);
           if (filtered.length) {
-            _context48.n = 3;
+            _context44.n = 3;
             break;
           }
           list.innerHTML = '<li class="empty">No listings match. Try a different search.</li>';
-          return _context48.a(2);
+          return _context44.a(2);
         case 3:
           list.innerHTML = '';
-          _iterator19 = _createForOfIteratorHelper(filtered);
-          _context48.p = 4;
+          _iterator18 = _createForOfIteratorHelper(filtered);
+          _context44.p = 4;
           _loop1 = _regenerator().m(function _loop1() {
             var l, rar, mut, nameHtml, li;
-            return _regenerator().w(function (_context47) {
-              while (1) switch (_context47.n) {
+            return _regenerator().w(function (_context43) {
+              while (1) switch (_context43.n) {
                 case 0:
-                  l = _step19.value;
+                  l = _step18.value;
                   rar = rarityFor(l.itemName);
                   mut = MUT_BY_ID[l.mutation];
                   nameHtml = mut ? '<span style="color:' + mut.color + '">' + esc(mut.name) + '</span> <span style="color:' + rar.color + '">' + esc(l.itemName) + '</span>' : '<span style="color:' + rar.color + '">' + esc(l.itemName) + '</span>';
@@ -4715,110 +4541,110 @@ function _loadBazaar() {
                   });
                   list.appendChild(li);
                 case 1:
-                  return _context47.a(2);
+                  return _context43.a(2);
               }
             }, _loop1);
           });
-          _iterator19.s();
+          _iterator18.s();
         case 5:
-          if ((_step19 = _iterator19.n()).done) {
-            _context48.n = 7;
+          if ((_step18 = _iterator18.n()).done) {
+            _context44.n = 7;
             break;
           }
-          return _context48.d(_regeneratorValues(_loop1()), 6);
+          return _context44.d(_regeneratorValues(_loop1()), 6);
         case 6:
-          _context48.n = 5;
+          _context44.n = 5;
           break;
         case 7:
-          _context48.n = 9;
+          _context44.n = 9;
           break;
         case 8:
-          _context48.p = 8;
-          _t45 = _context48.v;
-          _iterator19.e(_t45);
+          _context44.p = 8;
+          _t41 = _context44.v;
+          _iterator18.e(_t41);
         case 9:
-          _context48.p = 9;
-          _iterator19.f();
-          return _context48.f(9);
+          _context44.p = 9;
+          _iterator18.f();
+          return _context44.f(9);
         case 10:
-          _context48.n = 12;
+          _context44.n = 12;
           break;
         case 11:
-          _context48.p = 11;
-          _t46 = _context48.v;
-          list.innerHTML = '<li class="empty">' + esc(_t46.message) + '</li>';
+          _context44.p = 11;
+          _t42 = _context44.v;
+          list.innerHTML = '<li class="empty">' + esc(_t42.message) + '</li>';
         case 12:
-          return _context48.a(2);
+          return _context44.a(2);
       }
-    }, _callee46, null, [[4, 8, 9, 10], [1, 11]]);
+    }, _callee42, null, [[4, 8, 9, 10], [1, 11]]);
   }));
   return _loadBazaar.apply(this, arguments);
 }
-function buyListing(_x15) {
+function buyListing(_x14) {
   return _buyListing.apply(this, arguments);
 }
 function _buyListing() {
-  _buyListing = _asyncToGenerator(_regenerator().m(function _callee47(id) {
-    var _r9, _t47;
-    return _regenerator().w(function (_context49) {
-      while (1) switch (_context49.p = _context49.n) {
+  _buyListing = _asyncToGenerator(_regenerator().m(function _callee43(id) {
+    var _r9, _t43;
+    return _regenerator().w(function (_context45) {
+      while (1) switch (_context45.p = _context45.n) {
         case 0:
-          _context49.p = 0;
-          _context49.n = 1;
+          _context45.p = 0;
+          _context45.n = 1;
           return api('/bazaar/' + id + '/buy', {
             method: 'POST'
           });
         case 1:
-          _r9 = _context49.v;
+          _r9 = _context45.v;
           state = _r9.state;
           sfxBuy();
           toast('PURCHASE', 'Item added to your vault', null, '#7bdc78');
           if (_r9.newAch && _r9.newAch.length) showNewAch(_r9.newAch);
           renderVault();
           loadBazaar();
-          _context49.n = 3;
+          _context45.n = 3;
           break;
         case 2:
-          _context49.p = 2;
-          _t47 = _context49.v;
-          toast('OOPS', _t47.message, null, '#ff6b8a');
+          _context45.p = 2;
+          _t43 = _context45.v;
+          toast('OOPS', _t43.message, null, '#ff6b8a');
         case 3:
-          return _context49.a(2);
+          return _context45.a(2);
       }
-    }, _callee47, null, [[0, 2]]);
+    }, _callee43, null, [[0, 2]]);
   }));
   return _buyListing.apply(this, arguments);
 }
-function cancelListing(_x16) {
+function cancelListing(_x15) {
   return _cancelListing.apply(this, arguments);
 }
 function _cancelListing() {
-  _cancelListing = _asyncToGenerator(_regenerator().m(function _callee48(id) {
-    var _r0, _t48;
-    return _regenerator().w(function (_context50) {
-      while (1) switch (_context50.p = _context50.n) {
+  _cancelListing = _asyncToGenerator(_regenerator().m(function _callee44(id) {
+    var _r0, _t44;
+    return _regenerator().w(function (_context46) {
+      while (1) switch (_context46.p = _context46.n) {
         case 0:
-          _context50.p = 0;
-          _context50.n = 1;
+          _context46.p = 0;
+          _context46.n = 1;
           return api('/bazaar/' + id, {
             method: 'DELETE'
           });
         case 1:
-          _r0 = _context50.v;
+          _r0 = _context46.v;
           state = _r0.state;
           toast('CANCELLED', 'Item returned to your vault', null, '#ffb648');
           renderVault();
           loadBazaar();
-          _context50.n = 3;
+          _context46.n = 3;
           break;
         case 2:
-          _context50.p = 2;
-          _t48 = _context50.v;
-          toast('OOPS', _t48.message, null, '#ff6b8a');
+          _context46.p = 2;
+          _t44 = _context46.v;
+          toast('OOPS', _t44.message, null, '#ff6b8a');
         case 3:
-          return _context50.a(2);
+          return _context46.a(2);
       }
-    }, _callee48, null, [[0, 2]]);
+    }, _callee44, null, [[0, 2]]);
   }));
   return _cancelListing.apply(this, arguments);
 }
@@ -4858,17 +4684,17 @@ function renderSellList() {
     _loop6();
   }
 }
-function listItem(_x17, _x18, _x19, _x20) {
+function listItem(_x16, _x17, _x18, _x19) {
   return _listItem.apply(this, arguments);
 }
 function _listItem() {
-  _listItem = _asyncToGenerator(_regenerator().m(function _callee49(itemKey, rar, quantity, price) {
-    var _r1, _t49;
-    return _regenerator().w(function (_context51) {
-      while (1) switch (_context51.p = _context51.n) {
+  _listItem = _asyncToGenerator(_regenerator().m(function _callee45(itemKey, rar, quantity, price) {
+    var _r1, _t45;
+    return _regenerator().w(function (_context47) {
+      while (1) switch (_context47.p = _context47.n) {
         case 0:
-          _context51.p = 0;
-          _context51.n = 1;
+          _context47.p = 0;
+          _context47.n = 1;
           return api('/bazaar', {
             method: 'POST',
             body: JSON.stringify({
@@ -4879,23 +4705,23 @@ function _listItem() {
             })
           });
         case 1:
-          _r1 = _context51.v;
+          _r1 = _context47.v;
           state = _r1.state;
           sfxBuy();
           toast('LISTED', baseName(itemKey) + ' x' + quantity + ' for $' + fmt(price), null, '#ffb648');
           renderVault();
           loadBazaar();
           document.querySelector('.tab[data-btab="browse"]').click();
-          _context51.n = 3;
+          _context47.n = 3;
           break;
         case 2:
-          _context51.p = 2;
-          _t49 = _context51.v;
-          toast('OOPS', _t49.message, null, '#ff6b8a');
+          _context47.p = 2;
+          _t45 = _context47.v;
+          toast('OOPS', _t45.message, null, '#ff6b8a');
         case 3:
-          return _context51.a(2);
+          return _context47.a(2);
       }
-    }, _callee49, null, [[0, 2]]);
+    }, _callee45, null, [[0, 2]]);
   }));
   return _listItem.apply(this, arguments);
 }
@@ -4989,58 +4815,58 @@ function loadOnline() {
   return _loadOnline.apply(this, arguments);
 }
 function _loadOnline() {
-  _loadOnline = _asyncToGenerator(_regenerator().m(function _callee51() {
-    var _r10, _list, _iterator20, _step20, u, li, _list2, _t51, _t52;
-    return _regenerator().w(function (_context53) {
-      while (1) switch (_context53.p = _context53.n) {
+  _loadOnline = _asyncToGenerator(_regenerator().m(function _callee47() {
+    var _r10, _list, _iterator19, _step19, u, li, _list2, _t47, _t48;
+    return _regenerator().w(function (_context49) {
+      while (1) switch (_context49.p = _context49.n) {
         case 0:
-          _context53.p = 0;
-          _context53.n = 1;
+          _context49.p = 0;
+          _context49.n = 1;
           return api('/online');
         case 1:
-          _r10 = _context53.v;
+          _r10 = _context49.v;
           _list = $('onlineList');
           if (_list) {
-            _context53.n = 2;
+            _context49.n = 2;
             break;
           }
-          return _context53.a(2);
+          return _context49.a(2);
         case 2:
           if (!(!_r10 || !_r10.online)) {
-            _context53.n = 3;
+            _context49.n = 3;
             break;
           }
           _list.innerHTML = '<li class="empty">No online keepers</li>';
-          return _context53.a(2);
+          return _context49.a(2);
         case 3:
           _list.innerHTML = '';
-          _iterator20 = _createForOfIteratorHelper(_r10.online);
-          _context53.p = 4;
-          _iterator20.s();
+          _iterator19 = _createForOfIteratorHelper(_r10.online);
+          _context49.p = 4;
+          _iterator19.s();
         case 5:
-          if ((_step20 = _iterator20.n()).done) {
-            _context53.n = 8;
+          if ((_step19 = _iterator19.n()).done) {
+            _context49.n = 8;
             break;
           }
-          u = _step20.value;
+          u = _step19.value;
           if (!(u.id === me.id)) {
-            _context53.n = 6;
+            _context49.n = 6;
             break;
           }
-          return _context53.a(3, 7);
+          return _context49.a(3, 7);
         case 6:
           li = document.createElement('li');
           li.innerHTML = '<span class="name">' + esc(u.username) + '</span>' + '<button class="mini-btn" data-trade-user="' + u.id + '" data-trade-name="' + esc(u.username) + '">Request Trade</button>';
           li.querySelector('[data-trade-user]').addEventListener('click', function () {
-            var _ref19 = _asyncToGenerator(_regenerator().m(function _callee50(e) {
-              var userId, username, _t50;
-              return _regenerator().w(function (_context52) {
-                while (1) switch (_context52.p = _context52.n) {
+            var _ref18 = _asyncToGenerator(_regenerator().m(function _callee46(e) {
+              var userId, username, _t46;
+              return _regenerator().w(function (_context48) {
+                while (1) switch (_context48.p = _context48.n) {
                   case 0:
                     userId = parseInt(e.target.dataset.tradeUser, 10);
                     username = e.target.dataset.tradeName;
-                    _context52.p = 1;
-                    _context52.n = 2;
+                    _context48.p = 1;
+                    _context48.n = 2;
                     return api('/trade/request', {
                       method: 'POST',
                       body: JSON.stringify({
@@ -5049,48 +4875,48 @@ function _loadOnline() {
                     });
                   case 2:
                     toast('REQUEST SENT', 'Waiting for ' + username + ' to accept', null, '#4fd1ff');
-                    _context52.n = 4;
+                    _context48.n = 4;
                     break;
                   case 3:
-                    _context52.p = 3;
-                    _t50 = _context52.v;
-                    toast('OOPS', _t50.message, null, '#ff6b8a');
+                    _context48.p = 3;
+                    _t46 = _context48.v;
+                    toast('OOPS', _t46.message, null, '#ff6b8a');
                   case 4:
-                    return _context52.a(2);
+                    return _context48.a(2);
                 }
-              }, _callee50, null, [[1, 3]]);
+              }, _callee46, null, [[1, 3]]);
             }));
-            return function (_x37) {
-              return _ref19.apply(this, arguments);
+            return function (_x36) {
+              return _ref18.apply(this, arguments);
             };
           }());
           _list.appendChild(li);
         case 7:
-          _context53.n = 5;
+          _context49.n = 5;
           break;
         case 8:
-          _context53.n = 10;
+          _context49.n = 10;
           break;
         case 9:
-          _context53.p = 9;
-          _t51 = _context53.v;
-          _iterator20.e(_t51);
+          _context49.p = 9;
+          _t47 = _context49.v;
+          _iterator19.e(_t47);
         case 10:
-          _context53.p = 10;
-          _iterator20.f();
-          return _context53.f(10);
+          _context49.p = 10;
+          _iterator19.f();
+          return _context49.f(10);
         case 11:
-          _context53.n = 13;
+          _context49.n = 13;
           break;
         case 12:
-          _context53.p = 12;
-          _t52 = _context53.v;
+          _context49.p = 12;
+          _t48 = _context49.v;
           _list2 = $('onlineList');
           if (_list2) _list2.innerHTML = '<li class="empty">Could not load online keepers</li>';
         case 13:
-          return _context53.a(2);
+          return _context49.a(2);
       }
-    }, _callee51, null, [[4, 9, 10, 11], [0, 12]]);
+    }, _callee47, null, [[4, 9, 10, 11], [0, 12]]);
   }));
   return _loadOnline.apply(this, arguments);
 }
@@ -5420,50 +5246,50 @@ function renderQuests() {
   return _renderQuests.apply(this, arguments);
 }
 function _renderQuests() {
-  _renderQuests = _asyncToGenerator(_regenerator().m(function _callee52() {
-    var list, data, _iterator21, _step21, _loop10, _t53, _t54;
-    return _regenerator().w(function (_context55) {
-      while (1) switch (_context55.p = _context55.n) {
+  _renderQuests = _asyncToGenerator(_regenerator().m(function _callee48() {
+    var list, data, _iterator20, _step20, _loop10, _t49, _t50;
+    return _regenerator().w(function (_context51) {
+      while (1) switch (_context51.p = _context51.n) {
         case 0:
           list = $('questList');
           if (list) {
-            _context55.n = 1;
+            _context51.n = 1;
             break;
           }
-          return _context55.a(2);
+          return _context51.a(2);
         case 1:
           list.innerHTML = '<li class="empty">Loading quests...</li>';
           data = null;
-          _context55.p = 2;
-          _context55.n = 3;
+          _context51.p = 2;
+          _context51.n = 3;
           return api('/daily');
         case 3:
-          data = _context55.v;
-          _context55.n = 5;
+          data = _context51.v;
+          _context51.n = 5;
           break;
         case 4:
-          _context55.p = 4;
-          _t53 = _context55.v;
+          _context51.p = 4;
+          _t49 = _context51.v;
           data = dailyData;
         case 5:
           if (data) {
-            _context55.n = 6;
+            _context51.n = 6;
             break;
           }
           list.innerHTML = '<li class="empty">Could not load quests.</li>';
-          return _context55.a(2);
+          return _context51.a(2);
         case 6:
           dailyData = data;
           $('questInfo').textContent = (data.claimed || []).length + ' / ' + (data.quests || []).length + ' claimed';
           list.innerHTML = '';
-          _iterator21 = _createForOfIteratorHelper(data.quests || []);
-          _context55.p = 7;
+          _iterator20 = _createForOfIteratorHelper(data.quests || []);
+          _context51.p = 7;
           _loop10 = _regenerator().m(function _loop10() {
             var q, prog, done, claimed, pct, li, btn;
-            return _regenerator().w(function (_context54) {
-              while (1) switch (_context54.n) {
+            return _regenerator().w(function (_context50) {
+              while (1) switch (_context50.n) {
                 case 0:
-                  q = _step21.value;
+                  q = _step20.value;
                   prog = Number((data.prog || {})[q.id] || 0);
                   done = prog >= q.target;
                   claimed = (data.claimed || []).indexOf(q.id) !== -1;
@@ -5481,49 +5307,49 @@ function _renderQuests() {
                   li.appendChild(btn);
                   list.appendChild(li);
                 case 1:
-                  return _context54.a(2);
+                  return _context50.a(2);
               }
             }, _loop10);
           });
-          _iterator21.s();
+          _iterator20.s();
         case 8:
-          if ((_step21 = _iterator21.n()).done) {
-            _context55.n = 10;
+          if ((_step20 = _iterator20.n()).done) {
+            _context51.n = 10;
             break;
           }
-          return _context55.d(_regeneratorValues(_loop10()), 9);
+          return _context51.d(_regeneratorValues(_loop10()), 9);
         case 9:
-          _context55.n = 8;
+          _context51.n = 8;
           break;
         case 10:
-          _context55.n = 12;
+          _context51.n = 12;
           break;
         case 11:
-          _context55.p = 11;
-          _t54 = _context55.v;
-          _iterator21.e(_t54);
+          _context51.p = 11;
+          _t50 = _context51.v;
+          _iterator20.e(_t50);
         case 12:
-          _context55.p = 12;
-          _iterator21.f();
-          return _context55.f(12);
+          _context51.p = 12;
+          _iterator20.f();
+          return _context51.f(12);
         case 13:
-          return _context55.a(2);
+          return _context51.a(2);
       }
-    }, _callee52, null, [[7, 11, 12, 13], [2, 4]]);
+    }, _callee48, null, [[7, 11, 12, 13], [2, 4]]);
   }));
   return _renderQuests.apply(this, arguments);
 }
-function claimQuest(_x21) {
+function claimQuest(_x20) {
   return _claimQuest.apply(this, arguments);
 }
 function _claimQuest() {
-  _claimQuest = _asyncToGenerator(_regenerator().m(function _callee53(id) {
-    var _r11, _t55;
-    return _regenerator().w(function (_context56) {
-      while (1) switch (_context56.p = _context56.n) {
+  _claimQuest = _asyncToGenerator(_regenerator().m(function _callee49(id) {
+    var _r11, _t51;
+    return _regenerator().w(function (_context52) {
+      while (1) switch (_context52.p = _context52.n) {
         case 0:
-          _context56.p = 0;
-          _context56.n = 1;
+          _context52.p = 0;
+          _context52.n = 1;
           return api('/daily/claim', {
             method: 'POST',
             body: JSON.stringify({
@@ -5531,23 +5357,23 @@ function _claimQuest() {
             })
           });
         case 1:
-          _r11 = _context56.v;
+          _r11 = _context52.v;
           state = _r11.state;
           dailyData = _r11.daily;
           toast('QUEST COMPLETE', 'Reward claimed', '$' + fmt(_r11.reward), '#7bdc78');
           sfxToast();
           renderVault();
           renderQuests();
-          _context56.n = 3;
+          _context52.n = 3;
           break;
         case 2:
-          _context56.p = 2;
-          _t55 = _context56.v;
-          toast('OOPS', _t55.message, null, '#ff6b8a');
+          _context52.p = 2;
+          _t51 = _context52.v;
+          toast('OOPS', _t51.message, null, '#ff6b8a');
         case 3:
-          return _context56.a(2);
+          return _context52.a(2);
       }
-    }, _callee53, null, [[0, 2]]);
+    }, _callee49, null, [[0, 2]]);
   }));
   return _claimQuest.apply(this, arguments);
 }
@@ -5569,39 +5395,39 @@ function refreshBossPayout() {
   return _refreshBossPayout.apply(this, arguments);
 }
 function _refreshBossPayout() {
-  _refreshBossPayout = _asyncToGenerator(_regenerator().m(function _callee54() {
-    var b, _t56;
-    return _regenerator().w(function (_context57) {
-      while (1) switch (_context57.p = _context57.n) {
+  _refreshBossPayout = _asyncToGenerator(_regenerator().m(function _callee50() {
+    var b, _t52;
+    return _regenerator().w(function (_context53) {
+      while (1) switch (_context53.p = _context53.n) {
         case 0:
           if (!(!inGame || !token)) {
-            _context57.n = 1;
+            _context53.n = 1;
             break;
           }
-          return _context57.a(2);
+          return _context53.a(2);
         case 1:
-          _context57.p = 1;
-          _context57.n = 2;
+          _context53.p = 1;
+          _context53.n = 2;
           return api('/boss');
         case 2:
-          b = _context57.v;
+          b = _context53.v;
           if (b) {
-            _context57.n = 3;
+            _context53.n = 3;
             break;
           }
-          return _context57.a(2);
+          return _context53.a(2);
         case 3:
           if (b.boss) onBoss(b.boss);
           setBossYou(b.you);
-          _context57.n = 5;
+          _context53.n = 5;
           break;
         case 4:
-          _context57.p = 4;
-          _t56 = _context57.v;
+          _context53.p = 4;
+          _t52 = _context53.v;
         case 5:
-          return _context57.a(2);
+          return _context53.a(2);
       }
-    }, _callee54, null, [[1, 4]]);
+    }, _callee50, null, [[1, 4]]);
   }));
   return _refreshBossPayout.apply(this, arguments);
 }
@@ -5758,20 +5584,20 @@ function saveNow() {
   return _saveNow.apply(this, arguments);
 }
 function _saveNow() {
-  _saveNow = _asyncToGenerator(_regenerator().m(function _callee55() {
-    var body, _t57;
-    return _regenerator().w(function (_context58) {
-      while (1) switch (_context58.p = _context58.n) {
+  _saveNow = _asyncToGenerator(_regenerator().m(function _callee51() {
+    var body, _t53;
+    return _regenerator().w(function (_context54) {
+      while (1) switch (_context54.p = _context54.n) {
         case 0:
           if (!(!token || !state)) {
-            _context58.n = 1;
+            _context54.n = 1;
             break;
           }
-          return _context58.a(2);
+          return _context54.a(2);
         case 1:
-          _context58.p = 1;
+          _context54.p = 1;
           body = JSON.stringify(payload());
-          _context58.n = 2;
+          _context54.n = 2;
           return fetch('/api/save', {
             method: 'POST',
             headers: {
@@ -5782,15 +5608,15 @@ function _saveNow() {
             keepalive: true
           });
         case 2:
-          _context58.n = 4;
+          _context54.n = 4;
           break;
         case 3:
-          _context58.p = 3;
-          _t57 = _context58.v;
+          _context54.p = 3;
+          _t53 = _context54.v;
         case 4:
-          return _context58.a(2);
+          return _context54.a(2);
       }
-    }, _callee55, null, [[1, 3]]);
+    }, _callee51, null, [[1, 3]]);
   }));
   return _saveNow.apply(this, arguments);
 }
@@ -5884,30 +5710,30 @@ function loadBossLive() {
   return _loadBossLive.apply(this, arguments);
 }
 function _loadBossLive() {
-  _loadBossLive = _asyncToGenerator(_regenerator().m(function _callee56() {
-    var panel, b, boss, html, i, c, _t58;
-    return _regenerator().w(function (_context59) {
-      while (1) switch (_context59.p = _context59.n) {
+  _loadBossLive = _asyncToGenerator(_regenerator().m(function _callee52() {
+    var panel, b, boss, html, i, c, _t54;
+    return _regenerator().w(function (_context55) {
+      while (1) switch (_context55.p = _context55.n) {
         case 0:
           panel = $('bossPanel-live');
           if (panel) {
-            _context59.n = 1;
+            _context55.n = 1;
             break;
           }
-          return _context59.a(2);
+          return _context55.a(2);
         case 1:
           panel.innerHTML = '<div class="empty-note">Loading boss information...</div>';
-          _context59.p = 2;
-          _context59.n = 3;
+          _context55.p = 2;
+          _context55.n = 3;
           return api('/boss');
         case 3:
-          b = _context59.v;
+          b = _context55.v;
           if (b) {
-            _context59.n = 4;
+            _context55.n = 4;
             break;
           }
           panel.innerHTML = '<div class="empty-note">No boss information available.</div>';
-          return _context59.a(2);
+          return _context55.a(2);
         case 4:
           boss = b.boss || null;
           if (boss) onBoss(boss);
@@ -5941,16 +5767,16 @@ function _loadBossLive() {
           }
           html += '</div>';
           panel.innerHTML = html;
-          _context59.n = 6;
+          _context55.n = 6;
           break;
         case 5:
-          _context59.p = 5;
-          _t58 = _context59.v;
-          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t58.message || 'Could not load boss info') + '</div>';
+          _context55.p = 5;
+          _t54 = _context55.v;
+          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t54.message || 'Could not load boss info') + '</div>';
         case 6:
-          return _context59.a(2);
+          return _context55.a(2);
       }
-    }, _callee56, null, [[2, 5]]);
+    }, _callee52, null, [[2, 5]]);
   }));
   return _loadBossLive.apply(this, arguments);
 }
@@ -5958,31 +5784,31 @@ function loadBossHistory() {
   return _loadBossHistory.apply(this, arguments);
 }
 function _loadBossHistory() {
-  _loadBossHistory = _asyncToGenerator(_regenerator().m(function _callee57() {
-    var panel, h, rows, html, _t59;
-    return _regenerator().w(function (_context60) {
-      while (1) switch (_context60.p = _context60.n) {
+  _loadBossHistory = _asyncToGenerator(_regenerator().m(function _callee53() {
+    var panel, h, rows, html, _t55;
+    return _regenerator().w(function (_context56) {
+      while (1) switch (_context56.p = _context56.n) {
         case 0:
           panel = $('bossPanel-history');
           if (panel) {
-            _context60.n = 1;
+            _context56.n = 1;
             break;
           }
-          return _context60.a(2);
+          return _context56.a(2);
         case 1:
           panel.innerHTML = '<div class="empty-note">Loading boss history...</div>';
-          _context60.p = 2;
-          _context60.n = 3;
+          _context56.p = 2;
+          _context56.n = 3;
           return api('/boss/history');
         case 3:
-          h = _context60.v;
+          h = _context56.v;
           rows = h && h.history ? h.history : [];
           if (rows.length) {
-            _context60.n = 4;
+            _context56.n = 4;
             break;
           }
           panel.innerHTML = '<div class="empty-note">No defeated bosses yet.</div>';
-          return _context60.a(2);
+          return _context56.a(2);
         case 4:
           html = '<div class="boss-info">';
           html += '<h3 style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#9aa2cc; margin:4px 0 12px;">Last 20 Bosses</h3>';
@@ -5995,16 +5821,16 @@ function _loadBossHistory() {
           });
           html += '</ul></div>';
           panel.innerHTML = html;
-          _context60.n = 6;
+          _context56.n = 6;
           break;
         case 5:
-          _context60.p = 5;
-          _t59 = _context60.v;
-          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t59.message || 'Could not load boss history') + '</div>';
+          _context56.p = 5;
+          _t55 = _context56.v;
+          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t55.message || 'Could not load boss history') + '</div>';
         case 6:
-          return _context60.a(2);
+          return _context56.a(2);
       }
-    }, _callee57, null, [[2, 5]]);
+    }, _callee53, null, [[2, 5]]);
   }));
   return _loadBossHistory.apply(this, arguments);
 }
@@ -6012,28 +5838,28 @@ function openBossModal() {
   return _openBossModal.apply(this, arguments);
 }
 function _openBossModal() {
-  _openBossModal = _asyncToGenerator(_regenerator().m(function _callee58() {
+  _openBossModal = _asyncToGenerator(_regenerator().m(function _callee54() {
     var content;
-    return _regenerator().w(function (_context61) {
-      while (1) switch (_context61.n) {
+    return _regenerator().w(function (_context57) {
+      while (1) switch (_context57.n) {
         case 0:
           closeAllModals();
           content = $('bossContent');
           if (content) {
-            _context61.n = 1;
+            _context57.n = 1;
             break;
           }
-          return _context61.a(2);
+          return _context57.a(2);
         case 1:
           content.innerHTML = '<div class="tabs">' + '<button class="tab active" data-boss-tab="live" type="button">Live</button>' + '<button class="tab" data-boss-tab="history" type="button">History</button>' + '</div>' + '<div id="bossPanel-live" class="panel active"><div class="empty-note">Loading boss information...</div></div>' + '<div id="bossPanel-history" class="panel"><div class="empty-note">Loading boss history...</div></div>';
           $('bossModal').classList.remove('hidden');
           bindBossTabs();
-          _context61.n = 2;
+          _context57.n = 2;
           return Promise.all([loadBossLive(), loadBossHistory()]);
         case 2:
-          return _context61.a(2);
+          return _context57.a(2);
       }
-    }, _callee58);
+    }, _callee54);
   }));
   return _openBossModal.apply(this, arguments);
 }
@@ -6042,18 +5868,18 @@ function openAdminModal() {
   return _openAdminModal.apply(this, arguments);
 }
 function _openAdminModal() {
-  _openAdminModal = _asyncToGenerator(_regenerator().m(function _callee59() {
-    return _regenerator().w(function (_context62) {
-      while (1) switch (_context62.n) {
+  _openAdminModal = _asyncToGenerator(_regenerator().m(function _callee55() {
+    return _regenerator().w(function (_context58) {
+      while (1) switch (_context58.n) {
         case 0:
           closeAllModals();
           $('adminModal').classList.remove('hidden');
-          _context62.n = 1;
+          _context58.n = 1;
           return Promise.all([loadAdminStats(), loadAdminUsers()]);
         case 1:
-          return _context62.a(2);
+          return _context58.a(2);
       }
-    }, _callee59);
+    }, _callee55);
   }));
   return _openAdminModal.apply(this, arguments);
 }
@@ -6062,33 +5888,33 @@ function loadAdminStats() {
   return _loadAdminStats.apply(this, arguments);
 }
 function _loadAdminStats() {
-  _loadAdminStats = _asyncToGenerator(_regenerator().m(function _callee60() {
-    var totalEl, onlineEl, _yield$api5, users, _t60;
-    return _regenerator().w(function (_context63) {
-      while (1) switch (_context63.p = _context63.n) {
+  _loadAdminStats = _asyncToGenerator(_regenerator().m(function _callee56() {
+    var totalEl, onlineEl, _yield$api5, users, _t56;
+    return _regenerator().w(function (_context59) {
+      while (1) switch (_context59.p = _context59.n) {
         case 0:
           totalEl = $('adminTotalUsers');
           onlineEl = $('adminOnlineUsers');
-          _context63.p = 1;
-          _context63.n = 2;
+          _context59.p = 1;
+          _context59.n = 2;
           return api('/admin/users');
         case 2:
-          _yield$api5 = _context63.v;
+          _yield$api5 = _context59.v;
           users = _yield$api5.users;
           if (totalEl) totalEl.textContent = users.length;
           if (onlineEl) onlineEl.textContent = users.filter(function (u) {
             return u.online;
           }).length;
-          _context63.n = 4;
+          _context59.n = 4;
           break;
         case 3:
-          _context63.p = 3;
-          _t60 = _context63.v;
-          console.error('[admin stats]', _t60.message);
+          _context59.p = 3;
+          _t56 = _context59.v;
+          console.error('[admin stats]', _t56.message);
         case 4:
-          return _context63.a(2);
+          return _context59.a(2);
       }
-    }, _callee60, null, [[1, 3]]);
+    }, _callee56, null, [[1, 3]]);
   }));
   return _loadAdminStats.apply(this, arguments);
 }
@@ -6096,44 +5922,44 @@ function loadAdminUsers() {
   return _loadAdminUsers.apply(this, arguments);
 }
 function _loadAdminUsers() {
-  _loadAdminUsers = _asyncToGenerator(_regenerator().m(function _callee61() {
-    var list, _yield$api6, users, _t61;
-    return _regenerator().w(function (_context64) {
-      while (1) switch (_context64.p = _context64.n) {
+  _loadAdminUsers = _asyncToGenerator(_regenerator().m(function _callee57() {
+    var list, _yield$api6, users, _t57;
+    return _regenerator().w(function (_context60) {
+      while (1) switch (_context60.p = _context60.n) {
         case 0:
           list = $('adminUsers');
           if (list) {
-            _context64.n = 1;
+            _context60.n = 1;
             break;
           }
-          return _context64.a(2);
+          return _context60.a(2);
         case 1:
           list.innerHTML = '<li class="empty">Loading...</li>';
-          _context64.p = 2;
-          _context64.n = 3;
+          _context60.p = 2;
+          _context60.n = 3;
           return api('/admin/users');
         case 3:
-          _yield$api6 = _context64.v;
+          _yield$api6 = _context60.v;
           users = _yield$api6.users;
           adminUsersCache = users;
           if (users.length) {
-            _context64.n = 4;
+            _context60.n = 4;
             break;
           }
           list.innerHTML = '<li class="empty">No users found</li>';
-          return _context64.a(2);
+          return _context60.a(2);
         case 4:
           renderAdminUsers(users);
-          _context64.n = 6;
+          _context60.n = 6;
           break;
         case 5:
-          _context64.p = 5;
-          _t61 = _context64.v;
-          list.innerHTML = '<li class="empty">' + esc(_t61.message) + '</li>';
+          _context60.p = 5;
+          _t57 = _context60.v;
+          list.innerHTML = '<li class="empty">' + esc(_t57.message) + '</li>';
         case 6:
-          return _context64.a(2);
+          return _context60.a(2);
       }
-    }, _callee61, null, [[2, 5]]);
+    }, _callee57, null, [[2, 5]]);
   }));
   return _loadAdminUsers.apply(this, arguments);
 }
@@ -6268,32 +6094,32 @@ if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', _as
     }
   }, _callee13, null, [[2, 4]]);
 })));
-function adminGiveAll(_x22) {
+function adminGiveAll(_x21) {
   return _adminGiveAll.apply(this, arguments);
 }
 function _adminGiveAll() {
-  _adminGiveAll = _asyncToGenerator(_regenerator().m(function _callee62(scope) {
-    var item, quantity, mutation, _r12, _t62;
-    return _regenerator().w(function (_context65) {
-      while (1) switch (_context65.p = _context65.n) {
+  _adminGiveAll = _asyncToGenerator(_regenerator().m(function _callee58(scope) {
+    var item, quantity, mutation, _r12, _t58;
+    return _regenerator().w(function (_context61) {
+      while (1) switch (_context61.p = _context61.n) {
         case 0:
           item = $('adminGiveAllItem').value.trim();
           quantity = parseInt($('adminGiveAllQty').value, 10) || 1;
           mutation = $('adminGiveAllMutation').value.trim() || null;
           if (item) {
-            _context65.n = 1;
+            _context61.n = 1;
             break;
           }
-          return _context65.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context61.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 1:
           if (!(mutation && !MUT_BY_ID[mutation])) {
-            _context65.n = 2;
+            _context61.n = 2;
             break;
           }
-          return _context65.a(2, toast('OOPS', 'Invalid mutation', null, '#ff6b8a'));
+          return _context61.a(2, toast('OOPS', 'Invalid mutation', null, '#ff6b8a'));
         case 2:
-          _context65.p = 2;
-          _context65.n = 3;
+          _context61.p = 2;
+          _context61.n = 3;
           return api('/admin/give-all', {
             method: 'POST',
             body: JSON.stringify({
@@ -6304,21 +6130,21 @@ function _adminGiveAll() {
             })
           });
         case 3:
-          _r12 = _context65.v;
+          _r12 = _context61.v;
           toast('ADMIN', 'Gave ' + quantity + 'x ' + item + (mutation ? ' (' + mutation + ')' : '') + ' to ' + _r12.updated + ' ' + (scope === 'online' ? 'online player' : 'player') + (_r12.updated === 1 ? '' : 's'), null, '#4fd1ff');
           $('adminGiveAllItem').value = '';
           $('adminGiveAllQty').value = '1';
           $('adminGiveAllMutation').value = '';
-          _context65.n = 5;
+          _context61.n = 5;
           break;
         case 4:
-          _context65.p = 4;
-          _t62 = _context65.v;
-          toast('OOPS', _t62.message, null, '#ff6b8a');
+          _context61.p = 4;
+          _t58 = _context61.v;
+          toast('OOPS', _t58.message, null, '#ff6b8a');
         case 5:
-          return _context65.a(2);
+          return _context61.a(2);
       }
-    }, _callee62, null, [[2, 4]]);
+    }, _callee58, null, [[2, 4]]);
   }));
   return _adminGiveAll.apply(this, arguments);
 }
@@ -6328,17 +6154,17 @@ if ($('adminGiveAllBtn')) $('adminGiveAllBtn').addEventListener('click', functio
 if ($('adminGiveAllOnlineBtn')) $('adminGiveAllOnlineBtn').addEventListener('click', function () {
   return adminGiveAll('online');
 });
-function adminSetMoney(_x23, _x24) {
+function adminSetMoney(_x22, _x23) {
   return _adminSetMoney.apply(this, arguments);
 }
 function _adminSetMoney() {
-  _adminSetMoney = _asyncToGenerator(_regenerator().m(function _callee63(username, amt) {
-    var _t63;
-    return _regenerator().w(function (_context66) {
-      while (1) switch (_context66.p = _context66.n) {
+  _adminSetMoney = _asyncToGenerator(_regenerator().m(function _callee59(username, amt) {
+    var _t59;
+    return _regenerator().w(function (_context62) {
+      while (1) switch (_context62.p = _context62.n) {
         case 0:
-          _context66.p = 0;
-          _context66.n = 1;
+          _context62.p = 0;
+          _context62.n = 1;
           return api('/admin/set-money', {
             method: 'POST',
             body: JSON.stringify({
@@ -6349,76 +6175,76 @@ function _adminSetMoney() {
         case 1:
           toast('ADMIN', username + "\u2019s money updated", null, '#4fd1ff');
           loadAdminUsers();
-          _context66.n = 3;
+          _context62.n = 3;
           break;
         case 2:
-          _context66.p = 2;
-          _t63 = _context66.v;
-          toast('OOPS', _t63.message, null, '#ff6b8a');
+          _context62.p = 2;
+          _t59 = _context62.v;
+          toast('OOPS', _t59.message, null, '#ff6b8a');
         case 3:
-          return _context66.a(2);
+          return _context62.a(2);
       }
-    }, _callee63, null, [[0, 2]]);
+    }, _callee59, null, [[0, 2]]);
   }));
   return _adminSetMoney.apply(this, arguments);
 }
-function adminGiveMoneyPrompt(_x25) {
+function adminGiveMoneyPrompt(_x24) {
   return _adminGiveMoneyPrompt.apply(this, arguments);
 }
 function _adminGiveMoneyPrompt() {
-  _adminGiveMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee64(username) {
+  _adminGiveMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee60(username) {
     var amount, amt;
-    return _regenerator().w(function (_context67) {
-      while (1) switch (_context67.n) {
+    return _regenerator().w(function (_context63) {
+      while (1) switch (_context63.n) {
         case 0:
           amount = prompt('Enter amount to give to ' + username + ' (negative to remove):', '1000');
           if (!(amount == null)) {
-            _context67.n = 1;
+            _context63.n = 1;
             break;
           }
-          return _context67.a(2);
+          return _context63.a(2);
         case 1:
           amt = parseInt(amount, 10);
           if (!(isNaN(amt) || amt === 0)) {
-            _context67.n = 2;
+            _context63.n = 2;
             break;
           }
-          return _context67.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
+          return _context63.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
         case 2:
-          _context67.n = 3;
+          _context63.n = 3;
           return adminSetMoney(username, amt);
         case 3:
-          return _context67.a(2);
+          return _context63.a(2);
       }
-    }, _callee64);
+    }, _callee60);
   }));
   return _adminGiveMoneyPrompt.apply(this, arguments);
 }
-function adminSetMoneyPrompt(_x26) {
+function adminSetMoneyPrompt(_x25) {
   return _adminSetMoneyPrompt.apply(this, arguments);
 }
 function _adminSetMoneyPrompt() {
-  _adminSetMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee65(username) {
-    var amount, amt, _t64;
-    return _regenerator().w(function (_context68) {
-      while (1) switch (_context68.p = _context68.n) {
+  _adminSetMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee61(username) {
+    var amount, amt, _t60;
+    return _regenerator().w(function (_context64) {
+      while (1) switch (_context64.p = _context64.n) {
         case 0:
           amount = prompt('Set ' + username + "\u2019s money to:", '0');
           if (!(amount == null)) {
-            _context68.n = 1;
+            _context64.n = 1;
             break;
           }
-          return _context68.a(2);
+          return _context64.a(2);
         case 1:
           amt = parseInt(amount, 10);
           if (!(isNaN(amt) || amt < 0)) {
-            _context68.n = 2;
+            _context64.n = 2;
             break;
           }
-          return _context68.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
+          return _context64.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
         case 2:
-          _context68.p = 2;
-          _context68.n = 3;
+          _context64.p = 2;
+          _context64.n = 3;
           return api('/admin/set-money', {
             method: 'POST',
             body: JSON.stringify({
@@ -6429,16 +6255,16 @@ function _adminSetMoneyPrompt() {
         case 3:
           toast('ADMIN', username + ' money set', null, '#4fd1ff');
           loadAdminUsers();
-          _context68.n = 5;
+          _context64.n = 5;
           break;
         case 4:
-          _context68.p = 4;
-          _t64 = _context68.v;
-          toast('OOPS', _t64.message, null, '#ff6b8a');
+          _context64.p = 4;
+          _t60 = _context64.v;
+          toast('OOPS', _t60.message, null, '#ff6b8a');
         case 5:
-          return _context68.a(2);
+          return _context64.a(2);
       }
-    }, _callee65, null, [[2, 4]]);
+    }, _callee61, null, [[2, 4]]);
   }));
   return _adminSetMoneyPrompt.apply(this, arguments);
 }
@@ -6461,46 +6287,46 @@ function allItemNames() {
   allNames.sort();
   return allNames;
 }
-function adminGiveItemPrompt(_x27) {
+function adminGiveItemPrompt(_x26) {
   return _adminGiveItemPrompt.apply(this, arguments);
 }
 function _adminGiveItemPrompt() {
-  _adminGiveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee66(username) {
-    var allNames, itemSel, item, mutId, qty, _t65;
-    return _regenerator().w(function (_context69) {
-      while (1) switch (_context69.p = _context69.n) {
+  _adminGiveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee62(username) {
+    var allNames, itemSel, item, mutId, qty, _t61;
+    return _regenerator().w(function (_context65) {
+      while (1) switch (_context65.p = _context65.n) {
         case 0:
           allNames = allItemNames();
           itemSel = prompt('Give item to ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
-            _context69.n = 1;
+            _context65.n = 1;
             break;
           }
-          return _context69.a(2);
+          return _context65.a(2);
         case 1:
           item = itemSel.trim();
           if (item) {
-            _context69.n = 2;
+            _context65.n = 2;
             break;
           }
-          return _context69.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context65.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
           mutId = prompt('Mutation (blank for none; valid: gold, diamond, electric)', '');
           if (!(mutId == null)) {
-            _context69.n = 3;
+            _context65.n = 3;
             break;
           }
-          return _context69.a(2);
+          return _context65.a(2);
         case 3:
           qty = parseInt(prompt('Quantity', '1') || '1', 10);
           if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context69.n = 4;
+            _context65.n = 4;
             break;
           }
-          return _context69.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+          return _context65.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
         case 4:
-          _context69.p = 4;
-          _context69.n = 5;
+          _context65.p = 4;
+          _context65.n = 5;
           return api('/admin/give-item', {
             method: 'POST',
             body: JSON.stringify({
@@ -6512,52 +6338,52 @@ function _adminGiveItemPrompt() {
           });
         case 5:
           toast('ADMIN', 'Gave ' + qty + 'x ' + item + ' to ' + username, null, '#4fd1ff');
-          _context69.n = 7;
+          _context65.n = 7;
           break;
         case 6:
-          _context69.p = 6;
-          _t65 = _context69.v;
-          toast('OOPS', _t65.message, null, '#ff6b8a');
+          _context65.p = 6;
+          _t61 = _context65.v;
+          toast('OOPS', _t61.message, null, '#ff6b8a');
         case 7:
-          return _context69.a(2);
+          return _context65.a(2);
       }
-    }, _callee66, null, [[4, 6]]);
+    }, _callee62, null, [[4, 6]]);
   }));
   return _adminGiveItemPrompt.apply(this, arguments);
 }
-function adminRemoveItemPrompt(_x28) {
+function adminRemoveItemPrompt(_x27) {
   return _adminRemoveItemPrompt.apply(this, arguments);
 }
 function _adminRemoveItemPrompt() {
-  _adminRemoveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee67(username) {
-    var allNames, itemSel, item, qty, _t66;
-    return _regenerator().w(function (_context70) {
-      while (1) switch (_context70.p = _context70.n) {
+  _adminRemoveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee63(username) {
+    var allNames, itemSel, item, qty, _t62;
+    return _regenerator().w(function (_context66) {
+      while (1) switch (_context66.p = _context66.n) {
         case 0:
           allNames = allItemNames();
           itemSel = prompt('Remove item from ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
-            _context70.n = 1;
+            _context66.n = 1;
             break;
           }
-          return _context70.a(2);
+          return _context66.a(2);
         case 1:
           item = itemSel.trim();
           if (item) {
-            _context70.n = 2;
+            _context66.n = 2;
             break;
           }
-          return _context70.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context66.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
           qty = parseInt(prompt('Quantity to remove', '1') || '1', 10);
           if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context70.n = 3;
+            _context66.n = 3;
             break;
           }
-          return _context70.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+          return _context66.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
         case 3:
-          _context70.p = 3;
-          _context70.n = 4;
+          _context66.p = 3;
+          _context66.n = 4;
           return api('/admin/remove-item', {
             method: 'POST',
             body: JSON.stringify({
@@ -6568,59 +6394,59 @@ function _adminRemoveItemPrompt() {
           });
         case 4:
           toast('ADMIN', 'Removed ' + qty + 'x ' + item + ' from ' + username, null, '#4fd1ff');
-          _context70.n = 6;
+          _context66.n = 6;
           break;
         case 5:
-          _context70.p = 5;
-          _t66 = _context70.v;
-          toast('OOPS', _t66.message, null, '#ff6b8a');
+          _context66.p = 5;
+          _t62 = _context66.v;
+          toast('OOPS', _t62.message, null, '#ff6b8a');
         case 6:
-          return _context70.a(2);
+          return _context66.a(2);
       }
-    }, _callee67, null, [[3, 5]]);
+    }, _callee63, null, [[3, 5]]);
   }));
   return _adminRemoveItemPrompt.apply(this, arguments);
 }
-function adminRemoveMutationPrompt(_x29) {
+function adminRemoveMutationPrompt(_x28) {
   return _adminRemoveMutationPrompt.apply(this, arguments);
 }
 function _adminRemoveMutationPrompt() {
-  _adminRemoveMutationPrompt = _asyncToGenerator(_regenerator().m(function _callee68(username) {
-    var allNames, itemSel, item, mutId, qty, _t67;
-    return _regenerator().w(function (_context71) {
-      while (1) switch (_context71.p = _context71.n) {
+  _adminRemoveMutationPrompt = _asyncToGenerator(_regenerator().m(function _callee64(username) {
+    var allNames, itemSel, item, mutId, qty, _t63;
+    return _regenerator().w(function (_context67) {
+      while (1) switch (_context67.p = _context67.n) {
         case 0:
           allNames = allItemNames();
           itemSel = prompt('Remove mutation from item for ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
-            _context71.n = 1;
+            _context67.n = 1;
             break;
           }
-          return _context71.a(2);
+          return _context67.a(2);
         case 1:
           item = itemSel.trim();
           if (item) {
-            _context71.n = 2;
+            _context67.n = 2;
             break;
           }
-          return _context71.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context67.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
           mutId = prompt('Mutation to remove (valid: gold, diamond, electric)', '');
           if (!(mutId == null)) {
-            _context71.n = 3;
+            _context67.n = 3;
             break;
           }
-          return _context71.a(2);
+          return _context67.a(2);
         case 3:
           qty = parseInt(prompt('Quantity', '1') || '1', 10);
           if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context71.n = 4;
+            _context67.n = 4;
             break;
           }
-          return _context71.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+          return _context67.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
         case 4:
-          _context71.p = 4;
-          _context71.n = 5;
+          _context67.p = 4;
+          _context67.n = 5;
           return api('/admin/remove-mutation', {
             method: 'POST',
             body: JSON.stringify({
@@ -6632,30 +6458,30 @@ function _adminRemoveMutationPrompt() {
           });
         case 5:
           toast('ADMIN', 'Removed mutation from ' + qty + 'x ' + item + ' for ' + username, null, '#4fd1ff');
-          _context71.n = 7;
+          _context67.n = 7;
           break;
         case 6:
-          _context71.p = 6;
-          _t67 = _context71.v;
-          toast('OOPS', _t67.message, null, '#ff6b8a');
+          _context67.p = 6;
+          _t63 = _context67.v;
+          toast('OOPS', _t63.message, null, '#ff6b8a');
         case 7:
-          return _context71.a(2);
+          return _context67.a(2);
       }
-    }, _callee68, null, [[4, 6]]);
+    }, _callee64, null, [[4, 6]]);
   }));
   return _adminRemoveMutationPrompt.apply(this, arguments);
 }
-function adminSetLevel(_x30, _x31) {
+function adminSetLevel(_x29, _x30) {
   return _adminSetLevel.apply(this, arguments);
 }
 function _adminSetLevel() {
-  _adminSetLevel = _asyncToGenerator(_regenerator().m(function _callee69(username, level) {
-    var _t68;
-    return _regenerator().w(function (_context72) {
-      while (1) switch (_context72.p = _context72.n) {
+  _adminSetLevel = _asyncToGenerator(_regenerator().m(function _callee65(username, level) {
+    var _t64;
+    return _regenerator().w(function (_context68) {
+      while (1) switch (_context68.p = _context68.n) {
         case 0:
-          _context72.p = 0;
-          _context72.n = 1;
+          _context68.p = 0;
+          _context68.n = 1;
           return api('/admin/set-level', {
             method: 'POST',
             body: JSON.stringify({
@@ -6666,36 +6492,36 @@ function _adminSetLevel() {
         case 1:
           toast('ADMIN', username + ' is now level ' + level, null, '#4fd1ff');
           loadAdminUsers();
-          _context72.n = 3;
+          _context68.n = 3;
           break;
         case 2:
-          _context72.p = 2;
-          _t68 = _context72.v;
-          toast('OOPS', _t68.message, null, '#ff6b8a');
+          _context68.p = 2;
+          _t64 = _context68.v;
+          toast('OOPS', _t64.message, null, '#ff6b8a');
         case 3:
-          return _context72.a(2);
+          return _context68.a(2);
       }
-    }, _callee69, null, [[0, 2]]);
+    }, _callee65, null, [[0, 2]]);
   }));
   return _adminSetLevel.apply(this, arguments);
 }
-function adminClearItems(_x32) {
+function adminClearItems(_x31) {
   return _adminClearItems.apply(this, arguments);
 }
 function _adminClearItems() {
-  _adminClearItems = _asyncToGenerator(_regenerator().m(function _callee70(username) {
-    var _t69;
-    return _regenerator().w(function (_context73) {
-      while (1) switch (_context73.p = _context73.n) {
+  _adminClearItems = _asyncToGenerator(_regenerator().m(function _callee66(username) {
+    var _t65;
+    return _regenerator().w(function (_context69) {
+      while (1) switch (_context69.p = _context69.n) {
         case 0:
           if (confirm('Clear all items for ' + username + '?')) {
-            _context73.n = 1;
+            _context69.n = 1;
             break;
           }
-          return _context73.a(2);
+          return _context69.a(2);
         case 1:
-          _context73.p = 1;
-          _context73.n = 2;
+          _context69.p = 1;
+          _context69.n = 2;
           return api('/admin/clear-items', {
             method: 'POST',
             body: JSON.stringify({
@@ -6704,6 +6530,158 @@ function _adminClearItems() {
           });
         case 2:
           toast('ADMIN', username + "\u2019s items cleared", null, '#4fd1ff');
+          loadAdminUsers();
+          _context69.n = 4;
+          break;
+        case 3:
+          _context69.p = 3;
+          _t65 = _context69.v;
+          toast('OOPS', _t65.message, null, '#ff6b8a');
+        case 4:
+          return _context69.a(2);
+      }
+    }, _callee66, null, [[1, 3]]);
+  }));
+  return _adminClearItems.apply(this, arguments);
+}
+function adminResetProgress(_x32) {
+  return _adminResetProgress.apply(this, arguments);
+}
+function _adminResetProgress() {
+  _adminResetProgress = _asyncToGenerator(_regenerator().m(function _callee67(username) {
+    var _t66;
+    return _regenerator().w(function (_context70) {
+      while (1) switch (_context70.p = _context70.n) {
+        case 0:
+          if (confirm('Reset ALL progress for ' + username + '? This cannot be undone.')) {
+            _context70.n = 1;
+            break;
+          }
+          return _context70.a(2);
+        case 1:
+          _context70.p = 1;
+          _context70.n = 2;
+          return api('/admin/reset-progress', {
+            method: 'POST',
+            body: JSON.stringify({
+              username: username
+            })
+          });
+        case 2:
+          toast('ADMIN', username + ' reset', null, '#4fd1ff');
+          loadAdminUsers();
+          _context70.n = 4;
+          break;
+        case 3:
+          _context70.p = 3;
+          _t66 = _context70.v;
+          toast('OOPS', _t66.message, null, '#ff6b8a');
+        case 4:
+          return _context70.a(2);
+      }
+    }, _callee67, null, [[1, 3]]);
+  }));
+  return _adminResetProgress.apply(this, arguments);
+}
+function adminKick(_x33) {
+  return _adminKick.apply(this, arguments);
+}
+function _adminKick() {
+  _adminKick = _asyncToGenerator(_regenerator().m(function _callee68(username) {
+    var _t67;
+    return _regenerator().w(function (_context71) {
+      while (1) switch (_context71.p = _context71.n) {
+        case 0:
+          if (confirm('Kick ' + username + ' out of their world?')) {
+            _context71.n = 1;
+            break;
+          }
+          return _context71.a(2);
+        case 1:
+          _context71.p = 1;
+          _context71.n = 2;
+          return api('/admin/kick', {
+            method: 'POST',
+            body: JSON.stringify({
+              username: username
+            })
+          });
+        case 2:
+          toast('ADMIN', username + ' kicked', null, '#ffb648');
+          loadAdminUsers();
+          _context71.n = 4;
+          break;
+        case 3:
+          _context71.p = 3;
+          _t67 = _context71.v;
+          toast('OOPS', _t67.message, null, '#ff6b8a');
+        case 4:
+          return _context71.a(2);
+      }
+    }, _callee68, null, [[1, 3]]);
+  }));
+  return _adminKick.apply(this, arguments);
+}
+function adminMute(_x34) {
+  return _adminMute.apply(this, arguments);
+}
+function _adminMute() {
+  _adminMute = _asyncToGenerator(_regenerator().m(function _callee69(username) {
+    var d, _r13, _t68;
+    return _regenerator().w(function (_context72) {
+      while (1) switch (_context72.p = _context72.n) {
+        case 0:
+          d = adminDuration('adminMuteDur');
+          _context72.p = 1;
+          _context72.n = 2;
+          return api('/admin/mute', {
+            method: 'POST',
+            body: JSON.stringify({
+              username: username,
+              minutes: d.minutes,
+              permanent: d.permanent
+            })
+          });
+        case 2:
+          _r13 = _context72.v;
+          toast('ADMIN', username + (_r13.muted ? ' muted ' + d.label : ' unmuted'), null, '#ffb648');
+          loadAdminUsers();
+          _context72.n = 4;
+          break;
+        case 3:
+          _context72.p = 3;
+          _t68 = _context72.v;
+          toast('OOPS', _t68.message, null, '#ff6b8a');
+        case 4:
+          return _context72.a(2);
+      }
+    }, _callee69, null, [[1, 3]]);
+  }));
+  return _adminMute.apply(this, arguments);
+}
+function adminBan(_x35) {
+  return _adminBan.apply(this, arguments);
+}
+function _adminBan() {
+  _adminBan = _asyncToGenerator(_regenerator().m(function _callee70(username) {
+    var d, _r14, _t69;
+    return _regenerator().w(function (_context73) {
+      while (1) switch (_context73.p = _context73.n) {
+        case 0:
+          d = adminDuration('adminBanDur');
+          _context73.p = 1;
+          _context73.n = 2;
+          return api('/admin/ban', {
+            method: 'POST',
+            body: JSON.stringify({
+              username: username,
+              minutes: d.minutes,
+              permanent: d.permanent
+            })
+          });
+        case 2:
+          _r14 = _context73.v;
+          toast('ADMIN', username + (_r14.banned ? ' banned ' + d.label : ' unbanned'), null, _r14.banned ? '#ff5c8a' : '#7bdc78');
           loadAdminUsers();
           _context73.n = 4;
           break;
@@ -6716,18 +6694,20 @@ function _adminClearItems() {
       }
     }, _callee70, null, [[1, 3]]);
   }));
-  return _adminClearItems.apply(this, arguments);
+  return _adminBan.apply(this, arguments);
 }
-function adminResetProgress(_x33) {
-  return _adminResetProgress.apply(this, arguments);
+function adminAnnounce() {
+  return _adminAnnounce.apply(this, arguments);
 }
-function _adminResetProgress() {
-  _adminResetProgress = _asyncToGenerator(_regenerator().m(function _callee71(username) {
-    var _t70;
+function _adminAnnounce() {
+  _adminAnnounce = _asyncToGenerator(_regenerator().m(function _callee71() {
+    var inp, text, _t70;
     return _regenerator().w(function (_context74) {
       while (1) switch (_context74.p = _context74.n) {
         case 0:
-          if (confirm('Reset ALL progress for ' + username + '? This cannot be undone.')) {
+          inp = $('adminAnnounceInp');
+          text = inp.value.trim();
+          if (text) {
             _context74.n = 1;
             break;
           }
@@ -6735,15 +6715,15 @@ function _adminResetProgress() {
         case 1:
           _context74.p = 1;
           _context74.n = 2;
-          return api('/admin/reset-progress', {
+          return api('/admin/announce', {
             method: 'POST',
             body: JSON.stringify({
-              username: username
+              text: text
             })
           });
         case 2:
-          toast('ADMIN', username + ' reset', null, '#4fd1ff');
-          loadAdminUsers();
+          inp.value = '';
+          toast('ADMIN', 'Announcement sent', null, '#4fd1ff');
           _context74.n = 4;
           break;
         case 3:
@@ -6754,160 +6734,6 @@ function _adminResetProgress() {
           return _context74.a(2);
       }
     }, _callee71, null, [[1, 3]]);
-  }));
-  return _adminResetProgress.apply(this, arguments);
-}
-function adminKick(_x34) {
-  return _adminKick.apply(this, arguments);
-}
-function _adminKick() {
-  _adminKick = _asyncToGenerator(_regenerator().m(function _callee72(username) {
-    var _t71;
-    return _regenerator().w(function (_context75) {
-      while (1) switch (_context75.p = _context75.n) {
-        case 0:
-          if (confirm('Kick ' + username + ' out of their world?')) {
-            _context75.n = 1;
-            break;
-          }
-          return _context75.a(2);
-        case 1:
-          _context75.p = 1;
-          _context75.n = 2;
-          return api('/admin/kick', {
-            method: 'POST',
-            body: JSON.stringify({
-              username: username
-            })
-          });
-        case 2:
-          toast('ADMIN', username + ' kicked', null, '#ffb648');
-          loadAdminUsers();
-          _context75.n = 4;
-          break;
-        case 3:
-          _context75.p = 3;
-          _t71 = _context75.v;
-          toast('OOPS', _t71.message, null, '#ff6b8a');
-        case 4:
-          return _context75.a(2);
-      }
-    }, _callee72, null, [[1, 3]]);
-  }));
-  return _adminKick.apply(this, arguments);
-}
-function adminMute(_x35) {
-  return _adminMute.apply(this, arguments);
-}
-function _adminMute() {
-  _adminMute = _asyncToGenerator(_regenerator().m(function _callee73(username) {
-    var d, _r13, _t72;
-    return _regenerator().w(function (_context76) {
-      while (1) switch (_context76.p = _context76.n) {
-        case 0:
-          d = adminDuration('adminMuteDur');
-          _context76.p = 1;
-          _context76.n = 2;
-          return api('/admin/mute', {
-            method: 'POST',
-            body: JSON.stringify({
-              username: username,
-              minutes: d.minutes,
-              permanent: d.permanent
-            })
-          });
-        case 2:
-          _r13 = _context76.v;
-          toast('ADMIN', username + (_r13.muted ? ' muted ' + d.label : ' unmuted'), null, '#ffb648');
-          loadAdminUsers();
-          _context76.n = 4;
-          break;
-        case 3:
-          _context76.p = 3;
-          _t72 = _context76.v;
-          toast('OOPS', _t72.message, null, '#ff6b8a');
-        case 4:
-          return _context76.a(2);
-      }
-    }, _callee73, null, [[1, 3]]);
-  }));
-  return _adminMute.apply(this, arguments);
-}
-function adminBan(_x36) {
-  return _adminBan.apply(this, arguments);
-}
-function _adminBan() {
-  _adminBan = _asyncToGenerator(_regenerator().m(function _callee74(username) {
-    var d, _r14, _t73;
-    return _regenerator().w(function (_context77) {
-      while (1) switch (_context77.p = _context77.n) {
-        case 0:
-          d = adminDuration('adminBanDur');
-          _context77.p = 1;
-          _context77.n = 2;
-          return api('/admin/ban', {
-            method: 'POST',
-            body: JSON.stringify({
-              username: username,
-              minutes: d.minutes,
-              permanent: d.permanent
-            })
-          });
-        case 2:
-          _r14 = _context77.v;
-          toast('ADMIN', username + (_r14.banned ? ' banned ' + d.label : ' unbanned'), null, _r14.banned ? '#ff5c8a' : '#7bdc78');
-          loadAdminUsers();
-          _context77.n = 4;
-          break;
-        case 3:
-          _context77.p = 3;
-          _t73 = _context77.v;
-          toast('OOPS', _t73.message, null, '#ff6b8a');
-        case 4:
-          return _context77.a(2);
-      }
-    }, _callee74, null, [[1, 3]]);
-  }));
-  return _adminBan.apply(this, arguments);
-}
-function adminAnnounce() {
-  return _adminAnnounce.apply(this, arguments);
-}
-function _adminAnnounce() {
-  _adminAnnounce = _asyncToGenerator(_regenerator().m(function _callee75() {
-    var inp, text, _t74;
-    return _regenerator().w(function (_context78) {
-      while (1) switch (_context78.p = _context78.n) {
-        case 0:
-          inp = $('adminAnnounceInp');
-          text = inp.value.trim();
-          if (text) {
-            _context78.n = 1;
-            break;
-          }
-          return _context78.a(2);
-        case 1:
-          _context78.p = 1;
-          _context78.n = 2;
-          return api('/admin/announce', {
-            method: 'POST',
-            body: JSON.stringify({
-              text: text
-            })
-          });
-        case 2:
-          inp.value = '';
-          toast('ADMIN', 'Announcement sent', null, '#4fd1ff');
-          _context78.n = 4;
-          break;
-        case 3:
-          _context78.p = 3;
-          _t74 = _context78.v;
-          toast('OOPS', _t74.message, null, '#ff6b8a');
-        case 4:
-          return _context78.a(2);
-      }
-    }, _callee75, null, [[1, 3]]);
   }));
   return _adminAnnounce.apply(this, arguments);
 }

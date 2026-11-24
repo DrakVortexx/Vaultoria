@@ -1629,7 +1629,6 @@ async function loadMe() {
   renderVault();
   showScreen('dash');
   refreshEvent();
-  checkPurchaseReturn();
   if (data.login && data.login.isNew) {
     setTimeout(() => toast('DAILY REWARD \u00b7 DAY ' + data.login.day, data.login.streak + ' day streak', '$' + fmt(data.login.reward), '#ffb648'), 600);
   }
@@ -1919,7 +1918,6 @@ function openDashPanel(which) {
   else if (which === 'friends') renderFriendsPanel();
   else if (which === 'settings') renderSettingsPanel();
   else if (which === 'customize') renderCustomizePanel();
-  else if (which === 'store') renderStorePanel();
 }
 $('playBtn').addEventListener('click', play);
 $('eventBtn').addEventListener('click', () => openDashPanel('event'));
@@ -1927,7 +1925,7 @@ $('serversBtn').addEventListener('click', () => openDashPanel('servers'));
 $('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
 $('settingsBtn').addEventListener('click', () => openDashPanel('settings'));
 $('customizeBtn').addEventListener('click', () => openDashPanel('customize'));
-$('storeBtn').addEventListener('click', () => openDashPanel('store'));
+$('storeBtn').addEventListener('click', () => { window.location.href = '/store'; });
 
 function renderEventPanel() {
   const p = $('dashPanel');
@@ -2021,7 +2019,7 @@ function renderCustomizePanel() {
       if (!owned && opt.store) {
         btn.classList.add('disabled');
         btn.title = 'Available in the Store';
-        btn.addEventListener('click', () => openDashPanel('store'));
+        btn.addEventListener('click', () => { window.location.href = '/store'; });
       } else if (!owned && !canAfford) {
         btn.classList.add('disabled');
       } else if (!selected) {
@@ -2049,82 +2047,11 @@ function renderCustomizePanel() {
 }
 
 /* =============================================================
- * STORE (Stripe)
+ * STORE
+ * The store lives on its own page at /store (store.html). The Store
+ * button on the dashboard navigates there; purchases return to
+ * /store?purchase=success and are verified on that page.
  * ============================================================= */
-async function renderStorePanel() {
-  const p = $('dashPanel');
-  p.classList.remove('hidden');
-  p.innerHTML = '<div class="spinner">Loading store...</div>';
-  try {
-    const r = await api('/store');
-    if (!r.stripeReady) {
-      p.innerHTML = '<h3>Store</h3><div class="empty-note" style="padding:8px 4px 14px">The store is not configured on the server yet.</div>';
-      return;
-    }
-    let html = '<h3>Store</h3><div style="width:100%;display:flex;flex-direction:column;gap:12px">';
-    for (const prod of r.products) {
-      html +=
-        '<div class="quest" style="display:flex;flex-direction:column;gap:8px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' +
-            '<div><div style="font-weight:800;font-size:15px;color:#ffd76a">&#10024; ' + esc(prod.name) + '</div>' +
-            '<div style="font-size:12px;color:#8b93bd;margin-top:3px">' + esc(prod.description) + '</div></div>' +
-            '<div style="font-weight:800;font-size:18px;color:#7bdc78;white-space:nowrap">$' + (prod.priceCents / 100).toFixed(2) + '</div>' +
-          '</div>' +
-          '<div class="inline-form" style="margin:0">' +
-            '<input id="promoInput" maxlength="24" autocomplete="off" placeholder="Promo code (optional)" style="flex:1;min-width:140px">' +
-            (prod.owned
-              ? '<button class="btn green" data-equip="' + prod.id + '" type="button">EQUIP</button>'
-              : '<button class="btn" data-buy="' + prod.id + '" type="button">BUY</button>') +
-          '</div>' +
-          (prod.owned ? '<div style="font-size:11px;color:#7bdc78;font-weight:700;letter-spacing:1px">OWNED</div>' : '') +
-        '</div>';
-    }
-    html += '</div><div class="empty-note" style="padding:10px 4px 0">Secure checkout by Stripe. Promo code <b>FRIENDSAREW</b> makes it free!</div>';
-    p.innerHTML = html;
-    p.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => buyProduct(btn.dataset.buy)));
-    p.querySelectorAll('[data-equip]').forEach(btn => btn.addEventListener('click', async () => {
-      try {
-        const r2 = await api('/customize', { method: 'POST', body: JSON.stringify({ type: 'trail', id: 'golden' }) });
-        state = r2.state;
-        toast('EQUIPPED', 'Golden Sparkle is now active', null, '#ffd76a');
-        renderStorePanel();
-      } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
-    }));
-  } catch (e) {
-    p.innerHTML = '<h3>Store</h3><div class="empty-note" style="padding:8px 4px 14px">' + esc(e.message || 'Could not load store') + '</div>';
-  }
-}
-
-async function buyProduct(productId) {
-  const promoInput = $('promoInput');
-  const promoCode = promoInput ? promoInput.value.trim() : '';
-  try {
-    const r = await api('/store/checkout', { method: 'POST', body: JSON.stringify({ productId, promoCode }) });
-    if (r.url) window.location.href = r.url;
-  } catch (e) {
-    toast('OOPS', e.message, null, '#ff6b8a');
-  }
-}
-
-async function checkPurchaseReturn() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('purchase') !== 'success') return;
-  const sessionId = params.get('session_id');
-  // Clean the URL right away so a refresh doesn't re-verify.
-  params.delete('purchase'); params.delete('session_id');
-  const qs = params.toString();
-  history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
-  if (!sessionId) return;
-  try {
-    const r = await api('/store/verify?session_id=' + encodeURIComponent(sessionId));
-    state = r.state;
-    ownedProducts = r.ownedProducts || ownedProducts;
-    renderDash();
-    toast('PURCHASE COMPLETE', 'Golden Sparkle unlocked \u2014 check Customize to equip it', null, '#ffd76a');
-  } catch (e) {
-    toast('OOPS', e.message || 'Could not verify purchase', null, '#ff6b8a');
-  }
-}
 
 async function play() {
   try {
