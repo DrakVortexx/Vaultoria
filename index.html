@@ -762,6 +762,11 @@
         <div class="dc-title">Customize</div>
         <div class="dc-desc">Customize your character appearance with colors and effects.</div>
       </button>
+      <button class="dash-card" id="storeBtn" type="button">
+        <div class="dc-icon">&#128142;</div>
+        <div class="dc-title">Store</div>
+        <div class="dc-desc">Exclusive items and effects for real keepers.</div>
+      </button>
       <button class="dash-card event-card" id="eventBtn" type="button">
         <span class="event-badge hidden" id="eventBadge">LIVE</span>
         <div class="dc-icon">&#10024;</div>
@@ -1461,6 +1466,7 @@ let spotTimer = null;
 let dailyData = null;
 let bossState = null;
 let lastMoneyShown = null;
+let ownedProducts = [];
 
 applyEventTheme();
 setInterval(applyEventTheme, 60000);
@@ -1615,6 +1621,7 @@ async function loadMe() {
   const data = await api('/me');
   me = data.user;
   state = data.state;
+  ownedProducts = Array.isArray(state.ownedProducts) ? state.ownedProducts : [];
   dailyData = data.daily || null;
   tutorialDone = !!state.tutorialDone;
   $('dashPanel').classList.add('hidden');
@@ -1622,6 +1629,7 @@ async function loadMe() {
   renderVault();
   showScreen('dash');
   refreshEvent();
+  checkPurchaseReturn();
   if (data.login && data.login.isNew) {
     setTimeout(() => toast('DAILY REWARD \u00b7 DAY ' + data.login.day, data.login.streak + ' day streak', '$' + fmt(data.login.reward), '#ffb648'), 600);
   }
@@ -1648,6 +1656,7 @@ async function refreshState() {
   const data = await api('/me');
   me = data.user;
   state = data.state;
+  ownedProducts = Array.isArray(state.ownedProducts) ? state.ownedProducts : ownedProducts;
   dailyData = data.daily || null;
   tutorialDone = !!state.tutorialDone;
   renderVault();
@@ -1910,6 +1919,7 @@ function openDashPanel(which) {
   else if (which === 'friends') renderFriendsPanel();
   else if (which === 'settings') renderSettingsPanel();
   else if (which === 'customize') renderCustomizePanel();
+  else if (which === 'store') renderStorePanel();
 }
 $('playBtn').addEventListener('click', play);
 $('eventBtn').addEventListener('click', () => openDashPanel('event'));
@@ -1917,6 +1927,7 @@ $('serversBtn').addEventListener('click', () => openDashPanel('servers'));
 $('friendsBtn').addEventListener('click', () => openDashPanel('friends'));
 $('settingsBtn').addEventListener('click', () => openDashPanel('settings'));
 $('customizeBtn').addEventListener('click', () => openDashPanel('customize'));
+$('storeBtn').addEventListener('click', () => openDashPanel('store'));
 
 function renderEventPanel() {
   const p = $('dashPanel');
@@ -1981,6 +1992,7 @@ function renderCustomizePanel() {
     { id: 'sparkle', name: 'Sparkle', price: 25000 },
     { id: 'fire', name: 'Fire', price: 100000 },
     { id: 'rainbow', name: 'Rainbow', price: 500000 },
+    { id: 'golden', name: 'Golden Sparkle', price: 0, store: true },
   ];
 
   const glows = [
@@ -1994,7 +2006,8 @@ function renderCustomizePanel() {
     const container = $(containerId);
     container.innerHTML = '';
     options.forEach(opt => {
-      const owned = opt.price === 0 || current === opt.id;
+      const storeOwned = opt.store ? ownedProducts.indexOf('golden-sparkle') !== -1 : false;
+      const owned = (opt.price === 0 && !opt.store) || current === opt.id || storeOwned;
       const canAfford = money >= opt.price;
       const selected = current === opt.id;
 
@@ -2003,9 +2016,13 @@ function renderCustomizePanel() {
       btn.style.backgroundColor = type === 'color' ? 'hsl(' + opt.id + ', 70%, 50%)' : '#2a2d3e';
       btn.innerHTML =
         '<div class="co-name">' + opt.name + '</div>' +
-        '<div class="co-price">' + (owned ? 'OWNED' : '$' + formatNumber(opt.price)) + '</div>';
+        '<div class="co-price">' + (owned ? 'OWNED' : opt.store ? '$2.99' : '$' + fmt(opt.price)) + '</div>';
 
-      if (!owned && !canAfford) {
+      if (!owned && opt.store) {
+        btn.classList.add('disabled');
+        btn.title = 'Available in the Store';
+        btn.addEventListener('click', () => openDashPanel('store'));
+      } else if (!owned && !canAfford) {
         btn.classList.add('disabled');
       } else if (!selected) {
         btn.addEventListener('click', async () => {
@@ -2029,6 +2046,84 @@ function renderCustomizePanel() {
   renderOption('color', colors, 'colorGrid', state.customColor || '47');
   renderOption('trail', trails, 'trailGrid', state.customTrail || 'none');
   renderOption('glow', glows, 'glowGrid', state.customGlow || 'none');
+}
+
+/* =============================================================
+ * STORE (Stripe)
+ * ============================================================= */
+async function renderStorePanel() {
+  const p = $('dashPanel');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="spinner">Loading store...</div>';
+  try {
+    const r = await api('/store');
+    if (!r.stripeReady) {
+      p.innerHTML = '<h3>Store</h3><div class="empty-note" style="padding:8px 4px 14px">The store is not configured on the server yet.</div>';
+      return;
+    }
+    let html = '<h3>Store</h3><div style="width:100%;display:flex;flex-direction:column;gap:12px">';
+    for (const prod of r.products) {
+      html +=
+        '<div class="quest" style="display:flex;flex-direction:column;gap:8px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+            '<div><div style="font-weight:800;font-size:15px;color:#ffd76a">&#10024; ' + esc(prod.name) + '</div>' +
+            '<div style="font-size:12px;color:#8b93bd;margin-top:3px">' + esc(prod.description) + '</div></div>' +
+            '<div style="font-weight:800;font-size:18px;color:#7bdc78;white-space:nowrap">$' + (prod.priceCents / 100).toFixed(2) + '</div>' +
+          '</div>' +
+          '<div class="inline-form" style="margin:0">' +
+            '<input id="promoInput" maxlength="24" autocomplete="off" placeholder="Promo code (optional)" style="flex:1;min-width:140px">' +
+            (prod.owned
+              ? '<button class="btn green" data-equip="' + prod.id + '" type="button">EQUIP</button>'
+              : '<button class="btn" data-buy="' + prod.id + '" type="button">BUY</button>') +
+          '</div>' +
+          (prod.owned ? '<div style="font-size:11px;color:#7bdc78;font-weight:700;letter-spacing:1px">OWNED</div>' : '') +
+        '</div>';
+    }
+    html += '</div><div class="empty-note" style="padding:10px 4px 0">Secure checkout by Stripe. Promo code <b>FRIENDSAREW</b> makes it free!</div>';
+    p.innerHTML = html;
+    p.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => buyProduct(btn.dataset.buy)));
+    p.querySelectorAll('[data-equip]').forEach(btn => btn.addEventListener('click', async () => {
+      try {
+        const r2 = await api('/customize', { method: 'POST', body: JSON.stringify({ type: 'trail', id: 'golden' }) });
+        state = r2.state;
+        toast('EQUIPPED', 'Golden Sparkle is now active', null, '#ffd76a');
+        renderStorePanel();
+      } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+    }));
+  } catch (e) {
+    p.innerHTML = '<h3>Store</h3><div class="empty-note" style="padding:8px 4px 14px">' + esc(e.message || 'Could not load store') + '</div>';
+  }
+}
+
+async function buyProduct(productId) {
+  const promoInput = $('promoInput');
+  const promoCode = promoInput ? promoInput.value.trim() : '';
+  try {
+    const r = await api('/store/checkout', { method: 'POST', body: JSON.stringify({ productId, promoCode }) });
+    if (r.url) window.location.href = r.url;
+  } catch (e) {
+    toast('OOPS', e.message, null, '#ff6b8a');
+  }
+}
+
+async function checkPurchaseReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('purchase') !== 'success') return;
+  const sessionId = params.get('session_id');
+  // Clean the URL right away so a refresh doesn't re-verify.
+  params.delete('purchase'); params.delete('session_id');
+  const qs = params.toString();
+  history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+  if (!sessionId) return;
+  try {
+    const r = await api('/store/verify?session_id=' + encodeURIComponent(sessionId));
+    state = r.state;
+    ownedProducts = r.ownedProducts || ownedProducts;
+    renderDash();
+    toast('PURCHASE COMPLETE', 'Golden Sparkle unlocked \u2014 check Customize to equip it', null, '#ffd76a');
+  } catch (e) {
+    toast('OOPS', e.message || 'Could not verify purchase', null, '#ff6b8a');
+  }
 }
 
 async function play() {
@@ -2210,7 +2305,8 @@ function connectWS() {
 function disconnectWS() {
   clearTimeout(wsTimer);
   if (ws) { const old = ws; ws = null; try { old.close(); } catch (e) {} }
-  for (const k in others) delete others[k];
+  for (const k in others) { delete others[k]; trailClear(k); }
+  trailClear('me');
   members = [];
 }
 function wsSend(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
@@ -2228,14 +2324,15 @@ function onMembers(list) {
         x: m.x == null ? vp.x : m.x, y: m.y == null ? vp.y : m.y,
         tx: m.x == null ? vp.x : m.x, ty: m.y == null ? vp.y : m.y,
         online: m.online, moving: false, facing: { x: 1, y: 0 }, walk: 0, hue: (m.slot * 47 + 180) % 360,
-        customColor: m.customColor || null };
+        customColor: m.customColor || null, customTrail: m.customTrail || 'none' };
     } else {
       others[m.id].online = m.online;
       others[m.id].customColor = m.customColor || null;
+      others[m.id].customTrail = m.customTrail || 'none';
       if (m.x != null) { others[m.id].tx = m.x; others[m.id].ty = m.y; }
     }
   }
-  for (const id in others) if (!seen[id]) delete others[id];
+  for (const id in others) if (!seen[id]) { delete others[id]; trailClear(id); }
   updateHudMeta();
 }
 function onRemoteMove(msg) {
@@ -2672,6 +2769,61 @@ function drawNameTag(x, y, text, color) {
   ctx.fillStyle = color || '#e8eaf2';
   ctx.fillText(text, x, y);
 }
+/* =============================================================
+ * MOVEMENT TRAILS
+ * ============================================================= */
+const TRAIL_LIFE = 1100; // ms a trail point stays visible
+const trailHist = {};
+function trailPush(id, x, y, now) {
+  let arr = trailHist[id];
+  if (!arr) arr = trailHist[id] = [];
+  const last = arr[arr.length - 1];
+  if (last && Math.hypot(x - last.x, y - last.y) < 9) return;
+  arr.push({ x, y, t: now });
+  while (arr.length > 70 || (arr.length && now - arr[0].t > TRAIL_LIFE)) arr.shift();
+}
+function trailClear(id) { delete trailHist[id]; }
+function drawTrail(id, kind, now) {
+  if (!kind || kind === 'none') return;
+  const arr = trailHist[id];
+  if (!arr || !arr.length) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < arr.length; i++) {
+    const p = arr[i];
+    const age = (now - p.t) / TRAIL_LIFE;
+    if (age >= 1) continue;
+    const a = (1 - age) * (0.25 + 0.55 * (i / arr.length));
+    const sz = kind === 'golden' ? 7 + (i / arr.length) * 5 : 5 + (i / arr.length) * 4;
+    if (kind === 'golden') {
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, sz * 2.4);
+      g.addColorStop(0, 'rgba(255,224,120,' + (a * 0.9).toFixed(3) + ')');
+      g.addColorStop(0.45, 'rgba(255,190,60,' + (a * 0.45).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(255,170,30,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p.x, p.y, sz * 2.4, 0, Math.PI * 2); ctx.fill();
+      // four-point sparkle star on the newest points
+      if (i > arr.length * 0.45) {
+        const tw = 0.5 + 0.5 * Math.sin(now / 130 + i);
+        ctx.strokeStyle = 'rgba(255,246,200,' + (a * (0.5 + tw * 0.5)).toFixed(3) + ')';
+        ctx.lineWidth = 1.6;
+        const r = sz * (0.9 + tw * 0.5);
+        ctx.beginPath();
+        ctx.moveTo(p.x - r, p.y); ctx.lineTo(p.x + r, p.y);
+        ctx.moveTo(p.x, p.y - r); ctx.lineTo(p.x, p.y + r);
+        ctx.stroke();
+      }
+    } else {
+      const hue = kind === 'rainbow' ? (now / 12 + i * 14) % 360 : kind === 'fire' ? 18 + (i / arr.length) * 26 : 265;
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, sz * 2);
+      g.addColorStop(0, 'hsla(' + hue + ',95%,72%,' + a.toFixed(3) + ')');
+      g.addColorStop(1, 'hsla(' + hue + ',95%,60%,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p.x, p.y, sz * 2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
 function drawAurora(now) {
   const blobs = [
     { x: 760 + Math.sin(now / 7000) * 320, y: 900 + Math.cos(now / 9000) * 260, r: 620, c: '124,92,255' },
@@ -2711,10 +2863,13 @@ function drawWorld(now) {
     const member = members.find(m => m.id === id);
     const color = member && member.customColor ? 'hsl(' + member.customColor + ', 65%, 58%)' : 'hsl(' + o.hue + ', 65%, 58%)';
     if (o.zone === 'vault') continue;
+    drawTrail(o.id, o.customTrail, now);
     drawCharacter(o.x, o.y, color, o.facing, o.moving, o.walk);
     drawNameTag(o.x + 20, o.y - 6, o.username, color);
   }
   if (inGame) {
+    const myTrail = state && state.customTrail ? state.customTrail : 'none';
+    drawTrail('me', myTrail, now);
     const myColor = state && state.customColor ? 'hsl(' + state.customColor + ', 65%, 58%)' : '#7c5cff';
     drawCharacter(player.x, player.y, myColor, player.facing, player.moving, player.walk);
     if (shieldActive()) {
@@ -3020,6 +3175,12 @@ function frame(now) {
       wsSend({ type: 'move', x: player.x, y: player.y, zone: vaultOpen ? 'vault' : 'world', moving: player.moving, facing: player.facing });
     }
 
+    // trail breadcrumbs (feet position)
+    const myTrailKind = state && state.customTrail ? state.customTrail : 'none';
+    if (myTrailKind !== 'none' && player.moving) {
+      trailPush('me', player.x + player.w / 2, player.y + player.h, now);
+    }
+
     // interpolate other players
     for (const id in others) {
       const o = others[id];
@@ -3027,7 +3188,12 @@ function frame(now) {
       const k = Math.min(1, dt * 8);
       o.x += (o.tx - o.x) * k;
       o.y += (o.ty - o.y) * k;
-      if (o.moving) o.walk = (o.walk || 0) + dt * 11;
+      if (o.moving) {
+        o.walk = (o.walk || 0) + dt * 11;
+        if (o.customTrail && o.customTrail !== 'none') {
+          trailPush(o.id, o.x + 20, o.y + 58, now);
+        }
+      }
     }
 
     updateHudMeta();

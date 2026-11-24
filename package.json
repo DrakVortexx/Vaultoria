@@ -19,6 +19,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5",
+    "stripe": "^23.2.0",
     "ws": "^8.17.0"
   },
   "devDependencies": {

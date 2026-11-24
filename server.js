@@ -22,12 +22,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const { WebSocketServer } = require('ws');
+const Stripe = require('stripe');
 const luck = require('./luck');
 const genTime = require('./genTime');
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'vaultoria-dev-secret-change-me';
 const DATABASE_URL = process.env.DATABASE_URL || '';
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+const stripe = STRIPE_SECRET_KEY ? Stripe(STRIPE_SECRET_KEY) : null;
 const SERVER_CAPACITY = 8;
 
 /* ---------------------------------------------------------------
@@ -788,9 +791,11 @@ app.get('/api/me', dbReady, auth, async (req, res) => {
     }
 
     const d = dailyOf(st);
+    const pub = publicState(st);
+    pub.ownedProducts = await ownedProducts(req.user.id);
     res.json({
       user: { id: req.user.id, username: req.user.username, isAdmin: !!req.user.isAdmin },
-      state: publicState(st),
+      state: pub,
       login,
       daily: { quests: dailyQuests(st.level), prog: d.prog, claimed: d.claimed }
     });
@@ -1395,6 +1400,7 @@ const CUSTOMIZATION = {
     { id: 'sparkle', name: 'Sparkle', price: 25000 },
     { id: 'fire', name: 'Fire', price: 100000 },
     { id: 'rainbow', name: 'Rainbow', price: 500000 },
+    { id: 'golden', name: 'Golden Sparkle', price: 0, store: 'golden-sparkle' },
   ],
   glows: [
     { id: 'none', name: 'None', price: 0 },
@@ -1421,8 +1427,21 @@ app.post('/api/customize', dbReady, auth, rateLimit('customize', 5, 60000), asyn
   }
 
   try {
-    const { rows } = await pool.query('SELECT money FROM player_state WHERE user_id = $1', [req.user.id]);
+    const { rows } = await pool.query('SELECT money, custom_trail FROM player_state WHERE user_id = $1', [req.user.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Player not found' });
+
+    // Store-bought options can only be equipped by owners; they cost no in-game money.
+    if (option.store) {
+      const own = await pool.query('SELECT 1 FROM store_purchases WHERE user_id = $1 AND product = $2 LIMIT 1', [req.user.id, option.store]);
+      if (!own.rows[0]) return res.status(400).json({ error: 'That item is in the Store' });
+      const column = type === 'color' ? 'custom_color' : type === 'trail' ? 'custom_trail' : 'custom_glow';
+      await pool.query(
+        'UPDATE player_state SET ' + column + ' = $2, updated_at = NOW() WHERE user_id = $1',
+        [req.user.id, id]
+      );
+      const fresh = await stateFor(pool, req.user.id);
+      return res.json({ ok: true, state: publicState(fresh) });
+    }
 
     const money = Number(rows[0].money || 0);
     if (money < option.price) {
@@ -1440,6 +1459,129 @@ app.post('/api/customize', dbReady, auth, rateLimit('customize', 5, 60000), asyn
   } catch (e) {
     console.error('[customize]', e.message);
     res.status(500).json({ error: 'Could not save customization' });
+  }
+});
+
+/* ---------------------------------------------------------------
+ * Store (Stripe Checkout)
+ * ------------------------------------------------------------- */
+const STORE_PRODUCTS = {
+  'golden-sparkle': {
+    id: 'golden-sparkle',
+    name: 'Golden Sparkle',
+    description: 'A golden sparkling trail that follows you as you walk.',
+    trail: 'golden',
+    priceCents: 299
+  }
+};
+const PROMO_CODE = 'FRIENDSAREW';
+const promoCache = { couponId: null };
+
+async function ensurePromoCoupon() {
+  if (promoCache.couponId) return promoCache.couponId;
+  try {
+    await stripe.coupons.retrieve(PROMO_CODE);
+    promoCache.couponId = PROMO_CODE;
+    return promoCache.couponId;
+  } catch (e) {
+    await stripe.coupons.create({ id: PROMO_CODE, percent_off: 100, duration: 'once', name: 'Friends promo' });
+  }
+  // Promotion code lets the code be typed into Stripe Checkout itself.
+  try {
+    await stripe.promotionCodes.create({ promotion: { type: 'coupon', coupon: PROMO_CODE }, code: PROMO_CODE });
+  } catch (e) {}
+  promoCache.couponId = PROMO_CODE;
+  return promoCache.couponId;
+}
+
+async function ownedProducts(userId) {
+  try {
+    const { rows } = await pool.query('SELECT product FROM store_purchases WHERE user_id = $1', [userId]);
+    return rows.map(r => r.product);
+  } catch (e) {
+    return [];
+  }
+}
+
+app.get('/api/store', dbReady, auth, async (req, res) => {
+  const owned = await ownedProducts(req.user.id);
+  res.json({
+    products: Object.values(STORE_PRODUCTS).map(p => ({
+      id: p.id, name: p.name, description: p.description,
+      priceCents: p.priceCents, owned: owned.includes(p.id)
+    })),
+    stripeReady: !!stripe
+  });
+});
+
+app.post('/api/store/checkout', dbReady, auth, rateLimit('store_checkout', 10, 60000), async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Store is not configured on the server' });
+  const productId = String((req.body || {}).productId || '');
+  const product = STORE_PRODUCTS[productId];
+  if (!product) return res.status(400).json({ error: 'Unknown product' });
+  const promo = String((req.body || {}).promoCode || '').trim().toUpperCase();
+  const origin = String(req.headers.origin || req.headers.referer || '').replace(/\/$/, '').split('/').slice(0, 3).join('/');
+  const base = origin || ('https://' + (req.headers.host || 'localhost:' + PORT));
+  try {
+    const sessionParams = {
+      mode: 'payment',
+      client_reference_id: String(req.user.id),
+      line_items: [{
+        quantity: 1,
+        price_data: {
+          currency: 'usd',
+          unit_amount: product.priceCents,
+          product_data: { name: product.name, description: product.description }
+        }
+      }],
+      metadata: { userId: String(req.user.id), productId: product.id },
+      payment_intent_data: { metadata: { userId: String(req.user.id), productId: product.id } },
+      success_url: base + '/?purchase=success&session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: base + '/'
+    };
+    if (promo === PROMO_CODE) {
+      sessionParams.discounts = [{ coupon: await ensurePromoCoupon() }];
+    } else {
+      sessionParams.allow_promotion_codes = true;
+    }
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    res.json({ url: session.url });
+  } catch (e) {
+    console.error('[store-checkout]', e.message);
+    res.status(500).json({ error: 'Could not start checkout' });
+  }
+});
+
+app.get('/api/store/verify', dbReady, auth, async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Store is not configured on the server' });
+  const sessionId = String((req.query || {}).session_id || '');
+  if (!sessionId.startsWith('cs_')) return res.status(400).json({ error: 'Missing session' });
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const paid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
+    if (!paid || session.status !== 'complete') {
+      return res.status(402).json({ error: 'Payment not completed' });
+    }
+    const metaUser = Number(session.metadata && session.metadata.userId);
+    const productId = String(session.metadata && session.metadata.productId || '');
+    const product = STORE_PRODUCTS[productId];
+    if (!product || (metaUser && metaUser !== Number(req.user.id))) {
+      return res.status(403).json({ error: 'Session does not belong to this account' });
+    }
+    await pool.query(
+      `INSERT INTO store_purchases (user_id, product, stripe_session_id)
+       VALUES ($1, $2, $3) ON CONFLICT (user_id, product) DO NOTHING`,
+      [req.user.id, product.id, session.id]
+    );
+    // Equip the trail right away so the purchase is visible immediately.
+    if (product.trail) {
+      await pool.query('UPDATE player_state SET custom_trail = $2, updated_at = NOW() WHERE user_id = $1', [req.user.id, product.trail]);
+    }
+    const fresh = await stateFor(pool, req.user.id);
+    res.json({ ok: true, state: publicState(fresh), ownedProducts: await ownedProducts(req.user.id) });
+  } catch (e) {
+    console.error('[store-verify]', e.message);
+    res.status(500).json({ error: 'Could not verify purchase' });
   }
 });
 
@@ -2829,6 +2971,7 @@ setInterval(() => {
  * ------------------------------------------------------------- */
 initDb()
   .then(() => {
+    if (stripe) ensurePromoCoupon().catch(e => console.error('[store] promo setup:', e.message));
     server.listen(PORT, () => console.log('[vaultoria] listening on port ' + PORT));
   })
   .catch(err => {

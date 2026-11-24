@@ -94,6 +94,16 @@ CREATE TABLE IF NOT EXISTS bosses (
   defeated_at TIMESTAMPTZ
 );
 
+-- Real-money store purchases (Stripe). One row per user per product.
+CREATE TABLE IF NOT EXISTS store_purchases (
+  id               SERIAL PRIMARY KEY,
+  user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product          TEXT    NOT NULL,
+  stripe_session_id TEXT   UNIQUE,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, product)
+);
+
 -- Per-player contribution to a boss fight, used to split the payout.
 CREATE TABLE IF NOT EXISTS boss_contributions (
   boss_id  INTEGER NOT NULL REFERENCES bosses(id) ON DELETE CASCADE,
@@ -150,6 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_friendships_user   ON friendships (user_id);
 CREATE INDEX IF NOT EXISTS idx_friendships_friend ON friendships (friend_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (lower(username));
 CREATE INDEX IF NOT EXISTS idx_boss_active        ON bosses (defeated_at);
+CREATE INDEX IF NOT EXISTS idx_store_purchases    ON store_purchases (user_id);
 
 -- ------------------------------------------------------------
 -- 4. Data migrations (safe, idempotent)
