@@ -13,6 +13,7 @@ A multiplayer item-hoarding game with vaults, bazaar, and friends. Collect items
 - **Bazaar**: Buy and sell items in the global marketplace
 - **Social**: Add friends and see who's online
 - **Boss Battles**: Fight world bosses together and earn rewards based on your contribution
+- **Warzone**: 1v1 arena duels with agreed money or item wagers; winner takes both bets
 - **Upgrades**: Upgrade your generator level for better luck and item generation
 - **Mutations**: Items can have special mutations (Gold, Diamond, Electric) that increase their value
 - **Achievements**: Unlock achievements as you progress
@@ -92,6 +93,7 @@ A multiplayer item-hoarding game with vaults, bazaar, and friends. Collect items
 
 - **Mutations**: Rare items can have mutations (Gold, Diamond, Electric) that multiply their value
 - **Boss Battles**: When the world boss appears, attack it to earn rewards based on damage dealt
+- **Warzone**: Press E at the pink WARZONE pad, then queue or challenge an online player. Both sides pick a bet (cash or an item) and confirm; the winner keeps their own bet and takes the opponent's. Fight with WASD/arrows and click or Space to attack. Disconnecting gives you 10 seconds to reconnect before you forfeit.
 - **Breaching**: Buy breaches in the shop to raid other players' vaults (if they're not shielded)
 - **Daily Quests**: Complete daily quests for bonus rewards
 - **Rebirth**: Once you reach a high level, rebirth for permanent bonuses
@@ -101,7 +103,8 @@ A multiplayer item-hoarding game with vaults, bazaar, and friends. Collect items
 - **WASD / Arrow Keys**: Move around
 - **E**: Interact (open vault, spin wheel, etc.)
 - **ESC**: Close modals
-- **Mobile**: On-screen joystick and E button
+- **Click / Space**: Attack inside the Warzone arena
+- **Mobile**: On-screen joystick and E button (ATK button inside the arena)
 
 ## Game Mechanics
 

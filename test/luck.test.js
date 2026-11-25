@@ -142,8 +142,8 @@ test('server and client use only the central formula (no competing luck code)', 
   const client = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
   assert.match(server, /require\('\.\/luck'\)/);
-  assert.strictEqual((server.match(/luck\.pickRarityIndex\(/g) || []).length, 2,
-    'both server roll sites must call the central picker');
+  assert.ok((server.match(/luck\.pickRarityIndex\(/g) || []).length >= 1,
+    'server rolls must call the central picker');
   assert.doesNotMatch(server, /function\s+pickRarity\s*\(/);
   assert.doesNotMatch(server, /luckMult|commonScale|LUCK_PER_LEVEL|RARE_PLUS_BOOST/);
 

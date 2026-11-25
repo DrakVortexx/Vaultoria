@@ -564,6 +564,14 @@ var dailyData = null;
 var bossState = null;
 var lastMoneyShown = null;
 var ownedProducts = [];
+var arena = null;
+var inArena = false;
+var wzQueued = false;
+var wzChallenges = [];
+var wzBetType = 'none';
+var wzSelectedItem = '';
+var wzLastInput = 0;
+var wzLastHud = 0;
 applyEventTheme();
 setInterval(applyEventTheme, 60000);
 var actx = null;
@@ -720,45 +728,45 @@ function api(_x, _x2) {
   return _api.apply(this, arguments);
 }
 function _api() {
-  _api = _asyncToGenerator(_regenerator().m(function _callee14(path, opts) {
-    var headers, res, data, err, _t14;
-    return _regenerator().w(function (_context14) {
-      while (1) switch (_context14.p = _context14.n) {
+  _api = _asyncToGenerator(_regenerator().m(function _callee17(path, opts) {
+    var headers, res, data, err, _t17;
+    return _regenerator().w(function (_context17) {
+      while (1) switch (_context17.p = _context17.n) {
         case 0:
           opts = opts || {};
           headers = Object.assign({
             'Content-Type': 'application/json'
           }, opts.headers || {});
           if (token) headers.Authorization = 'Bearer ' + token;
-          _context14.n = 1;
+          _context17.n = 1;
           return fetch('/api' + path, Object.assign({}, opts, {
             headers: headers
           }));
         case 1:
-          res = _context14.v;
+          res = _context17.v;
           data = {};
-          _context14.p = 2;
-          _context14.n = 3;
+          _context17.p = 2;
+          _context17.n = 3;
           return res.json();
         case 3:
-          data = _context14.v;
-          _context14.n = 5;
+          data = _context17.v;
+          _context17.n = 5;
           break;
         case 4:
-          _context14.p = 4;
-          _t14 = _context14.v;
+          _context17.p = 4;
+          _t17 = _context17.v;
         case 5:
           if (res.ok) {
-            _context14.n = 6;
+            _context17.n = 6;
             break;
           }
           err = new Error(data.error || 'Request failed (' + res.status + ')');
           err.status = res.status;
           throw err;
         case 6:
-          return _context14.a(2, data);
+          return _context17.a(2, data);
       }
-    }, _callee14, null, [[2, 4]]);
+    }, _callee17, null, [[2, 4]]);
   }));
   return _api.apply(this, arguments);
 }
@@ -846,15 +854,15 @@ function loadMe() {
   return _loadMe.apply(this, arguments);
 }
 function _loadMe() {
-  _loadMe = _asyncToGenerator(_regenerator().m(function _callee15() {
+  _loadMe = _asyncToGenerator(_regenerator().m(function _callee18() {
     var data;
-    return _regenerator().w(function (_context15) {
-      while (1) switch (_context15.n) {
+    return _regenerator().w(function (_context18) {
+      while (1) switch (_context18.n) {
         case 0:
-          _context15.n = 1;
+          _context18.n = 1;
           return api('/me');
         case 1:
-          data = _context15.v;
+          data = _context18.v;
           me = data.user;
           state = data.state;
           ownedProducts = Array.isArray(state.ownedProducts) ? state.ownedProducts : [];
@@ -878,9 +886,9 @@ function _loadMe() {
             }
           }
         case 2:
-          return _context15.a(2);
+          return _context18.a(2);
       }
-    }, _callee15);
+    }, _callee18);
   }));
   return _loadMe.apply(this, arguments);
 }
@@ -897,15 +905,15 @@ function refreshState() {
   return _refreshState.apply(this, arguments);
 }
 function _refreshState() {
-  _refreshState = _asyncToGenerator(_regenerator().m(function _callee16() {
+  _refreshState = _asyncToGenerator(_regenerator().m(function _callee19() {
     var data;
-    return _regenerator().w(function (_context16) {
-      while (1) switch (_context16.n) {
+    return _regenerator().w(function (_context19) {
+      while (1) switch (_context19.n) {
         case 0:
-          _context16.n = 1;
+          _context19.n = 1;
           return api('/me');
         case 1:
-          data = _context16.v;
+          data = _context19.v;
           me = data.user;
           state = data.state;
           ownedProducts = Array.isArray(state.ownedProducts) ? state.ownedProducts : ownedProducts;
@@ -913,9 +921,9 @@ function _refreshState() {
           tutorialDone = !!state.tutorialDone;
           renderVault();
         case 2:
-          return _context16.a(2);
+          return _context19.a(2);
       }
-    }, _callee16);
+    }, _callee19);
   }));
   return _refreshState.apply(this, arguments);
 }
@@ -923,31 +931,31 @@ function onBreached(_x4) {
   return _onBreached.apply(this, arguments);
 }
 function _onBreached() {
-  _onBreached = _asyncToGenerator(_regenerator().m(function _callee17(msg) {
-    var took, _t15;
-    return _regenerator().w(function (_context17) {
-      while (1) switch (_context17.p = _context17.n) {
+  _onBreached = _asyncToGenerator(_regenerator().m(function _callee20(msg) {
+    var took, _t18;
+    return _regenerator().w(function (_context20) {
+      while (1) switch (_context20.p = _context20.n) {
         case 0:
           took = [];
           if (msg.item) took.push(itemDisplayName(makeKey(msg.item.name, msg.item.mutation ? MUT_BY_ID[msg.item.mutation] || null : null)) + ' x' + msg.item.qty);
           if (msg.money > 0) took.push('$' + fmt(msg.money));
           toast('YOU WERE BREACHED', (msg.byName || 'Someone') + ' raided your vault' + (took.length ? " \u2014 stole " + took.join(' + ') : " \u2014 took your change"), null, '#ff6b8a');
           sfxToast();
-          _context17.p = 1;
-          _context17.n = 2;
+          _context20.p = 1;
+          _context20.n = 2;
           return refreshState();
         case 2:
-          _context17.n = 4;
+          _context20.n = 4;
           break;
         case 3:
-          _context17.p = 3;
-          _t15 = _context17.v;
+          _context20.p = 3;
+          _t18 = _context20.v;
         case 4:
           renderBreachTargets();
         case 5:
-          return _context17.a(2);
+          return _context20.a(2);
       }
-    }, _callee17, null, [[1, 3]]);
+    }, _callee20, null, [[1, 3]]);
   }));
   return _onBreached.apply(this, arguments);
 }
@@ -1004,35 +1012,35 @@ function pollTrade() {
   return _pollTrade.apply(this, arguments);
 }
 function _pollTrade() {
-  _pollTrade = _asyncToGenerator(_regenerator().m(function _callee18() {
-    var r, _t16;
-    return _regenerator().w(function (_context18) {
-      while (1) switch (_context18.p = _context18.n) {
+  _pollTrade = _asyncToGenerator(_regenerator().m(function _callee21() {
+    var r, _t19;
+    return _regenerator().w(function (_context21) {
+      while (1) switch (_context21.p = _context21.n) {
         case 0:
           if (activeTrade) {
-            _context18.n = 1;
+            _context21.n = 1;
             break;
           }
-          return _context18.a(2);
+          return _context21.a(2);
         case 1:
-          _context18.p = 1;
-          _context18.n = 2;
+          _context21.p = 1;
+          _context21.n = 2;
           return api('/trade/' + activeTrade.id);
         case 2:
-          r = _context18.v;
+          r = _context21.v;
           if (r.trade) {
             activeTrade = r.trade;
             if (!$('tradeModal').classList.contains('hidden')) renderTrade();
           }
-          _context18.n = 4;
+          _context21.n = 4;
           break;
         case 3:
-          _context18.p = 3;
-          _t16 = _context18.v;
+          _context21.p = 3;
+          _t19 = _context21.v;
         case 4:
-          return _context18.a(2);
+          return _context21.a(2);
       }
-    }, _callee18, null, [[1, 3]]);
+    }, _callee21, null, [[1, 3]]);
   }));
   return _pollTrade.apply(this, arguments);
 }
@@ -1048,28 +1056,28 @@ function refreshEvent() {
   return _refreshEvent.apply(this, arguments);
 }
 function _refreshEvent() {
-  _refreshEvent = _asyncToGenerator(_regenerator().m(function _callee19() {
-    var r, _t17;
-    return _regenerator().w(function (_context19) {
-      while (1) switch (_context19.p = _context19.n) {
+  _refreshEvent = _asyncToGenerator(_regenerator().m(function _callee22() {
+    var r, _t20;
+    return _regenerator().w(function (_context22) {
+      while (1) switch (_context22.p = _context22.n) {
         case 0:
-          _context19.p = 0;
-          _context19.n = 1;
+          _context22.p = 0;
+          _context22.n = 1;
           return api('/event');
         case 1:
-          r = _context19.v;
+          r = _context22.v;
           ev = r.event;
           renderEventTag();
           if (!$('wheelModal').classList.contains('hidden')) renderWheelModal();
-          _context19.n = 3;
+          _context22.n = 3;
           break;
         case 2:
-          _context19.p = 2;
-          _t17 = _context19.v;
+          _context22.p = 2;
+          _t20 = _context22.v;
         case 3:
-          return _context19.a(2);
+          return _context22.a(2);
       }
-    }, _callee19, null, [[0, 2]]);
+    }, _callee22, null, [[0, 2]]);
   }));
   return _refreshEvent.apply(this, arguments);
 }
@@ -1212,28 +1220,28 @@ function openWheel() {
   return _openWheel.apply(this, arguments);
 }
 function _openWheel() {
-  _openWheel = _asyncToGenerator(_regenerator().m(function _callee20() {
-    return _regenerator().w(function (_context20) {
-      while (1) switch (_context20.n) {
+  _openWheel = _asyncToGenerator(_regenerator().m(function _callee23() {
+    return _regenerator().w(function (_context23) {
+      while (1) switch (_context23.n) {
         case 0:
           if (inGame) {
-            _context20.n = 1;
+            _context23.n = 1;
             break;
           }
-          return _context20.a(2);
+          return _context23.a(2);
         case 1:
           closeAllModals();
           $('wheelModal').classList.remove('hidden');
           $('wheelResult').innerHTML = '';
           renderWheelModal();
-          _context20.n = 2;
+          _context23.n = 2;
           return refreshEvent();
         case 2:
           if (eventActive()) startWheelSpin();
         case 3:
-          return _context20.a(2);
+          return _context23.a(2);
       }
-    }, _callee20);
+    }, _callee23);
   }));
   return _openWheel.apply(this, arguments);
 }
@@ -1268,18 +1276,18 @@ function runWheelSpin() {
   return _runWheelSpin.apply(this, arguments);
 }
 function _runWheelSpin() {
-  _runWheelSpin = _asyncToGenerator(_regenerator().m(function _callee21() {
-    var r, name, _t18;
-    return _regenerator().w(function (_context21) {
-      while (1) switch (_context21.p = _context21.n) {
+  _runWheelSpin = _asyncToGenerator(_regenerator().m(function _callee24() {
+    var r, name, _t21;
+    return _regenerator().w(function (_context24) {
+      while (1) switch (_context24.p = _context24.n) {
         case 0:
-          _context21.p = 0;
-          _context21.n = 1;
+          _context24.p = 0;
+          _context24.n = 1;
           return api('/event/spin', {
             method: 'POST'
           });
         case 1:
-          r = _context21.v;
+          r = _context24.v;
           state = r.state;
           renderVault();
           ev = r.event;
@@ -1289,16 +1297,16 @@ function _runWheelSpin() {
           $('wheelResult').innerHTML = '<div class="empty-note" style="padding:10px 0;text-align:center"><div style="font-weight:800;color:#8affd8;font-size:16px">' + name + (r.jackpot ? " \u2014 ELECTRIC!" : '') + '</div><div style="font-size:12px;color:#8b93bd">-\$' + fmt(r.cost) + '</div></div>';
           sfxBuy();
           if (r.newAch && r.newAch.length) showNewAch(r.newAch);
-          _context21.n = 3;
+          _context24.n = 3;
           break;
         case 2:
-          _context21.p = 2;
-          _t18 = _context21.v;
-          toast('OOPS', _t18.message, null, '#ff6b8a');
+          _context24.p = 2;
+          _t21 = _context24.v;
+          toast('OOPS', _t21.message, null, '#ff6b8a');
         case 3:
-          return _context21.a(2);
+          return _context24.a(2);
       }
-    }, _callee21, null, [[0, 2]]);
+    }, _callee24, null, [[0, 2]]);
   }));
   return _runWheelSpin.apply(this, arguments);
 }
@@ -1332,29 +1340,29 @@ function play() {
   return _play.apply(this, arguments);
 }
 function _play() {
-  _play = _asyncToGenerator(_regenerator().m(function _callee22() {
-    var p, _yield$api, servers, target, created, _t19;
-    return _regenerator().w(function (_context22) {
-      while (1) switch (_context22.p = _context22.n) {
+  _play = _asyncToGenerator(_regenerator().m(function _callee25() {
+    var p, _yield$api, servers, target, created, _t22;
+    return _regenerator().w(function (_context25) {
+      while (1) switch (_context25.p = _context25.n) {
         case 0:
-          _context22.p = 0;
+          _context25.p = 0;
           p = $('dashPanel');
           p.classList.remove('hidden');
           p.innerHTML = '<div class="spinner">Finding an open world...</div>';
-          _context22.n = 1;
+          _context25.n = 1;
           return api('/servers');
         case 1:
-          _yield$api = _context22.v;
+          _yield$api = _context25.v;
           servers = _yield$api.servers;
           target = servers.find(function (s) {
             return s.members < s.capacity;
           });
           if (!target && servers.length) target = servers[0];
           if (target) {
-            _context22.n = 3;
+            _context25.n = 3;
             break;
           }
-          _context22.n = 2;
+          _context25.n = 2;
           return api('/servers', {
             method: 'POST',
             body: JSON.stringify({
@@ -1362,23 +1370,23 @@ function _play() {
             })
           });
         case 2:
-          created = _context22.v;
+          created = _context25.v;
           target = created.server;
         case 3:
-          _context22.n = 4;
+          _context25.n = 4;
           return enterServer(target.id, 'World ' + target.id);
         case 4:
           refreshEvent();
-          _context22.n = 6;
+          _context25.n = 6;
           break;
         case 5:
-          _context22.p = 5;
-          _t19 = _context22.v;
-          toast('OOPS', _t19.message, null, '#ff6b8a');
+          _context25.p = 5;
+          _t22 = _context25.v;
+          toast('OOPS', _t22.message, null, '#ff6b8a');
         case 6:
-          return _context22.a(2);
+          return _context25.a(2);
       }
-    }, _callee22, null, [[0, 5]]);
+    }, _callee25, null, [[0, 5]]);
   }));
   return _play.apply(this, arguments);
 }
@@ -1397,18 +1405,18 @@ function enterServer(_x5, _x6) {
   return _enterServer.apply(this, arguments);
 }
 function _enterServer() {
-  _enterServer = _asyncToGenerator(_regenerator().m(function _callee23(sid, name) {
-    var r, savedOk, b, _t20, _t21;
-    return _regenerator().w(function (_context23) {
-      while (1) switch (_context23.p = _context23.n) {
+  _enterServer = _asyncToGenerator(_regenerator().m(function _callee26(sid, name) {
+    var r, savedOk, b, _t23, _t24;
+    return _regenerator().w(function (_context26) {
+      while (1) switch (_context26.p = _context26.n) {
         case 0:
-          _context23.p = 0;
-          _context23.n = 1;
+          _context26.p = 0;
+          _context26.n = 1;
           return api('/servers/' + sid + '/join', {
             method: 'POST'
           });
         case 1:
-          r = _context23.v;
+          r = _context26.v;
           mySlot = r.slot;
           currentServer = {
             id: sid
@@ -1431,31 +1439,31 @@ function _enterServer() {
           renderVault();
           addChat('sys', 'You joined World ' + currentServer.id + ' (slot ' + (mySlot + 1) + '/8).');
           refreshEvent();
-          _context23.p = 2;
-          _context23.n = 3;
+          _context26.p = 2;
+          _context26.n = 3;
           return api('/boss');
         case 3:
-          b = _context23.v;
+          b = _context26.v;
           if (b) {
             if (b.boss) onBoss(b.boss);
             setBossYou(b.you);
           }
-          _context23.n = 5;
+          _context26.n = 5;
           break;
         case 4:
-          _context23.p = 4;
-          _t20 = _context23.v;
+          _context26.p = 4;
+          _t23 = _context26.v;
         case 5:
-          _context23.n = 7;
+          _context26.n = 7;
           break;
         case 6:
-          _context23.p = 6;
-          _t21 = _context23.v;
-          toast('OOPS', _t21.message, null, '#ff6b8a');
+          _context26.p = 6;
+          _t24 = _context26.v;
+          toast('OOPS', _t24.message, null, '#ff6b8a');
         case 7:
-          return _context23.a(2);
+          return _context26.a(2);
       }
-    }, _callee23, null, [[2, 4], [0, 6]]);
+    }, _callee26, null, [[2, 4], [0, 6]]);
   }));
   return _enterServer.apply(this, arguments);
 }
@@ -1472,6 +1480,10 @@ function connectWS() {
       x: player.x,
       y: player.y
     }));
+    if (inArena && arena) sock.send(JSON.stringify({
+      type: 'warzoneEnter',
+      matchId: arena.matchId
+    }));
   });
   sock.addEventListener('message', function (ev) {
     if (sock !== ws) return;
@@ -1481,7 +1493,7 @@ function connectWS() {
     } catch (e) {
       return;
     }
-    if (msg.type === 'members') onMembers(msg.members);else if (msg.type === 'move') onRemoteMove(msg);else if (msg.type === 'say') addChat('chat', msg.name, msg.text);else if (msg.type === 'boss') onBoss(msg.boss);else if (msg.type === 'bossDefeated') onBossDefeated(msg.boss);else if (msg.type === 'breached') onBreached(msg);else if (msg.type === 'tradeRequest') onTradeRequest(msg);else if (msg.type === 'tradeOpened') onTradeOpened(msg);else if (msg.type === 'tradeDone') onTradeDone(msg);else if (msg.type === 'tradeCancelled') onTradeCancelled(msg);else if (msg.type === 'tradeDeclined') onTradeDeclined(msg);else if (msg.type === 'tradeUpdate') pollTrade();else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);else if (msg.type === 'wheel') onWheelMsg(msg);else if (msg.type === 'restart') onRestart();else if (msg.type === 'reload') location.reload();else if (msg.type === 'announce') announce(msg.text);else if (msg.type === 'adminGift') {
+    if (msg.type === 'members') onMembers(msg.members);else if (msg.type === 'move') onRemoteMove(msg);else if (msg.type === 'say') addChat('chat', msg.name, msg.text);else if (msg.type === 'warzoneMatched') onWarzoneMatched(msg);else if (msg.type === 'warzoneChallenge') onWarzoneChallenge(msg);else if (msg.type === 'warzoneChallengeDeclined') onWarzoneChallengeDeclined(msg);else if (msg.type === 'warzoneLobby') onWarzoneLobby(msg);else if (msg.type === 'warzoneStart' || msg.type === 'warzoneResume') onWarzoneStart(msg);else if (msg.type === 'warzoneState') onWarzoneState(msg);else if (msg.type === 'warzoneResult') onWarzoneResult(msg);else if (msg.type === 'warzoneCancelled') onWarzoneCancelled(msg);else if (msg.type === 'warzoneOpponentDisconnected') onWarzoneDisconnected(msg);else if (msg.type === 'warzoneOpponentReconnected') onWarzoneReconnected(msg);else if (msg.type === 'boss') onBoss(msg.boss);else if (msg.type === 'bossDefeated') onBossDefeated(msg.boss);else if (msg.type === 'breached') onBreached(msg);else if (msg.type === 'tradeRequest') onTradeRequest(msg);else if (msg.type === 'tradeOpened') onTradeOpened(msg);else if (msg.type === 'tradeDone') onTradeDone(msg);else if (msg.type === 'tradeCancelled') onTradeCancelled(msg);else if (msg.type === 'tradeDeclined') onTradeDeclined(msg);else if (msg.type === 'tradeUpdate') pollTrade();else if (msg.type === 'electric' || msg.type === 'electricNotice') onElectricMsg(msg);else if (msg.type === 'wheel') onWheelMsg(msg);else if (msg.type === 'restart') onRestart();else if (msg.type === 'reload') location.reload();else if (msg.type === 'announce') announce(msg.text);else if (msg.type === 'adminGift') {
       toast('GIFT', msg.text || 'An admin gave you an item', null, '#4fd1ff');
       if (state) refreshState().catch(function () {});
     } else if (msg.type === 'sayDenied') {
@@ -1780,6 +1792,10 @@ window.addEventListener('keydown', function (e) {
     triggerInteract();
     return;
   }
+  if (k === ' ' && !e.repeat && inArena) {
+    wzAttack();
+    return;
+  }
   if (k === 'escape') {
     closeAllModals();
     return;
@@ -1794,8 +1810,13 @@ window.addEventListener('blur', function () {
   for (var k in keys) keys[k] = false;
 });
 function triggerInteract() {
+  if (inArena) return;
   if (!inGame || anyModalOpen()) return;
   ac();
+  if (nearWarzone()) {
+    openWarzone();
+    return;
+  }
   if (eventActive() && nearWheel()) openWheel();else toggleVault();
 }
 (function initMobileControls() {
@@ -1854,6 +1875,10 @@ function triggerInteract() {
     });
     if (eBtn) eBtn.addEventListener('pointerdown', function (e) {
       e.preventDefault();
+      if (inArena) {
+        wzAttack();
+        return;
+      }
       triggerInteract();
     });
   } else {
@@ -1880,10 +1905,17 @@ function triggerInteract() {
     stick.addEventListener('touchcancel', reset, false);
     if (eBtn) eBtn.addEventListener('touchstart', function (e) {
       e.preventDefault();
+      if (inArena) {
+        wzAttack();
+        return;
+      }
       triggerInteract();
     }, false);
   }
 })();
+canvas.addEventListener('pointerdown', function () {
+  if (inArena) wzAttack();
+});
 function resize() {
   dpr = window.devicePixelRatio || 1;
   canvas.width = Math.floor(window.innerWidth * dpr);
@@ -1900,6 +1932,11 @@ function nearMyVault() {
   var cx = player.x + player.w / 2,
     cy = player.y + player.h / 2;
   return Math.hypot(cx - p.x, cy - p.y) < 96;
+}
+function nearWarzone() {
+  var cx = player.x + player.w / 2,
+    cy = player.y + player.h / 2;
+  return Math.hypot(cx - (EL.x + 180), cy - (EL.y - 50)) < 78;
 }
 function vaultAtPosition(slot) {
   return members.find(function (m) {
@@ -2368,7 +2405,7 @@ function drawWorld(now) {
         return m.id === id;
       });
       var color = member && member.customColor ? 'hsl(' + member.customColor + ', 65%, 58%)' : 'hsl(' + o.hue + ', 65%, 58%)';
-      if (o.zone === 'vault') return 0;
+      if (o.zone === 'vault' || o.zone === 'warzone') return 0;
       drawTrail(o.id, o.customTrail, now);
       drawCharacter(o.x, o.y, color, o.facing, o.moving, o.walk);
       drawNameTag(o.x + 20, o.y - 6, o.username, color);
@@ -2458,9 +2495,9 @@ function drawWarzone(now) {
   ctx.shadowBlur = 12;
   ctx.fillText('WARZONE', 0, 50);
   ctx.font = "700 9px 'Segoe UI', sans-serif";
-  ctx.fillStyle = 'rgba(255,92,138,0.7)';
+  ctx.fillStyle = 'rgba(255,92,138,0.85)';
   ctx.shadowBlur = 0;
-  ctx.fillText('COMING SOON', 0, 65);
+  ctx.fillText('PRESS E', 0, 65);
   ctx.restore();
 }
 function drawWheel(now) {
@@ -2686,7 +2723,9 @@ var lastFrame = performance.now();
 function frame(now) {
   var dt = Math.min(64, now - lastFrame) / 1000;
   lastFrame = now;
-  if (inGame) {
+  if (inArena) {
+    wzFrame(now, dt);
+  } else if (inGame) {
     refreshTutorial();
     var blocked = anyModalOpen();
     var ix = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
@@ -2769,8 +2808,12 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 function updateHint() {
+  if (inArena) return;
   var h = $('hint');
-  if (nearMyVault()) {
+  if (nearWarzone()) {
+    h.textContent = isMobile ? 'Tap E to enter the Warzone' : 'Press E to enter the Warzone';
+    $('zone').textContent = 'WARZONE';
+  } else if (nearMyVault()) {
     h.textContent = isMobile ? 'Tap E to open your vault' : 'Press E to open your vault';
     $('zone').textContent = 'YOUR VAULT';
   } else {
@@ -2779,8 +2822,10 @@ function updateHint() {
   }
   var vb = $('vaultBtn');
   vb.textContent = nearMyVault() ? 'Open Vault' : 'Vault';
+  var wb = $('warzoneBtn');
+  if (wb) wb.textContent = nearWarzone() ? 'ENTER WARZONE' : 'Warzone';
 }
-var MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'wheelModal', 'bossModal', 'tradeModal'];
+var MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'wheelModal', 'bossModal', 'tradeModal', 'warzoneModal'];
 function anyModalOpen() {
   return MODAL_IDS.some(function (id) {
     return !$(id).classList.contains('hidden');
@@ -3021,28 +3066,28 @@ function finishGen() {
   return _finishGen.apply(this, arguments);
 }
 function _finishGen() {
-  _finishGen = _asyncToGenerator(_regenerator().m(function _callee24() {
-    var r, rar, mut, color, idx, el, _t22;
-    return _regenerator().w(function (_context24) {
-      while (1) switch (_context24.p = _context24.n) {
+  _finishGen = _asyncToGenerator(_regenerator().m(function _callee27() {
+    var r, rar, mut, color, idx, el, _t25;
+    return _regenerator().w(function (_context27) {
+      while (1) switch (_context27.p = _context27.n) {
         case 0:
           if (!genBusy) {
-            _context24.n = 1;
+            _context27.n = 1;
             break;
           }
-          return _context24.a(2);
+          return _context27.a(2);
         case 1:
           genBusy = true;
           generating = false;
           $('generator').classList.remove('charging');
           $('gen').disabled = true;
-          _context24.p = 2;
-          _context24.n = 3;
+          _context27.p = 2;
+          _context27.n = 3;
           return api('/generate', {
             method: 'POST'
           });
         case 3:
-          r = _context24.v;
+          r = _context27.v;
           state = r.state;
           rar = RARITIES.find(function (x) {
             return x.key === r.rarity;
@@ -3072,21 +3117,21 @@ function _finishGen() {
           if (r.bossDefeated) onBossDefeated(r.bossDefeated);
           renderVault();
           refreshTutorial();
-          _context24.n = 5;
+          _context27.n = 5;
           break;
         case 4:
-          _context24.p = 4;
-          _t22 = _context24.v;
-          toast('OOPS', _t22.message, null, '#ff6b8a');
+          _context27.p = 4;
+          _t25 = _context27.v;
+          toast('OOPS', _t25.message, null, '#ff6b8a');
         case 5:
-          _context24.p = 5;
+          _context27.p = 5;
           genBusy = false;
           $('gen').disabled = false;
-          return _context24.f(5);
+          return _context27.f(5);
         case 6:
-          return _context24.a(2);
+          return _context27.a(2);
       }
-    }, _callee24, null, [[2, 4, 5, 6]]);
+    }, _callee27, null, [[2, 4, 5, 6]]);
   }));
   return _finishGen.apply(this, arguments);
 }
@@ -3108,20 +3153,20 @@ function sellItem(_x9, _x0) {
   return _sellItem.apply(this, arguments);
 }
 function _sellItem() {
-  _sellItem = _asyncToGenerator(_regenerator().m(function _callee25(item, ev) {
-    var box, _r, _t23;
-    return _regenerator().w(function (_context25) {
-      while (1) switch (_context25.p = _context25.n) {
+  _sellItem = _asyncToGenerator(_regenerator().m(function _callee28(item, ev) {
+    var box, _r, _t26;
+    return _regenerator().w(function (_context28) {
+      while (1) switch (_context28.p = _context28.n) {
         case 0:
           if (state.counts[item]) {
-            _context25.n = 1;
+            _context28.n = 1;
             break;
           }
-          return _context25.a(2);
+          return _context28.a(2);
         case 1:
           box = (ev && (ev.currentTarget || ev.target)).getBoundingClientRect();
-          _context25.p = 2;
-          _context25.n = 3;
+          _context28.p = 2;
+          _context28.n = 3;
           return api('/sell', {
             method: 'POST',
             body: JSON.stringify({
@@ -3129,7 +3174,7 @@ function _sellItem() {
             })
           });
         case 3:
-          _r = _context25.v;
+          _r = _context28.v;
           state = _r.state;
           salesCount++;
           sfxSell();
@@ -3137,16 +3182,16 @@ function _sellItem() {
           if (_r.newAch && _r.newAch.length) showNewAch(_r.newAch);
           if (_r.daily) dailyData = Object.assign({}, dailyData, _r.daily);
           renderVault();
-          _context25.n = 5;
+          _context28.n = 5;
           break;
         case 4:
-          _context25.p = 4;
-          _t23 = _context25.v;
-          toast('OOPS', _t23.message, null, '#ff6b8a');
+          _context28.p = 4;
+          _t26 = _context28.v;
+          toast('OOPS', _t26.message, null, '#ff6b8a');
         case 5:
-          return _context25.a(2);
+          return _context28.a(2);
       }
-    }, _callee25, null, [[2, 4]]);
+    }, _callee28, null, [[2, 4]]);
   }));
   return _sellItem.apply(this, arguments);
 }
@@ -3154,21 +3199,21 @@ function sellAllItems(_x1) {
   return _sellAllItems.apply(this, arguments);
 }
 function _sellAllItems() {
-  _sellAllItems = _asyncToGenerator(_regenerator().m(function _callee26(srcEl) {
-    var src, box, _r2, _t24;
-    return _regenerator().w(function (_context26) {
-      while (1) switch (_context26.p = _context26.n) {
+  _sellAllItems = _asyncToGenerator(_regenerator().m(function _callee29(srcEl) {
+    var src, box, _r2, _t27;
+    return _regenerator().w(function (_context29) {
+      while (1) switch (_context29.p = _context29.n) {
         case 0:
           if (!(!state || !Object.keys(state.counts || {}).length)) {
-            _context26.n = 1;
+            _context29.n = 1;
             break;
           }
-          return _context26.a(2);
+          return _context29.a(2);
         case 1:
           src = srcEl || $('sellAll');
           box = src.getBoundingClientRect();
-          _context26.p = 2;
-          _context26.n = 3;
+          _context29.p = 2;
+          _context29.n = 3;
           return api('/sell', {
             method: 'POST',
             body: JSON.stringify({
@@ -3176,7 +3221,7 @@ function _sellAllItems() {
             })
           });
         case 3:
-          _r2 = _context26.v;
+          _r2 = _context29.v;
           state = _r2.state;
           salesCount++;
           sfxSell();
@@ -3188,16 +3233,16 @@ function _sellAllItems() {
           if (_r2.newAch && _r2.newAch.length) showNewAch(_r2.newAch);
           if (_r2.daily) dailyData = Object.assign({}, dailyData, _r2.daily);
           renderVault();
-          _context26.n = 5;
+          _context29.n = 5;
           break;
         case 4:
-          _context26.p = 4;
-          _t24 = _context26.v;
-          toast('OOPS', _t24.message, null, '#ff6b8a');
+          _context29.p = 4;
+          _t27 = _context29.v;
+          toast('OOPS', _t27.message, null, '#ff6b8a');
         case 5:
-          return _context26.a(2);
+          return _context29.a(2);
       }
-    }, _callee26, null, [[2, 4]]);
+    }, _callee29, null, [[2, 4]]);
   }));
   return _sellAllItems.apply(this, arguments);
 }
@@ -3330,18 +3375,18 @@ function doRebirth() {
   return _doRebirth.apply(this, arguments);
 }
 function _doRebirth() {
-  _doRebirth = _asyncToGenerator(_regenerator().m(function _callee27() {
-    var _r3, _t25;
-    return _regenerator().w(function (_context27) {
-      while (1) switch (_context27.p = _context27.n) {
+  _doRebirth = _asyncToGenerator(_regenerator().m(function _callee30() {
+    var _r3, _t28;
+    return _regenerator().w(function (_context30) {
+      while (1) switch (_context30.p = _context30.n) {
         case 0:
-          _context27.p = 0;
-          _context27.n = 1;
+          _context30.p = 0;
+          _context30.n = 1;
           return api('/rebirth', {
             method: 'POST'
           });
         case 1:
-          _r3 = _context27.v;
+          _r3 = _context30.v;
           state = _r3.state;
           sfxBuy();
           toast('REBIRTH', 'Rebirth ' + _r3.rebirths + " \u2014 the vault resets but grows", null, '#8affd8');
@@ -3349,16 +3394,16 @@ function _doRebirth() {
           if (_r3.newAch && _r3.newAch.length) showNewAch(_r3.newAch);
           renderVault();
           refreshTutorial();
-          _context27.n = 3;
+          _context30.n = 3;
           break;
         case 2:
-          _context27.p = 2;
-          _t25 = _context27.v;
-          toast('OOPS', _t25.message, null, '#ff6b8a');
+          _context30.p = 2;
+          _t28 = _context30.v;
+          toast('OOPS', _t28.message, null, '#ff6b8a');
         case 3:
-          return _context27.a(2);
+          return _context30.a(2);
       }
-    }, _callee27, null, [[0, 2]]);
+    }, _callee30, null, [[0, 2]]);
   }));
   return _doRebirth.apply(this, arguments);
 }
@@ -3366,23 +3411,23 @@ function renderOffline() {
   return _renderOffline.apply(this, arguments);
 }
 function _renderOffline() {
-  _renderOffline = _asyncToGenerator(_regenerator().m(function _callee28() {
-    var list, _r4, ol, claimLi, claimBtn, _t26;
-    return _regenerator().w(function (_context28) {
-      while (1) switch (_context28.p = _context28.n) {
+  _renderOffline = _asyncToGenerator(_regenerator().m(function _callee31() {
+    var list, _r4, ol, claimLi, claimBtn, _t29;
+    return _regenerator().w(function (_context31) {
+      while (1) switch (_context31.p = _context31.n) {
         case 0:
           list = $('offlineList');
           if (list) {
-            _context28.n = 1;
+            _context31.n = 1;
             break;
           }
-          return _context28.a(2);
+          return _context31.a(2);
         case 1:
-          _context28.p = 1;
-          _context28.n = 2;
+          _context31.p = 1;
+          _context31.n = 2;
           return api('/offline');
         case 2:
-          _r4 = _context28.v;
+          _r4 = _context31.v;
           ol = _r4.offlineLevel || 0;
           $('offlineInfo').textContent = 'Offline Level ' + ol + ' / ' + _r4.available.length;
           list.innerHTML = '';
@@ -3416,16 +3461,16 @@ function _renderOffline() {
             claimLi.appendChild(claimBtn);
             list.appendChild(claimLi);
           }
-          _context28.n = 4;
+          _context31.n = 4;
           break;
         case 3:
-          _context28.p = 3;
-          _t26 = _context28.v;
-          toast('OOPS', _t26.message, null, '#ff6b8a');
+          _context31.p = 3;
+          _t29 = _context31.v;
+          toast('OOPS', _t29.message, null, '#ff6b8a');
         case 4:
-          return _context28.a(2);
+          return _context31.a(2);
       }
-    }, _callee28, null, [[1, 3]]);
+    }, _callee31, null, [[1, 3]]);
   }));
   return _renderOffline.apply(this, arguments);
 }
@@ -3433,32 +3478,32 @@ function doOfflineUpgrade(_x10) {
   return _doOfflineUpgrade.apply(this, arguments);
 }
 function _doOfflineUpgrade() {
-  _doOfflineUpgrade = _asyncToGenerator(_regenerator().m(function _callee29(level) {
-    var _r5, _t27;
-    return _regenerator().w(function (_context29) {
-      while (1) switch (_context29.p = _context29.n) {
+  _doOfflineUpgrade = _asyncToGenerator(_regenerator().m(function _callee32(level) {
+    var _r5, _t30;
+    return _regenerator().w(function (_context32) {
+      while (1) switch (_context32.p = _context32.n) {
         case 0:
-          _context29.p = 0;
-          _context29.n = 1;
+          _context32.p = 0;
+          _context32.n = 1;
           return api('/offline/upgrade', {
             method: 'POST'
           });
         case 1:
-          _r5 = _context29.v;
+          _r5 = _context32.v;
           state = _r5.state;
           sfxBuy();
           toast('UPGRADED', 'Offline rewards upgraded to level ' + _r5.level, null, '#8affd8');
           renderOffline();
-          _context29.n = 3;
+          _context32.n = 3;
           break;
         case 2:
-          _context29.p = 2;
-          _t27 = _context29.v;
-          toast('OOPS', _t27.message, null, '#ff6b8a');
+          _context32.p = 2;
+          _t30 = _context32.v;
+          toast('OOPS', _t30.message, null, '#ff6b8a');
         case 3:
-          return _context29.a(2);
+          return _context32.a(2);
       }
-    }, _callee29, null, [[0, 2]]);
+    }, _callee32, null, [[0, 2]]);
   }));
   return _doOfflineUpgrade.apply(this, arguments);
 }
@@ -3466,32 +3511,32 @@ function doOfflineClaim() {
   return _doOfflineClaim.apply(this, arguments);
 }
 function _doOfflineClaim() {
-  _doOfflineClaim = _asyncToGenerator(_regenerator().m(function _callee30() {
-    var _r6, _t28;
-    return _regenerator().w(function (_context30) {
-      while (1) switch (_context30.p = _context30.n) {
+  _doOfflineClaim = _asyncToGenerator(_regenerator().m(function _callee33() {
+    var _r6, _t31;
+    return _regenerator().w(function (_context33) {
+      while (1) switch (_context33.p = _context33.n) {
         case 0:
-          _context30.p = 0;
-          _context30.n = 1;
+          _context33.p = 0;
+          _context33.n = 1;
           return api('/offline/claim', {
             method: 'POST'
           });
         case 1:
-          _r6 = _context30.v;
+          _r6 = _context33.v;
           state = _r6.state;
           sfxBuy();
           toast('EARNINGS', 'Claimed $' + fmt(_r6.earnings) + ' from ' + _r6.hours.toFixed(1) + ' hours offline', null, '#7bdc78');
           renderOffline();
-          _context30.n = 3;
+          _context33.n = 3;
           break;
         case 2:
-          _context30.p = 2;
-          _t28 = _context30.v;
-          toast('OOPS', _t28.message, null, '#ff6b8a');
+          _context33.p = 2;
+          _t31 = _context33.v;
+          toast('OOPS', _t31.message, null, '#ff6b8a');
         case 3:
-          return _context30.a(2);
+          return _context33.a(2);
       }
-    }, _callee30, null, [[0, 2]]);
+    }, _callee33, null, [[0, 2]]);
   }));
   return _doOfflineClaim.apply(this, arguments);
 }
@@ -3778,34 +3823,34 @@ function renderMarket() {
   return _renderMarket.apply(this, arguments);
 }
 function _renderMarket() {
-  _renderMarket = _asyncToGenerator(_regenerator().m(function _callee31() {
-    var list, _iterator13, _step13, _loop0, _t29, _t30;
-    return _regenerator().w(function (_context32) {
-      while (1) switch (_context32.p = _context32.n) {
+  _renderMarket = _asyncToGenerator(_regenerator().m(function _callee34() {
+    var list, _iterator15, _step15, _loop1, _t32, _t33;
+    return _regenerator().w(function (_context35) {
+      while (1) switch (_context35.p = _context35.n) {
         case 0:
           list = $('marketList');
           if (state) {
-            _context32.n = 1;
+            _context35.n = 1;
             break;
           }
-          return _context32.a(2);
+          return _context35.a(2);
         case 1:
           $('mMoney').textContent = '$' + fmt(state.money);
           list.innerHTML = '<li class="empty">Loading Market...</li>';
-          _context32.p = 2;
-          _context32.n = 3;
+          _context35.p = 2;
+          _context35.n = 3;
           return api('/market');
         case 3:
-          marketData = _context32.v;
+          marketData = _context35.v;
           list.innerHTML = '';
-          _iterator13 = _createForOfIteratorHelper(marketData.items || []);
-          _context32.p = 4;
-          _loop0 = _regenerator().m(function _loop0() {
+          _iterator15 = _createForOfIteratorHelper(marketData.items || []);
+          _context35.p = 4;
+          _loop1 = _regenerator().m(function _loop1() {
             var it, li, extra, btn;
-            return _regenerator().w(function (_context31) {
-              while (1) switch (_context31.n) {
+            return _regenerator().w(function (_context34) {
+              while (1) switch (_context34.n) {
                 case 0:
-                  it = _step13.value;
+                  it = _step15.value;
                   li = document.createElement('li');
                   li.className = 'ach';
                   extra = '';
@@ -3818,42 +3863,42 @@ function _renderMarket() {
                   });
                   list.appendChild(li);
                 case 1:
-                  return _context31.a(2);
+                  return _context34.a(2);
               }
-            }, _loop0);
+            }, _loop1);
           });
-          _iterator13.s();
+          _iterator15.s();
         case 5:
-          if ((_step13 = _iterator13.n()).done) {
-            _context32.n = 7;
+          if ((_step15 = _iterator15.n()).done) {
+            _context35.n = 7;
             break;
           }
-          return _context32.d(_regeneratorValues(_loop0()), 6);
+          return _context35.d(_regeneratorValues(_loop1()), 6);
         case 6:
-          _context32.n = 5;
+          _context35.n = 5;
           break;
         case 7:
-          _context32.n = 9;
+          _context35.n = 9;
           break;
         case 8:
-          _context32.p = 8;
-          _t29 = _context32.v;
-          _iterator13.e(_t29);
+          _context35.p = 8;
+          _t32 = _context35.v;
+          _iterator15.e(_t32);
         case 9:
-          _context32.p = 9;
-          _iterator13.f();
-          return _context32.f(9);
+          _context35.p = 9;
+          _iterator15.f();
+          return _context35.f(9);
         case 10:
-          _context32.n = 12;
+          _context35.n = 12;
           break;
         case 11:
-          _context32.p = 11;
-          _t30 = _context32.v;
-          list.innerHTML = '<li class="empty">' + esc(_t30.message) + '</li>';
+          _context35.p = 11;
+          _t33 = _context35.v;
+          list.innerHTML = '<li class="empty">' + esc(_t33.message) + '</li>';
         case 12:
-          return _context32.a(2);
+          return _context35.a(2);
       }
-    }, _callee31, null, [[4, 8, 9, 10], [2, 11]]);
+    }, _callee34, null, [[4, 8, 9, 10], [2, 11]]);
   }));
   return _renderMarket.apply(this, arguments);
 }
@@ -3861,13 +3906,13 @@ function buyMarketItem(_x11) {
   return _buyMarketItem.apply(this, arguments);
 }
 function _buyMarketItem() {
-  _buyMarketItem = _asyncToGenerator(_regenerator().m(function _callee32(id) {
-    var _r7, _t31;
-    return _regenerator().w(function (_context33) {
-      while (1) switch (_context33.p = _context33.n) {
+  _buyMarketItem = _asyncToGenerator(_regenerator().m(function _callee35(id) {
+    var _r7, _t34;
+    return _regenerator().w(function (_context36) {
+      while (1) switch (_context36.p = _context36.n) {
         case 0:
-          _context33.p = 0;
-          _context33.n = 1;
+          _context36.p = 0;
+          _context36.n = 1;
           return api('/market/buy', {
             method: 'POST',
             body: JSON.stringify({
@@ -3875,23 +3920,23 @@ function _buyMarketItem() {
             })
           });
         case 1:
-          _r7 = _context33.v;
+          _r7 = _context36.v;
           state = _r7.state;
           sfxBuy();
           toast('PURCHASED', 'Breach added to your arsenal', '$' + fmt(_r7.price), '#ffb648');
           renderVault();
           renderMarket();
           renderBreachTargets();
-          _context33.n = 3;
+          _context36.n = 3;
           break;
         case 2:
-          _context33.p = 2;
-          _t31 = _context33.v;
-          toast('OOPS', _t31.message, null, '#ff6b8a');
+          _context36.p = 2;
+          _t34 = _context36.v;
+          toast('OOPS', _t34.message, null, '#ff6b8a');
         case 3:
-          return _context33.a(2);
+          return _context36.a(2);
       }
-    }, _callee32, null, [[0, 2]]);
+    }, _callee35, null, [[0, 2]]);
   }));
   return _buyMarketItem.apply(this, arguments);
 }
@@ -3946,13 +3991,13 @@ function useBreach(_x12, _x13) {
   return _useBreach.apply(this, arguments);
 }
 function _useBreach() {
-  _useBreach = _asyncToGenerator(_regenerator().m(function _callee33(userId, name) {
-    var _r8, got, _t32;
-    return _regenerator().w(function (_context34) {
-      while (1) switch (_context34.p = _context34.n) {
+  _useBreach = _asyncToGenerator(_regenerator().m(function _callee36(userId, name) {
+    var _r8, got, _t35;
+    return _regenerator().w(function (_context37) {
+      while (1) switch (_context37.p = _context37.n) {
         case 0:
-          _context34.p = 0;
-          _context34.n = 1;
+          _context37.p = 0;
+          _context37.n = 1;
           return api('/breach', {
             method: 'POST',
             body: JSON.stringify({
@@ -3960,7 +4005,7 @@ function _useBreach() {
             })
           });
         case 1:
-          _r8 = _context34.v;
+          _r8 = _context37.v;
           state = _r8.state;
           got = [];
           if (_r8.stolen.item) got.push(itemDisplayName(makeKey(_r8.stolen.item.name, _r8.stolen.item.mutation ? MUT_BY_ID[_r8.stolen.item.mutation] || null : null)) + ' x' + _r8.stolen.item.qty);
@@ -3969,16 +4014,16 @@ function _useBreach() {
           toast('BREACH SUCCESS', 'Raided ' + name + (got.length ? " \u2014 took " + got.join(' + ') : " \u2014 they were flat broke"), null, '#ff6b8a');
           renderVault();
           renderBreachTargets();
-          _context34.n = 3;
+          _context37.n = 3;
           break;
         case 2:
-          _context34.p = 2;
-          _t32 = _context34.v;
-          toast('OOPS', _t32.message, null, '#ff6b8a');
+          _context37.p = 2;
+          _t35 = _context37.v;
+          toast('OOPS', _t35.message, null, '#ff6b8a');
         case 3:
-          return _context34.a(2);
+          return _context37.a(2);
       }
-    }, _callee33, null, [[0, 2]]);
+    }, _callee36, null, [[0, 2]]);
   }));
   return _useBreach.apply(this, arguments);
 }
@@ -3999,31 +4044,31 @@ function loadLeaders() {
   return _loadLeaders.apply(this, arguments);
 }
 function _loadLeaders() {
-  _loadLeaders = _asyncToGenerator(_regenerator().m(function _callee34() {
-    var list, _yield$api2, leaders, total, _t33;
-    return _regenerator().w(function (_context35) {
-      while (1) switch (_context35.p = _context35.n) {
+  _loadLeaders = _asyncToGenerator(_regenerator().m(function _callee37() {
+    var list, _yield$api2, leaders, total, _t36;
+    return _regenerator().w(function (_context38) {
+      while (1) switch (_context38.p = _context38.n) {
         case 0:
           list = $('leaderList');
           list.innerHTML = '<li class="empty">Loading leaderboard...</li>';
-          _context35.p = 1;
-          _context35.n = 2;
+          _context38.p = 1;
+          _context38.n = 2;
           return api('/leaderboard');
         case 2:
-          _yield$api2 = _context35.v;
+          _yield$api2 = _context38.v;
           leaders = _yield$api2.leaders;
           total = _yield$api2.total;
           renderLeaders(leaders, total);
-          _context35.n = 4;
+          _context38.n = 4;
           break;
         case 3:
-          _context35.p = 3;
-          _t33 = _context35.v;
-          list.innerHTML = '<li class="empty">' + esc(_t33.message) + '</li>';
+          _context38.p = 3;
+          _t36 = _context38.v;
+          list.innerHTML = '<li class="empty">' + esc(_t36.message) + '</li>';
         case 4:
-          return _context35.a(2);
+          return _context38.a(2);
       }
-    }, _callee34, null, [[1, 3]]);
+    }, _callee37, null, [[1, 3]]);
   }));
   return _loadLeaders.apply(this, arguments);
 }
@@ -4107,37 +4152,37 @@ function loadBazaar() {
   return _loadBazaar.apply(this, arguments);
 }
 function _loadBazaar() {
-  _loadBazaar = _asyncToGenerator(_regenerator().m(function _callee35() {
-    var list, _yield$api3, listings, filtered, _iterator14, _step14, _loop1, _t34, _t35;
-    return _regenerator().w(function (_context37) {
-      while (1) switch (_context37.p = _context37.n) {
+  _loadBazaar = _asyncToGenerator(_regenerator().m(function _callee38() {
+    var list, _yield$api3, listings, filtered, _iterator16, _step16, _loop10, _t37, _t38;
+    return _regenerator().w(function (_context40) {
+      while (1) switch (_context40.p = _context40.n) {
         case 0:
           list = $('browseList');
           initBazaarFilters();
           list.innerHTML = '<li class="empty">Loading bazaar...</li>';
-          _context37.p = 1;
-          _context37.n = 2;
+          _context40.p = 1;
+          _context40.n = 2;
           return api('/bazaar' + (bazaarQuery ? '?q=' + encodeURIComponent(bazaarQuery) : ''));
         case 2:
-          _yield$api3 = _context37.v;
+          _yield$api3 = _context40.v;
           listings = _yield$api3.listings;
           filtered = bazaarFiltered(listings);
           if (filtered.length) {
-            _context37.n = 3;
+            _context40.n = 3;
             break;
           }
           list.innerHTML = '<li class="empty">No listings match. Try a different search.</li>';
-          return _context37.a(2);
+          return _context40.a(2);
         case 3:
           list.innerHTML = '';
-          _iterator14 = _createForOfIteratorHelper(filtered);
-          _context37.p = 4;
-          _loop1 = _regenerator().m(function _loop1() {
+          _iterator16 = _createForOfIteratorHelper(filtered);
+          _context40.p = 4;
+          _loop10 = _regenerator().m(function _loop10() {
             var l, rar, mut, nameHtml, li;
-            return _regenerator().w(function (_context36) {
-              while (1) switch (_context36.n) {
+            return _regenerator().w(function (_context39) {
+              while (1) switch (_context39.n) {
                 case 0:
-                  l = _step14.value;
+                  l = _step16.value;
                   rar = rarityFor(l.itemName);
                   mut = MUT_BY_ID[l.mutation];
                   nameHtml = mut ? '<span style="color:' + mut.color + '">' + esc(mut.name) + '</span> <span style="color:' + rar.color + '">' + esc(l.itemName) + '</span>' : '<span style="color:' + rar.color + '">' + esc(l.itemName) + '</span>';
@@ -4151,42 +4196,42 @@ function _loadBazaar() {
                   });
                   list.appendChild(li);
                 case 1:
-                  return _context36.a(2);
+                  return _context39.a(2);
               }
-            }, _loop1);
+            }, _loop10);
           });
-          _iterator14.s();
+          _iterator16.s();
         case 5:
-          if ((_step14 = _iterator14.n()).done) {
-            _context37.n = 7;
+          if ((_step16 = _iterator16.n()).done) {
+            _context40.n = 7;
             break;
           }
-          return _context37.d(_regeneratorValues(_loop1()), 6);
+          return _context40.d(_regeneratorValues(_loop10()), 6);
         case 6:
-          _context37.n = 5;
+          _context40.n = 5;
           break;
         case 7:
-          _context37.n = 9;
+          _context40.n = 9;
           break;
         case 8:
-          _context37.p = 8;
-          _t34 = _context37.v;
-          _iterator14.e(_t34);
+          _context40.p = 8;
+          _t37 = _context40.v;
+          _iterator16.e(_t37);
         case 9:
-          _context37.p = 9;
-          _iterator14.f();
-          return _context37.f(9);
+          _context40.p = 9;
+          _iterator16.f();
+          return _context40.f(9);
         case 10:
-          _context37.n = 12;
+          _context40.n = 12;
           break;
         case 11:
-          _context37.p = 11;
-          _t35 = _context37.v;
-          list.innerHTML = '<li class="empty">' + esc(_t35.message) + '</li>';
+          _context40.p = 11;
+          _t38 = _context40.v;
+          list.innerHTML = '<li class="empty">' + esc(_t38.message) + '</li>';
         case 12:
-          return _context37.a(2);
+          return _context40.a(2);
       }
-    }, _callee35, null, [[4, 8, 9, 10], [1, 11]]);
+    }, _callee38, null, [[4, 8, 9, 10], [1, 11]]);
   }));
   return _loadBazaar.apply(this, arguments);
 }
@@ -4194,34 +4239,34 @@ function buyListing(_x14) {
   return _buyListing.apply(this, arguments);
 }
 function _buyListing() {
-  _buyListing = _asyncToGenerator(_regenerator().m(function _callee36(id) {
-    var _r9, _t36;
-    return _regenerator().w(function (_context38) {
-      while (1) switch (_context38.p = _context38.n) {
+  _buyListing = _asyncToGenerator(_regenerator().m(function _callee39(id) {
+    var _r9, _t39;
+    return _regenerator().w(function (_context41) {
+      while (1) switch (_context41.p = _context41.n) {
         case 0:
-          _context38.p = 0;
-          _context38.n = 1;
+          _context41.p = 0;
+          _context41.n = 1;
           return api('/bazaar/' + id + '/buy', {
             method: 'POST'
           });
         case 1:
-          _r9 = _context38.v;
+          _r9 = _context41.v;
           state = _r9.state;
           sfxBuy();
           toast('PURCHASE', 'Item added to your vault', null, '#7bdc78');
           if (_r9.newAch && _r9.newAch.length) showNewAch(_r9.newAch);
           renderVault();
           loadBazaar();
-          _context38.n = 3;
+          _context41.n = 3;
           break;
         case 2:
-          _context38.p = 2;
-          _t36 = _context38.v;
-          toast('OOPS', _t36.message, null, '#ff6b8a');
+          _context41.p = 2;
+          _t39 = _context41.v;
+          toast('OOPS', _t39.message, null, '#ff6b8a');
         case 3:
-          return _context38.a(2);
+          return _context41.a(2);
       }
-    }, _callee36, null, [[0, 2]]);
+    }, _callee39, null, [[0, 2]]);
   }));
   return _buyListing.apply(this, arguments);
 }
@@ -4229,32 +4274,32 @@ function cancelListing(_x15) {
   return _cancelListing.apply(this, arguments);
 }
 function _cancelListing() {
-  _cancelListing = _asyncToGenerator(_regenerator().m(function _callee37(id) {
-    var _r0, _t37;
-    return _regenerator().w(function (_context39) {
-      while (1) switch (_context39.p = _context39.n) {
+  _cancelListing = _asyncToGenerator(_regenerator().m(function _callee40(id) {
+    var _r0, _t40;
+    return _regenerator().w(function (_context42) {
+      while (1) switch (_context42.p = _context42.n) {
         case 0:
-          _context39.p = 0;
-          _context39.n = 1;
+          _context42.p = 0;
+          _context42.n = 1;
           return api('/bazaar/' + id, {
             method: 'DELETE'
           });
         case 1:
-          _r0 = _context39.v;
+          _r0 = _context42.v;
           state = _r0.state;
           toast('CANCELLED', 'Item returned to your vault', null, '#ffb648');
           renderVault();
           loadBazaar();
-          _context39.n = 3;
+          _context42.n = 3;
           break;
         case 2:
-          _context39.p = 2;
-          _t37 = _context39.v;
-          toast('OOPS', _t37.message, null, '#ff6b8a');
+          _context42.p = 2;
+          _t40 = _context42.v;
+          toast('OOPS', _t40.message, null, '#ff6b8a');
         case 3:
-          return _context39.a(2);
+          return _context42.a(2);
       }
-    }, _callee37, null, [[0, 2]]);
+    }, _callee40, null, [[0, 2]]);
   }));
   return _cancelListing.apply(this, arguments);
 }
@@ -4298,13 +4343,13 @@ function listItem(_x16, _x17, _x18, _x19) {
   return _listItem.apply(this, arguments);
 }
 function _listItem() {
-  _listItem = _asyncToGenerator(_regenerator().m(function _callee38(itemKey, rar, quantity, price) {
-    var _r1, _t38;
-    return _regenerator().w(function (_context40) {
-      while (1) switch (_context40.p = _context40.n) {
+  _listItem = _asyncToGenerator(_regenerator().m(function _callee41(itemKey, rar, quantity, price) {
+    var _r1, _t41;
+    return _regenerator().w(function (_context43) {
+      while (1) switch (_context43.p = _context43.n) {
         case 0:
-          _context40.p = 0;
-          _context40.n = 1;
+          _context43.p = 0;
+          _context43.n = 1;
           return api('/bazaar', {
             method: 'POST',
             body: JSON.stringify({
@@ -4315,23 +4360,23 @@ function _listItem() {
             })
           });
         case 1:
-          _r1 = _context40.v;
+          _r1 = _context43.v;
           state = _r1.state;
           sfxBuy();
           toast('LISTED', baseName(itemKey) + ' x' + quantity + ' for $' + fmt(price), null, '#ffb648');
           renderVault();
           loadBazaar();
           document.querySelector('.tab[data-btab="browse"]').click();
-          _context40.n = 3;
+          _context43.n = 3;
           break;
         case 2:
-          _context40.p = 2;
-          _t38 = _context40.v;
-          toast('OOPS', _t38.message, null, '#ff6b8a');
+          _context43.p = 2;
+          _t41 = _context43.v;
+          toast('OOPS', _t41.message, null, '#ff6b8a');
         case 3:
-          return _context40.a(2);
+          return _context43.a(2);
       }
-    }, _callee38, null, [[0, 2]]);
+    }, _callee41, null, [[0, 2]]);
   }));
   return _listItem.apply(this, arguments);
 }
@@ -4425,58 +4470,58 @@ function loadOnline() {
   return _loadOnline.apply(this, arguments);
 }
 function _loadOnline() {
-  _loadOnline = _asyncToGenerator(_regenerator().m(function _callee40() {
-    var _r10, _list, _iterator15, _step15, u, li, _list2, _t40, _t41;
-    return _regenerator().w(function (_context42) {
-      while (1) switch (_context42.p = _context42.n) {
+  _loadOnline = _asyncToGenerator(_regenerator().m(function _callee43() {
+    var _r10, _list, _iterator17, _step17, u, li, _list2, _t43, _t44;
+    return _regenerator().w(function (_context45) {
+      while (1) switch (_context45.p = _context45.n) {
         case 0:
-          _context42.p = 0;
-          _context42.n = 1;
+          _context45.p = 0;
+          _context45.n = 1;
           return api('/online');
         case 1:
-          _r10 = _context42.v;
+          _r10 = _context45.v;
           _list = $('onlineList');
           if (_list) {
-            _context42.n = 2;
+            _context45.n = 2;
             break;
           }
-          return _context42.a(2);
+          return _context45.a(2);
         case 2:
           if (!(!_r10 || !_r10.online)) {
-            _context42.n = 3;
+            _context45.n = 3;
             break;
           }
           _list.innerHTML = '<li class="empty">No online keepers</li>';
-          return _context42.a(2);
+          return _context45.a(2);
         case 3:
           _list.innerHTML = '';
-          _iterator15 = _createForOfIteratorHelper(_r10.online);
-          _context42.p = 4;
-          _iterator15.s();
+          _iterator17 = _createForOfIteratorHelper(_r10.online);
+          _context45.p = 4;
+          _iterator17.s();
         case 5:
-          if ((_step15 = _iterator15.n()).done) {
-            _context42.n = 8;
+          if ((_step17 = _iterator17.n()).done) {
+            _context45.n = 8;
             break;
           }
-          u = _step15.value;
+          u = _step17.value;
           if (!(u.id === me.id)) {
-            _context42.n = 6;
+            _context45.n = 6;
             break;
           }
-          return _context42.a(3, 7);
+          return _context45.a(3, 7);
         case 6:
           li = document.createElement('li');
           li.innerHTML = '<span class="name">' + esc(u.username) + '</span>' + '<button class="mini-btn" data-trade-user="' + u.id + '" data-trade-name="' + esc(u.username) + '">Request Trade</button>';
           li.querySelector('[data-trade-user]').addEventListener('click', function () {
-            var _ref13 = _asyncToGenerator(_regenerator().m(function _callee39(e) {
-              var userId, username, _t39;
-              return _regenerator().w(function (_context41) {
-                while (1) switch (_context41.p = _context41.n) {
+            var _ref16 = _asyncToGenerator(_regenerator().m(function _callee42(e) {
+              var userId, username, _t42;
+              return _regenerator().w(function (_context44) {
+                while (1) switch (_context44.p = _context44.n) {
                   case 0:
                     userId = parseInt(e.target.dataset.tradeUser, 10);
                     username = e.target.dataset.tradeName;
-                    _context41.p = 1;
-                    _context41.n = 2;
+                    _context44.p = 1;
+                    _context44.n = 2;
                     return api('/trade/request', {
                       method: 'POST',
                       body: JSON.stringify({
@@ -4485,48 +4530,48 @@ function _loadOnline() {
                     });
                   case 2:
                     toast('REQUEST SENT', 'Waiting for ' + username + ' to accept', null, '#4fd1ff');
-                    _context41.n = 4;
+                    _context44.n = 4;
                     break;
                   case 3:
-                    _context41.p = 3;
-                    _t39 = _context41.v;
-                    toast('OOPS', _t39.message, null, '#ff6b8a');
+                    _context44.p = 3;
+                    _t42 = _context44.v;
+                    toast('OOPS', _t42.message, null, '#ff6b8a');
                   case 4:
-                    return _context41.a(2);
+                    return _context44.a(2);
                 }
-              }, _callee39, null, [[1, 3]]);
+              }, _callee42, null, [[1, 3]]);
             }));
             return function (_x36) {
-              return _ref13.apply(this, arguments);
+              return _ref16.apply(this, arguments);
             };
           }());
           _list.appendChild(li);
         case 7:
-          _context42.n = 5;
+          _context45.n = 5;
           break;
         case 8:
-          _context42.n = 10;
+          _context45.n = 10;
           break;
         case 9:
-          _context42.p = 9;
-          _t40 = _context42.v;
-          _iterator15.e(_t40);
+          _context45.p = 9;
+          _t43 = _context45.v;
+          _iterator17.e(_t43);
         case 10:
-          _context42.p = 10;
-          _iterator15.f();
-          return _context42.f(10);
+          _context45.p = 10;
+          _iterator17.f();
+          return _context45.f(10);
         case 11:
-          _context42.n = 13;
+          _context45.n = 13;
           break;
         case 12:
-          _context42.p = 12;
-          _t41 = _context42.v;
+          _context45.p = 12;
+          _t44 = _context45.v;
           _list2 = $('onlineList');
           if (_list2) _list2.innerHTML = '<li class="empty">Could not load online keepers</li>';
         case 13:
-          return _context42.a(2);
+          return _context45.a(2);
       }
-    }, _callee40, null, [[4, 9, 10, 11], [0, 12]]);
+    }, _callee43, null, [[4, 9, 10, 11], [0, 12]]);
   }));
   return _loadOnline.apply(this, arguments);
 }
@@ -4852,54 +4897,1007 @@ $('tradeCancel').addEventListener('click', _asyncToGenerator(_regenerator().m(fu
     }
   }, _callee1, null, [[1, 3]]);
 })));
+function wzFmtWager(w) {
+  if (!w || w.type === 'none') return 'No bet';
+  if (w.type === 'money') return '$' + fmt(w.amount);
+  return itemDisplayName(w.key) + ' x' + (w.qty || 1);
+}
+function openWarzone() {
+  if (!inGame || inArena) return;
+  closeAllModals();
+  $('warzoneModal').classList.remove('hidden');
+  wzRenderMenu();
+  wzRenderOnline();
+  wzRenderHistory();
+}
+$('warzoneBtn').addEventListener('click', function () {
+  ac();
+  openWarzone();
+});
+var wzMobileBtn = $('mActionsWarzone');
+if (wzMobileBtn) wzMobileBtn.addEventListener('click', function () {
+  ac();
+  openWarzone();
+});
+document.querySelectorAll('.tab[data-wztab]').forEach(function (tab) {
+  return tab.addEventListener('click', function () {
+    document.querySelectorAll('.tab[data-wztab]').forEach(function (t) {
+      return t.classList.remove('active');
+    });
+    document.querySelectorAll('#warzoneModal .panel').forEach(function (p) {
+      return p.classList.remove('active');
+    });
+    tab.classList.add('active');
+    var name = tab.dataset.wztab;
+    $('wzPanel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+    if (name === 'challenge') wzRenderOnline();
+    if (name === 'history') wzRenderHistory();
+  });
+});
+function wzRenderMenu() {
+  return _wzRenderMenu.apply(this, arguments);
+}
+function _wzRenderMenu() {
+  _wzRenderMenu = _asyncToGenerator(_regenerator().m(function _callee44() {
+    var _r11, _t45;
+    return _regenerator().w(function (_context46) {
+      while (1) switch (_context46.p = _context46.n) {
+        case 0:
+          $('wzQueueBtn').textContent = wzQueued ? 'LEAVE QUEUE' : 'FIND MATCH';
+          _context46.p = 1;
+          _context46.n = 2;
+          return api('/warzone');
+        case 2:
+          _r11 = _context46.v;
+          wzQueued = !!_r11.queued;
+          $('wzStats').textContent = _r11.stats.wins + ' / ' + _r11.stats.losses;
+          $('wzMoneyWon').textContent = '$' + fmt(_r11.stats.moneyWon);
+          $('wzQueueBtn').textContent = wzQueued ? 'LEAVE QUEUE' : 'FIND MATCH';
+          if (_r11.activeMatch && !inArena) {
+            closeAllModals();
+            wzEnterArena(_r11.activeMatch, _r11.activeMatch.state === 'fighting' ? 'fighting' : 'lobby');
+          }
+          _context46.n = 4;
+          break;
+        case 3:
+          _context46.p = 3;
+          _t45 = _context46.v;
+        case 4:
+          return _context46.a(2);
+      }
+    }, _callee44, null, [[1, 3]]);
+  }));
+  return _wzRenderMenu.apply(this, arguments);
+}
+function wzRenderOnline() {
+  return _wzRenderOnline.apply(this, arguments);
+}
+function _wzRenderOnline() {
+  _wzRenderOnline = _asyncToGenerator(_regenerator().m(function _callee48() {
+    var list, _r12, users, _iterator18, _step18, _loop11, pending, _iterator19, _step19, _loop12, _t49, _t50, _t51;
+    return _regenerator().w(function (_context52) {
+      while (1) switch (_context52.p = _context52.n) {
+        case 0:
+          list = $('wzOnlineList');
+          if (list) {
+            _context52.n = 1;
+            break;
+          }
+          return _context52.a(2);
+        case 1:
+          _context52.p = 1;
+          _context52.n = 2;
+          return api('/online');
+        case 2:
+          _r12 = _context52.v;
+          list.innerHTML = '';
+          users = (_r12.online || []).filter(function (u) {
+            return u.id !== me.id;
+          });
+          if (users.length) {
+            _context52.n = 3;
+            break;
+          }
+          list.innerHTML = '<div class="wz-empty">No other players online</div>';
+          _context52.n = 10;
+          break;
+        case 3:
+          _iterator18 = _createForOfIteratorHelper(users);
+          _context52.p = 4;
+          _loop11 = _regenerator().m(function _loop11() {
+            var u, row, name, btn;
+            return _regenerator().w(function (_context48) {
+              while (1) switch (_context48.n) {
+                case 0:
+                  u = _step18.value;
+                  row = document.createElement('div');
+                  row.className = 'wz-row';
+                  name = document.createElement('span');
+                  name.textContent = u.username;
+                  btn = document.createElement('button');
+                  btn.className = 'mini-btn';
+                  btn.textContent = 'CHALLENGE';
+                  btn.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee45() {
+                    var _t46;
+                    return _regenerator().w(function (_context47) {
+                      while (1) switch (_context47.p = _context47.n) {
+                        case 0:
+                          _context47.p = 0;
+                          _context47.n = 1;
+                          return api('/warzone/challenge', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              toUserId: u.id
+                            })
+                          });
+                        case 1:
+                          toast('WARZONE', 'Challenge sent to ' + u.username, null, '#ffb648');
+                          _context47.n = 3;
+                          break;
+                        case 2:
+                          _context47.p = 2;
+                          _t46 = _context47.v;
+                          toast('OOPS', _t46.message, null, '#ff6b8a');
+                        case 3:
+                          return _context47.a(2);
+                      }
+                    }, _callee45, null, [[0, 2]]);
+                  })));
+                  row.appendChild(name);
+                  row.appendChild(btn);
+                  list.appendChild(row);
+                case 1:
+                  return _context48.a(2);
+              }
+            }, _loop11);
+          });
+          _iterator18.s();
+        case 5:
+          if ((_step18 = _iterator18.n()).done) {
+            _context52.n = 7;
+            break;
+          }
+          return _context52.d(_regeneratorValues(_loop11()), 6);
+        case 6:
+          _context52.n = 5;
+          break;
+        case 7:
+          _context52.n = 9;
+          break;
+        case 8:
+          _context52.p = 8;
+          _t49 = _context52.v;
+          _iterator18.e(_t49);
+        case 9:
+          _context52.p = 9;
+          _iterator18.f();
+          return _context52.f(9);
+        case 10:
+          _context52.n = 12;
+          break;
+        case 11:
+          _context52.p = 11;
+          _t50 = _context52.v;
+        case 12:
+          pending = $('wzPending');
+          if (!pending) {
+            _context52.n = 20;
+            break;
+          }
+          pending.innerHTML = '';
+          if (wzChallenges.length) {
+            _context52.n = 13;
+            break;
+          }
+          pending.textContent = 'No pending challenges.';
+          _context52.n = 20;
+          break;
+        case 13:
+          _iterator19 = _createForOfIteratorHelper(wzChallenges);
+          _context52.p = 14;
+          _loop12 = _regenerator().m(function _loop12() {
+            var c, row, label, btns, accept, decline;
+            return _regenerator().w(function (_context51) {
+              while (1) switch (_context51.n) {
+                case 0:
+                  c = _step19.value;
+                  row = document.createElement('div');
+                  row.className = 'wz-row';
+                  label = document.createElement('span');
+                  label.textContent = c.fromName + ' challenged you';
+                  btns = document.createElement('span');
+                  accept = document.createElement('button');
+                  accept.className = 'mini-btn';
+                  accept.textContent = 'ACCEPT';
+                  accept.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee46() {
+                    var _r13, _t47;
+                    return _regenerator().w(function (_context49) {
+                      while (1) switch (_context49.p = _context49.n) {
+                        case 0:
+                          _context49.p = 0;
+                          _context49.n = 1;
+                          return api('/warzone/challenge/' + c.id + '/accept', {
+                            method: 'POST'
+                          });
+                        case 1:
+                          _r13 = _context49.v;
+                          wzChallenges = wzChallenges.filter(function (x) {
+                            return x.id !== c.id;
+                          });
+                          closeAllModals();
+                          wzEnterArena({
+                            matchId: _r13.matchId,
+                            opponent: {
+                              id: _r13.opponentId,
+                              username: _r13.opponentName
+                            }
+                          }, 'lobby');
+                          _context49.n = 3;
+                          break;
+                        case 2:
+                          _context49.p = 2;
+                          _t47 = _context49.v;
+                          toast('OOPS', _t47.message, null, '#ff6b8a');
+                        case 3:
+                          return _context49.a(2);
+                      }
+                    }, _callee46, null, [[0, 2]]);
+                  })));
+                  decline = document.createElement('button');
+                  decline.className = 'mini-btn ghost';
+                  decline.textContent = 'DECLINE';
+                  decline.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee47() {
+                    var _t48;
+                    return _regenerator().w(function (_context50) {
+                      while (1) switch (_context50.p = _context50.n) {
+                        case 0:
+                          _context50.p = 0;
+                          _context50.n = 1;
+                          return api('/warzone/challenge/' + c.id + '/decline', {
+                            method: 'POST'
+                          });
+                        case 1:
+                          wzChallenges = wzChallenges.filter(function (x) {
+                            return x.id !== c.id;
+                          });
+                          wzRenderOnline();
+                          _context50.n = 3;
+                          break;
+                        case 2:
+                          _context50.p = 2;
+                          _t48 = _context50.v;
+                        case 3:
+                          return _context50.a(2);
+                      }
+                    }, _callee47, null, [[0, 2]]);
+                  })));
+                  btns.appendChild(accept);
+                  btns.appendChild(decline);
+                  row.appendChild(label);
+                  row.appendChild(btns);
+                  pending.appendChild(row);
+                case 1:
+                  return _context51.a(2);
+              }
+            }, _loop12);
+          });
+          _iterator19.s();
+        case 15:
+          if ((_step19 = _iterator19.n()).done) {
+            _context52.n = 17;
+            break;
+          }
+          return _context52.d(_regeneratorValues(_loop12()), 16);
+        case 16:
+          _context52.n = 15;
+          break;
+        case 17:
+          _context52.n = 19;
+          break;
+        case 18:
+          _context52.p = 18;
+          _t51 = _context52.v;
+          _iterator19.e(_t51);
+        case 19:
+          _context52.p = 19;
+          _iterator19.f();
+          return _context52.f(19);
+        case 20:
+          return _context52.a(2);
+      }
+    }, _callee48, null, [[14, 18, 19, 20], [4, 8, 9, 10], [1, 11]]);
+  }));
+  return _wzRenderOnline.apply(this, arguments);
+}
+function wzRenderHistory() {
+  return _wzRenderHistory.apply(this, arguments);
+}
+function _wzRenderHistory() {
+  _wzRenderHistory = _asyncToGenerator(_regenerator().m(function _callee49() {
+    var list, _r14, _iterator20, _step20, h, row, label, left, right, _t52;
+    return _regenerator().w(function (_context53) {
+      while (1) switch (_context53.p = _context53.n) {
+        case 0:
+          list = $('wzHistoryList');
+          if (list) {
+            _context53.n = 1;
+            break;
+          }
+          return _context53.a(2);
+        case 1:
+          _context53.p = 1;
+          _context53.n = 2;
+          return api('/warzone');
+        case 2:
+          _r14 = _context53.v;
+          list.innerHTML = '';
+          if (_r14.history.length) {
+            _context53.n = 3;
+            break;
+          }
+          list.innerHTML = '<div class="wz-empty">No duels yet. Enter the arena to make history.</div>';
+          return _context53.a(2);
+        case 3:
+          _iterator20 = _createForOfIteratorHelper(_r14.history);
+          try {
+            for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
+              h = _step20.value;
+              row = document.createElement('div');
+              row.className = 'wz-row';
+              label = h.won ? 'WIN' : h.state === 'refunded' ? 'REFUND' : 'LOSS';
+              left = document.createElement('span');
+              left.textContent = esc(h.opponent.username) + " \xB7 " + label + " \xB7 " + wzFmtWager(h.yourWager);
+              right = document.createElement('span');
+              right.textContent = new Date(h.startedAt || Date.now()).toLocaleDateString();
+              row.appendChild(left);
+              row.appendChild(right);
+              list.appendChild(row);
+            }
+          } catch (err) {
+            _iterator20.e(err);
+          } finally {
+            _iterator20.f();
+          }
+          _context53.n = 5;
+          break;
+        case 4:
+          _context53.p = 4;
+          _t52 = _context53.v;
+        case 5:
+          return _context53.a(2);
+      }
+    }, _callee49, null, [[1, 4]]);
+  }));
+  return _wzRenderHistory.apply(this, arguments);
+}
+$('wzQueueBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee10() {
+  var r, _t11;
+  return _regenerator().w(function (_context10) {
+    while (1) switch (_context10.p = _context10.n) {
+      case 0:
+        if (!inArena) {
+          _context10.n = 1;
+          break;
+        }
+        return _context10.a(2);
+      case 1:
+        _context10.p = 1;
+        _context10.n = 2;
+        return api('/warzone/queue', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: wzQueued ? 'leave' : 'join'
+          })
+        });
+      case 2:
+        r = _context10.v;
+        wzQueued = !!r.queued;
+        $('wzQueueBtn').textContent = wzQueued ? 'LEAVE QUEUE' : 'FIND MATCH';
+        if (r.matched) {
+          closeAllModals();
+          wzEnterArena({
+            matchId: r.matchId,
+            opponent: r.opponent
+          }, 'lobby');
+        } else {
+          toast('WARZONE', wzQueued ? 'Searching for an opponent...' : 'Left the queue', null, '#4fd1ff');
+        }
+        _context10.n = 4;
+        break;
+      case 3:
+        _context10.p = 3;
+        _t11 = _context10.v;
+        toast('OOPS', _t11.message, null, '#ff6b8a');
+      case 4:
+        return _context10.a(2);
+    }
+  }, _callee10, null, [[1, 3]]);
+})));
+function wzEnterArena(match, phase) {
+  if (inArena) return;
+  if (!match || !match.matchId) return;
+  var rules = match.rules || {};
+  arena = {
+    matchId: match.matchId,
+    match: match,
+    phase: phase === 'fighting' ? 'fighting' : 'lobby',
+    rules: {
+      arenaW: rules.arenaW || 960,
+      arenaH: rules.arenaH || 600,
+      fighterW: rules.fighterW || 40,
+      fighterH: rules.fighterH || 58,
+      maxHp: rules.maxHp || 100,
+      damage: rules.damage || 10,
+      attackCooldownMs: rules.attackCooldownMs || 600,
+      fightTimeoutMs: rules.fightTimeoutMs || 120000
+    },
+    players: {
+      a: match.a || null,
+      b: match.b || null
+    },
+    render: {
+      a: {
+        x: match.a && match.a.x || 120,
+        y: match.a && match.a.y || 271
+      },
+      b: {
+        x: match.b && match.b.x || 800,
+        y: match.b && match.b.y || 271
+      }
+    },
+    target: {
+      a: {
+        x: match.a && match.a.x || 120,
+        y: match.a && match.a.y || 271
+      },
+      b: {
+        x: match.b && match.b.x || 800,
+        y: match.b && match.b.y || 271
+      }
+    },
+    attackQueued: false,
+    status: '',
+    startedAt: match.startedAt || 0
+  };
+  inArena = true;
+  document.body.classList.add('wz-arena');
+  $('warzoneArena').classList.remove('hidden');
+  $('mobileEBtn').textContent = 'ATK';
+  closeAllModals();
+  wsSend({
+    type: 'warzoneEnter',
+    matchId: arena.matchId
+  });
+  if (arena.phase === 'fighting') wzBeginFight(match);else wzRenderLobby();
+}
+function wzExitArena() {
+  if (!inArena) return;
+  wsSend({
+    type: 'warzoneLeave'
+  });
+  inArena = false;
+  arena = null;
+  document.body.classList.remove('wz-arena');
+  $('warzoneArena').classList.add('hidden');
+  $('mobileEBtn').textContent = 'E';
+  for (var k in keys) keys[k] = false;
+  refreshState().catch(function () {});
+}
+function wzRenderLobby() {
+  if (!arena || !arena.match) return;
+  var m = arena.match;
+  arena.phase = 'lobby';
+  $('wzLobby').classList.remove('hidden');
+  $('wzResult').classList.add('hidden');
+  $('wzForfeit').classList.add('hidden');
+  $('wzHint').classList.add('hidden');
+  $('wzLobbyStatus').textContent = 'Agree on a bet with ' + (m.opponent && m.opponent.username || 'your opponent') + '. Winner takes both bets.';
+  $('wzBetYou').textContent = wzFmtWager(m.you && m.you.wager);
+  $('wzBetThem').textContent = wzFmtWager(m.opponent && m.opponent.wager);
+  $('wzReadyYou').textContent = m.you && m.you.confirmed ? 'READY' : 'NOT READY';
+  $('wzReadyThem').textContent = m.opponent && m.opponent.confirmed ? 'READY' : 'NOT READY';
+  $('wzReady').textContent = m.you && m.you.confirmed ? "READY \u2713" : 'READY';
+  wzRenderWagerPicker();
+  wzRenderHud(true);
+}
+function wzRenderWagerPicker() {
+  document.querySelectorAll('#wzLobby .wz-choice button').forEach(function (b) {
+    return b.classList.toggle('active', b.dataset.wtype === wzBetType);
+  });
+  $('wzMoneyInput').classList.toggle('hidden', wzBetType !== 'money');
+  $('wzItemQty').classList.toggle('hidden', wzBetType !== 'item');
+  $('wzItemList').classList.toggle('hidden', wzBetType !== 'item');
+  if (wzBetType !== 'item') return;
+  var list = $('wzItemList');
+  list.innerHTML = '';
+  var entries = Object.entries(state.counts || {}).sort(function (a, b) {
+    return itemValueKey(b[0]) - itemValueKey(a[0]);
+  });
+  if (!entries.length) {
+    list.innerHTML = '<div class="wz-empty">No items in your vault to wager</div>';
+    return;
+  }
+  var _iterator11 = _createForOfIteratorHelper(entries),
+    _step11;
+  try {
+    var _loop9 = function _loop9() {
+      var _step11$value = _slicedToArray(_step11.value, 2),
+        key = _step11$value[0],
+        qty = _step11$value[1];
+      var row = document.createElement('div');
+      row.className = 'wz-item' + (wzSelectedItem === key ? ' active' : '');
+      var left = document.createElement('span');
+      left.textContent = itemDisplayName(key) + ' x' + qty;
+      var right = document.createElement('span');
+      right.textContent = wzSelectedItem === key ? 'SELECTED' : '';
+      row.appendChild(left);
+      row.appendChild(right);
+      row.addEventListener('click', function () {
+        wzSelectedItem = key;
+        wzRenderWagerPicker();
+      });
+      list.appendChild(row);
+    };
+    for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
+      _loop9();
+    }
+  } catch (err) {
+    _iterator11.e(err);
+  } finally {
+    _iterator11.f();
+  }
+}
+document.querySelectorAll('#wzLobby .wz-choice button').forEach(function (b) {
+  return b.addEventListener('click', function () {
+    wzBetType = b.dataset.wtype;
+    wzRenderWagerPicker();
+  });
+});
+$('wzSetWager').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee11() {
+  var wager, r, _t12;
+  return _regenerator().w(function (_context11) {
+    while (1) switch (_context11.p = _context11.n) {
+      case 0:
+        if (!(!arena || arena.phase !== 'lobby')) {
+          _context11.n = 1;
+          break;
+        }
+        return _context11.a(2);
+      case 1:
+        wager = {
+          type: 'none'
+        };
+        if (wzBetType === 'money') wager = {
+          type: 'money',
+          amount: Math.floor(Number($('wzMoneyInput').value) || 0)
+        };
+        if (!(wzBetType === 'item')) {
+          _context11.n = 3;
+          break;
+        }
+        if (wzSelectedItem) {
+          _context11.n = 2;
+          break;
+        }
+        toast('WARZONE', 'Pick an item first', null, '#ff6b8a');
+        return _context11.a(2);
+      case 2:
+        wager = {
+          type: 'item',
+          key: wzSelectedItem,
+          qty: Math.floor(Number($('wzItemQty').value) || 1)
+        };
+      case 3:
+        _context11.p = 3;
+        _context11.n = 4;
+        return api('/warzone/' + arena.matchId + '/wager', {
+          method: 'POST',
+          body: JSON.stringify({
+            wager: wager
+          })
+        });
+      case 4:
+        r = _context11.v;
+        arena.match = r.match;
+        wzRenderLobby();
+        toast('WARZONE', 'Bet set: ' + wzFmtWager(wager), null, '#4fd1ff');
+        _context11.n = 6;
+        break;
+      case 5:
+        _context11.p = 5;
+        _t12 = _context11.v;
+        toast('OOPS', _t12.message, null, '#ff6b8a');
+      case 6:
+        return _context11.a(2);
+    }
+  }, _callee11, null, [[3, 5]]);
+})));
+$('wzReady').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee12() {
+  var r, _t13;
+  return _regenerator().w(function (_context12) {
+    while (1) switch (_context12.p = _context12.n) {
+      case 0:
+        if (!(!arena || arena.phase !== 'lobby')) {
+          _context12.n = 1;
+          break;
+        }
+        return _context12.a(2);
+      case 1:
+        _context12.p = 1;
+        _context12.n = 2;
+        return api('/warzone/' + arena.matchId + '/confirm', {
+          method: 'POST'
+        });
+      case 2:
+        r = _context12.v;
+        arena.match = r.match;
+        if (r.match && r.match.state === 'fighting') wzBeginFight(r.match);else wzRenderLobby();
+        _context12.n = 4;
+        break;
+      case 3:
+        _context12.p = 3;
+        _t13 = _context12.v;
+        toast('OOPS', _t13.message, null, '#ff6b8a');
+      case 4:
+        return _context12.a(2);
+    }
+  }, _callee12, null, [[1, 3]]);
+})));
+function wzLeaveLobby() {
+  return _wzLeaveLobby.apply(this, arguments);
+}
+function _wzLeaveLobby() {
+  _wzLeaveLobby = _asyncToGenerator(_regenerator().m(function _callee50() {
+    var _t53;
+    return _regenerator().w(function (_context54) {
+      while (1) switch (_context54.p = _context54.n) {
+        case 0:
+          if (arena) {
+            _context54.n = 1;
+            break;
+          }
+          return _context54.a(2);
+        case 1:
+          _context54.p = 1;
+          _context54.n = 2;
+          return api('/warzone/' + arena.matchId + '/cancel', {
+            method: 'POST'
+          });
+        case 2:
+          _context54.n = 4;
+          break;
+        case 3:
+          _context54.p = 3;
+          _t53 = _context54.v;
+        case 4:
+          wzExitArena();
+        case 5:
+          return _context54.a(2);
+      }
+    }, _callee50, null, [[1, 3]]);
+  }));
+  return _wzLeaveLobby.apply(this, arguments);
+}
+$('wzLobbyLeave').addEventListener('click', wzLeaveLobby);
+$('wzForfeit').addEventListener('click', function () {
+  if (!arena) return;
+  if (arena.phase === 'fighting') {
+    wsSend({
+      type: 'warzoneLeave'
+    });
+    toast('WARZONE', 'You forfeited the duel', null, '#ff6b8a');
+    wzExitArena();
+  } else wzLeaveLobby();
+});
+$('wzResultClose').addEventListener('click', wzExitArena);
+function wzBeginFight(match) {
+  if (!arena || arena.matchId !== match.matchId) return;
+  arena.match = match;
+  arena.phase = 'fighting';
+  arena.startedAt = match.startedAt || Date.now();
+  if (match.rules) arena.rules = Object.assign(arena.rules, match.rules);
+  for (var _i6 = 0, _arr = ['a', 'b']; _i6 < _arr.length; _i6++) {
+    var side = _arr[_i6];
+    var p = match[side];
+    if (!p) continue;
+    var live = arena.players[side] || {};
+    live.id = p.id;
+    live.username = p.username;
+    live.hp = p.hp;
+    live.facing = p.facing || {
+      x: side === 'a' ? 1 : -1,
+      y: 0
+    };
+    live.moving = false;
+    live.attackAt = 0;
+    live.fxUntil = 0;
+    arena.players[side] = live;
+    arena.render[side] = {
+      x: p.x,
+      y: p.y
+    };
+    arena.target[side] = {
+      x: p.x,
+      y: p.y
+    };
+  }
+  $('wzLobby').classList.add('hidden');
+  $('wzResult').classList.add('hidden');
+  $('wzForfeit').classList.remove('hidden');
+  $('wzHint').classList.remove('hidden');
+  $('wzHint').textContent = isMobile ? "Joystick to move \xB7 Tap ATK to attack" : "WASD / Arrows to move \xB7 Click or Space to attack";
+  $('mobileEBtn').textContent = 'ATK';
+  wzRenderHud(true);
+  sfxToast();
+  toast('FIGHT!', 'Duel started', null, '#ff5c8a');
+}
+function wzRenderHud(force) {
+  if (!arena) return;
+  var now = Date.now();
+  if (!force && now - wzLastHud < 80) return;
+  wzLastHud = now;
+  var max = arena.rules.maxHp || 100;
+  for (var _i7 = 0, _arr2 = ['a', 'b']; _i7 < _arr2.length; _i7++) {
+    var side = _arr2[_i7];
+    var p = arena.players[side];
+    var suffix = side === 'a' ? 'A' : 'B';
+    if (!p) continue;
+    $('wzName' + suffix).textContent = p.username || (side === 'a' ? 'You' : 'Opponent');
+    var hp = Math.max(0, Number(p.hp) || 0);
+    $('wzHp' + suffix).style.width = Math.max(0, Math.min(100, hp / max * 100)) + '%';
+    $('wzHpText' + suffix).textContent = hp + ' / ' + max;
+  }
+  var remain = Math.max(0, Math.floor(((arena.rules.fightTimeoutMs || 120000) - (arena.startedAt ? now - arena.startedAt : 0)) / 1000));
+  $('wzTimer').textContent = String(Math.floor(remain / 60)).padStart(2, '0') + ':' + String(remain % 60).padStart(2, '0');
+  $('wzStatus').textContent = arena.status || (arena.phase === 'lobby' ? 'WAGER LOBBY' : arena.phase === 'result' ? 'MATCH OVER' : 'DUEL IN PROGRESS');
+}
+function wzAttack() {
+  if (!inArena || !arena || arena.phase !== 'fighting') return;
+  ac();
+  tone(240, 0.07, 'square', 0.045);
+  arena.attackQueued = true;
+}
+function onWarzoneMatched(msg) {
+  toast('WARZONE', 'Opponent found: ' + (msg.opponentName || 'unknown'), null, '#ff5c8a');
+  if (!inArena) {
+    closeAllModals();
+    wzEnterArena({
+      matchId: msg.matchId,
+      opponent: {
+        id: msg.opponentId,
+        username: msg.opponentName
+      }
+    }, 'lobby');
+  }
+}
+function onWarzoneChallenge(msg) {
+  toast('WARZONE CHALLENGE', msg.fromName + ' challenged you', null, '#ffb648');
+  wzChallenges.push({
+    id: msg.challengeId,
+    fromId: msg.fromId,
+    fromName: msg.fromName
+  });
+  if ($('wzPanelChallenge').classList.contains('active')) wzRenderOnline();
+}
+function onWarzoneChallengeDeclined(msg) {
+  toast('WARZONE', msg.fromName + ' declined your challenge', null, '#ff6b8a');
+}
+function onWarzoneLobby(msg) {
+  if (!arena || arena.matchId !== msg.match.matchId) return;
+  arena.match = msg.match;
+  if (arena.phase === 'lobby') wzRenderLobby();
+}
+function onWarzoneStart(msg) {
+  if (!arena || arena.matchId !== msg.match.matchId) return;
+  wzBeginFight(msg.match);
+}
+function onWarzoneState(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  var _iterator12 = _createForOfIteratorHelper(msg.players),
+    _step12;
+  try {
+    for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
+      var p = _step12.value;
+      var side = arena.players.a && p.id === arena.players.a.id ? 'a' : arena.players.b && p.id === arena.players.b.id ? 'b' : null;
+      if (!side) continue;
+      arena.target[side] = {
+        x: p.x,
+        y: p.y
+      };
+      var live = arena.players[side];
+      live.hp = p.hp;
+      live.x = p.x;
+      live.y = p.y;
+      live.facing = p.facing;
+      live.moving = p.moving;
+      live.connected = p.connected;
+      if (p.attackAt && p.attackAt !== live.attackAt) {
+        live.attackAt = p.attackAt;
+        live.fxUntil = p.attackAt + 220;
+      }
+    }
+  } catch (err) {
+    _iterator12.e(err);
+  } finally {
+    _iterator12.f();
+  }
+  wzRenderHud();
+}
+function onWarzoneResult(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  arena.phase = 'result';
+  if (msg.state) {
+    state = msg.state;
+    renderVault();
+  }
+  var youWon = Number(msg.winnerId) === Number(me && me.id);
+  $('wzResultTitle').textContent = msg.outcome === 'draw' ? 'Draw' : youWon ? 'Victory' : 'Defeat';
+  var body = 'Outcome: ' + String(msg.outcome || 'finished').replace(/[^a-z]/gi, ' ') + '. ';
+  if (arena.match && arena.match.you) body += 'Your bet was ' + wzFmtWager(arena.match.you.wager) + '. ';
+  if (youWon) body += "You kept your bet and took your opponent\u2019s.";else if (msg.outcome === 'draw') body += 'Both bets were refunded.';else body += 'Your bet was lost.';
+  $('wzResultBody').textContent = body;
+  $('wzResult').classList.remove('hidden');
+  $('wzLobby').classList.add('hidden');
+  $('wzForfeit').classList.add('hidden');
+  $('wzHint').classList.add('hidden');
+  shock(youWon ? '#ffb648' : '#7c5cff');
+  sfxToast();
+}
+function onWarzoneCancelled(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  toast('WARZONE', msg.reason || 'Match cancelled', null, '#ff6b8a');
+  wzExitArena();
+}
+function onWarzoneDisconnected(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  arena.status = "Opponent disconnected \xB7 " + Math.round((msg.graceMs || 10000) / 1000) + 's to forfeit';
+  wzRenderHud(true);
+}
+function onWarzoneReconnected(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  arena.status = '';
+  wzRenderHud(true);
+}
+function wzFrame(now, dt) {
+  if (arena && arena.phase === 'fighting') {
+    var ix = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+    var iy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+    if (now - wzLastInput >= 70) {
+      wzLastInput = now;
+      wsSend({
+        type: 'warzoneInput',
+        ix: ix,
+        iy: iy,
+        attack: !!arena.attackQueued
+      });
+      arena.attackQueued = false;
+    }
+    for (var _i8 = 0, _arr3 = ['a', 'b']; _i8 < _arr3.length; _i8++) {
+      var side = _arr3[_i8];
+      var r = arena.render[side],
+        t = arena.target[side];
+      if (!r || !t) continue;
+      var k = Math.min(1, dt * 12);
+      r.x += (t.x - r.x) * k;
+      r.y += (t.y - r.y) * k;
+    }
+  }
+  wzRenderHud();
+  drawArena(now);
+}
+function drawArena(now) {
+  var rules = arena && arena.rules || {};
+  var aw = rules.arenaW || 960,
+    ah = rules.arenaH || 600;
+  var fw = rules.fighterW || 40,
+    fh = rules.fighterH || 58;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, viewW, viewH);
+  var scale = Math.max(0.3, Math.min((viewW - 40) / aw, (viewH - 180) / ah));
+  var ox = (viewW - aw * scale) / 2;
+  var oy = (viewH - ah * scale) / 2 + 20;
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = 'rgba(12,8,22,0.9)';
+  ctx.strokeStyle = 'rgba(255,92,138,0.55)';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = 'rgba(255,92,138,0.5)';
+  ctx.shadowBlur = 30;
+  rr(0, 0, aw, ah, 18);
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 1;
+  for (var x = 60; x < aw; x += 60) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, ah);
+    ctx.stroke();
+  }
+  for (var y = 60; y < ah; y += 60) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(aw, y);
+    ctx.stroke();
+  }
+  if (arena) {
+    for (var _i9 = 0, _arr4 = ['a', 'b']; _i9 < _arr4.length; _i9++) {
+      var side = _arr4[_i9];
+      var p = arena.players[side],
+        r = arena.render[side];
+      if (!p || !r) continue;
+      var color = side === 'a' ? state && state.customColor ? 'hsl(' + state.customColor + ', 65%, 58%)' : '#7c5cff' : '#ff5c8a';
+      drawCharacter(r.x, r.y, color, p.facing || {
+        x: side === 'a' ? 1 : -1,
+        y: 0
+      }, p.moving, now / 90);
+      drawNameTag(r.x + fw / 2, r.y - 10, p.username || '?', color);
+      if (p.fxUntil && now < p.fxUntil) {
+        var a = 1 - (p.fxUntil - now) / 220;
+        ctx.save();
+        ctx.translate(r.x + fw / 2, r.y + fh / 2);
+        if (p.facing && p.facing.x < 0) ctx.rotate(Math.PI);
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.8 * (1 - a)).toFixed(3) + ')';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, fw * 0.85, -0.9 + a * 1.8, 0.3 + a * 1.8);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+  ctx.restore();
+}
 function renderQuests() {
   return _renderQuests.apply(this, arguments);
 }
 function _renderQuests() {
-  _renderQuests = _asyncToGenerator(_regenerator().m(function _callee41() {
-    var list, data, _iterator16, _step16, _loop10, _t42, _t43;
-    return _regenerator().w(function (_context44) {
-      while (1) switch (_context44.p = _context44.n) {
+  _renderQuests = _asyncToGenerator(_regenerator().m(function _callee51() {
+    var list, data, _iterator21, _step21, _loop13, _t54, _t55;
+    return _regenerator().w(function (_context56) {
+      while (1) switch (_context56.p = _context56.n) {
         case 0:
           list = $('questList');
           if (list) {
-            _context44.n = 1;
+            _context56.n = 1;
             break;
           }
-          return _context44.a(2);
+          return _context56.a(2);
         case 1:
           list.innerHTML = '<li class="empty">Loading quests...</li>';
           data = null;
-          _context44.p = 2;
-          _context44.n = 3;
+          _context56.p = 2;
+          _context56.n = 3;
           return api('/daily');
         case 3:
-          data = _context44.v;
-          _context44.n = 5;
+          data = _context56.v;
+          _context56.n = 5;
           break;
         case 4:
-          _context44.p = 4;
-          _t42 = _context44.v;
+          _context56.p = 4;
+          _t54 = _context56.v;
           data = dailyData;
         case 5:
           if (data) {
-            _context44.n = 6;
+            _context56.n = 6;
             break;
           }
           list.innerHTML = '<li class="empty">Could not load quests.</li>';
-          return _context44.a(2);
+          return _context56.a(2);
         case 6:
           dailyData = data;
           $('questInfo').textContent = (data.claimed || []).length + ' / ' + (data.quests || []).length + ' claimed';
           list.innerHTML = '';
-          _iterator16 = _createForOfIteratorHelper(data.quests || []);
-          _context44.p = 7;
-          _loop10 = _regenerator().m(function _loop10() {
+          _iterator21 = _createForOfIteratorHelper(data.quests || []);
+          _context56.p = 7;
+          _loop13 = _regenerator().m(function _loop13() {
             var q, prog, done, claimed, pct, li, btn;
-            return _regenerator().w(function (_context43) {
-              while (1) switch (_context43.n) {
+            return _regenerator().w(function (_context55) {
+              while (1) switch (_context55.n) {
                 case 0:
-                  q = _step16.value;
+                  q = _step21.value;
                   prog = Number((data.prog || {})[q.id] || 0);
                   done = prog >= q.target;
                   claimed = (data.claimed || []).indexOf(q.id) !== -1;
@@ -4917,35 +5915,35 @@ function _renderQuests() {
                   li.appendChild(btn);
                   list.appendChild(li);
                 case 1:
-                  return _context43.a(2);
+                  return _context55.a(2);
               }
-            }, _loop10);
+            }, _loop13);
           });
-          _iterator16.s();
+          _iterator21.s();
         case 8:
-          if ((_step16 = _iterator16.n()).done) {
-            _context44.n = 10;
+          if ((_step21 = _iterator21.n()).done) {
+            _context56.n = 10;
             break;
           }
-          return _context44.d(_regeneratorValues(_loop10()), 9);
+          return _context56.d(_regeneratorValues(_loop13()), 9);
         case 9:
-          _context44.n = 8;
+          _context56.n = 8;
           break;
         case 10:
-          _context44.n = 12;
+          _context56.n = 12;
           break;
         case 11:
-          _context44.p = 11;
-          _t43 = _context44.v;
-          _iterator16.e(_t43);
+          _context56.p = 11;
+          _t55 = _context56.v;
+          _iterator21.e(_t55);
         case 12:
-          _context44.p = 12;
-          _iterator16.f();
-          return _context44.f(12);
+          _context56.p = 12;
+          _iterator21.f();
+          return _context56.f(12);
         case 13:
-          return _context44.a(2);
+          return _context56.a(2);
       }
-    }, _callee41, null, [[7, 11, 12, 13], [2, 4]]);
+    }, _callee51, null, [[7, 11, 12, 13], [2, 4]]);
   }));
   return _renderQuests.apply(this, arguments);
 }
@@ -4953,13 +5951,13 @@ function claimQuest(_x20) {
   return _claimQuest.apply(this, arguments);
 }
 function _claimQuest() {
-  _claimQuest = _asyncToGenerator(_regenerator().m(function _callee42(id) {
-    var _r11, _t44;
-    return _regenerator().w(function (_context45) {
-      while (1) switch (_context45.p = _context45.n) {
+  _claimQuest = _asyncToGenerator(_regenerator().m(function _callee52(id) {
+    var _r15, _t56;
+    return _regenerator().w(function (_context57) {
+      while (1) switch (_context57.p = _context57.n) {
         case 0:
-          _context45.p = 0;
-          _context45.n = 1;
+          _context57.p = 0;
+          _context57.n = 1;
           return api('/daily/claim', {
             method: 'POST',
             body: JSON.stringify({
@@ -4967,23 +5965,23 @@ function _claimQuest() {
             })
           });
         case 1:
-          _r11 = _context45.v;
-          state = _r11.state;
-          dailyData = _r11.daily;
-          toast('QUEST COMPLETE', 'Reward claimed', '$' + fmt(_r11.reward), '#7bdc78');
+          _r15 = _context57.v;
+          state = _r15.state;
+          dailyData = _r15.daily;
+          toast('QUEST COMPLETE', 'Reward claimed', '$' + fmt(_r15.reward), '#7bdc78');
           sfxToast();
           renderVault();
           renderQuests();
-          _context45.n = 3;
+          _context57.n = 3;
           break;
         case 2:
-          _context45.p = 2;
-          _t44 = _context45.v;
-          toast('OOPS', _t44.message, null, '#ff6b8a');
+          _context57.p = 2;
+          _t56 = _context57.v;
+          toast('OOPS', _t56.message, null, '#ff6b8a');
         case 3:
-          return _context45.a(2);
+          return _context57.a(2);
       }
-    }, _callee42, null, [[0, 2]]);
+    }, _callee52, null, [[0, 2]]);
   }));
   return _claimQuest.apply(this, arguments);
 }
@@ -5005,39 +6003,39 @@ function refreshBossPayout() {
   return _refreshBossPayout.apply(this, arguments);
 }
 function _refreshBossPayout() {
-  _refreshBossPayout = _asyncToGenerator(_regenerator().m(function _callee43() {
-    var b, _t45;
-    return _regenerator().w(function (_context46) {
-      while (1) switch (_context46.p = _context46.n) {
+  _refreshBossPayout = _asyncToGenerator(_regenerator().m(function _callee53() {
+    var b, _t57;
+    return _regenerator().w(function (_context58) {
+      while (1) switch (_context58.p = _context58.n) {
         case 0:
           if (!(!inGame || !token)) {
-            _context46.n = 1;
+            _context58.n = 1;
             break;
           }
-          return _context46.a(2);
+          return _context58.a(2);
         case 1:
-          _context46.p = 1;
-          _context46.n = 2;
+          _context58.p = 1;
+          _context58.n = 2;
           return api('/boss');
         case 2:
-          b = _context46.v;
+          b = _context58.v;
           if (b) {
-            _context46.n = 3;
+            _context58.n = 3;
             break;
           }
-          return _context46.a(2);
+          return _context58.a(2);
         case 3:
           if (b.boss) onBoss(b.boss);
           setBossYou(b.you);
-          _context46.n = 5;
+          _context58.n = 5;
           break;
         case 4:
-          _context46.p = 4;
-          _t45 = _context46.v;
+          _context58.p = 4;
+          _t57 = _context58.v;
         case 5:
-          return _context46.a(2);
+          return _context58.a(2);
       }
-    }, _callee43, null, [[1, 4]]);
+    }, _callee53, null, [[1, 4]]);
   }));
   return _refreshBossPayout.apply(this, arguments);
 }
@@ -5194,20 +6192,20 @@ function saveNow() {
   return _saveNow.apply(this, arguments);
 }
 function _saveNow() {
-  _saveNow = _asyncToGenerator(_regenerator().m(function _callee44() {
-    var body, _t46;
-    return _regenerator().w(function (_context47) {
-      while (1) switch (_context47.p = _context47.n) {
+  _saveNow = _asyncToGenerator(_regenerator().m(function _callee54() {
+    var body, _t58;
+    return _regenerator().w(function (_context59) {
+      while (1) switch (_context59.p = _context59.n) {
         case 0:
           if (!(!token || !state)) {
-            _context47.n = 1;
+            _context59.n = 1;
             break;
           }
-          return _context47.a(2);
+          return _context59.a(2);
         case 1:
-          _context47.p = 1;
+          _context59.p = 1;
           body = JSON.stringify(payload());
-          _context47.n = 2;
+          _context59.n = 2;
           return fetch('/api/save', {
             method: 'POST',
             headers: {
@@ -5218,15 +6216,15 @@ function _saveNow() {
             keepalive: true
           });
         case 2:
-          _context47.n = 4;
+          _context59.n = 4;
           break;
         case 3:
-          _context47.p = 3;
-          _t46 = _context47.v;
+          _context59.p = 3;
+          _t58 = _context59.v;
         case 4:
-          return _context47.a(2);
+          return _context59.a(2);
       }
-    }, _callee44, null, [[1, 3]]);
+    }, _callee54, null, [[1, 3]]);
   }));
   return _saveNow.apply(this, arguments);
 }
@@ -5240,59 +6238,59 @@ window.addEventListener('beforeunload', function () {
     navigator.sendBeacon && navigator.sendBeacon('/api/save?token=' + encodeURIComponent(token), blob);
   } catch (e) {}
 });
-$('leaveBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee10() {
-  var _t11;
-  return _regenerator().w(function (_context10) {
-    while (1) switch (_context10.p = _context10.n) {
+$('leaveBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee13() {
+  var _t14;
+  return _regenerator().w(function (_context13) {
+    while (1) switch (_context13.p = _context13.n) {
       case 0:
-        _context10.n = 1;
+        _context13.n = 1;
         return saveNow();
       case 1:
         disconnectWS();
         closeAllModals();
         if (!(currentServer && token)) {
-          _context10.n = 5;
+          _context13.n = 5;
           break;
         }
-        _context10.p = 2;
-        _context10.n = 3;
+        _context13.p = 2;
+        _context13.n = 3;
         return api('/servers/' + currentServer.id + '/leave', {
           method: 'POST'
         });
       case 3:
-        _context10.n = 5;
+        _context13.n = 5;
         break;
       case 4:
-        _context10.p = 4;
-        _t11 = _context10.v;
+        _context13.p = 4;
+        _t14 = _context13.v;
       case 5:
         currentServer = null;
         mySlot = -1;
-        _context10.n = 6;
+        _context13.n = 6;
         return loadMe();
       case 6:
-        return _context10.a(2);
+        return _context13.a(2);
     }
-  }, _callee10, null, [[2, 4]]);
+  }, _callee13, null, [[2, 4]]);
 })));
 var bossBarEl = $('bossBar');
 if (bossBarEl) {
-  bossBarEl.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee11() {
-    return _regenerator().w(function (_context11) {
-      while (1) switch (_context11.n) {
+  bossBarEl.addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee14() {
+    return _regenerator().w(function (_context14) {
+      while (1) switch (_context14.n) {
         case 0:
           if (inGame) {
-            _context11.n = 1;
+            _context14.n = 1;
             break;
           }
-          return _context11.a(2);
+          return _context14.a(2);
         case 1:
-          _context11.n = 2;
+          _context14.n = 2;
           return openBossModal();
         case 2:
-          return _context11.a(2);
+          return _context14.a(2);
       }
-    }, _callee11);
+    }, _callee14);
   })));
   bossBarEl.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -5320,30 +6318,30 @@ function loadBossLive() {
   return _loadBossLive.apply(this, arguments);
 }
 function _loadBossLive() {
-  _loadBossLive = _asyncToGenerator(_regenerator().m(function _callee45() {
-    var panel, b, boss, html, i, c, _t47;
-    return _regenerator().w(function (_context48) {
-      while (1) switch (_context48.p = _context48.n) {
+  _loadBossLive = _asyncToGenerator(_regenerator().m(function _callee55() {
+    var panel, b, boss, html, i, c, _t59;
+    return _regenerator().w(function (_context60) {
+      while (1) switch (_context60.p = _context60.n) {
         case 0:
           panel = $('bossPanel-live');
           if (panel) {
-            _context48.n = 1;
+            _context60.n = 1;
             break;
           }
-          return _context48.a(2);
+          return _context60.a(2);
         case 1:
           panel.innerHTML = '<div class="empty-note">Loading boss information...</div>';
-          _context48.p = 2;
-          _context48.n = 3;
+          _context60.p = 2;
+          _context60.n = 3;
           return api('/boss');
         case 3:
-          b = _context48.v;
+          b = _context60.v;
           if (b) {
-            _context48.n = 4;
+            _context60.n = 4;
             break;
           }
           panel.innerHTML = '<div class="empty-note">No boss information available.</div>';
-          return _context48.a(2);
+          return _context60.a(2);
         case 4:
           boss = b.boss || null;
           if (boss) onBoss(boss);
@@ -5377,16 +6375,16 @@ function _loadBossLive() {
           }
           html += '</div>';
           panel.innerHTML = html;
-          _context48.n = 6;
+          _context60.n = 6;
           break;
         case 5:
-          _context48.p = 5;
-          _t47 = _context48.v;
-          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t47.message || 'Could not load boss info') + '</div>';
+          _context60.p = 5;
+          _t59 = _context60.v;
+          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t59.message || 'Could not load boss info') + '</div>';
         case 6:
-          return _context48.a(2);
+          return _context60.a(2);
       }
-    }, _callee45, null, [[2, 5]]);
+    }, _callee55, null, [[2, 5]]);
   }));
   return _loadBossLive.apply(this, arguments);
 }
@@ -5394,31 +6392,31 @@ function loadBossHistory() {
   return _loadBossHistory.apply(this, arguments);
 }
 function _loadBossHistory() {
-  _loadBossHistory = _asyncToGenerator(_regenerator().m(function _callee46() {
-    var panel, h, rows, html, _t48;
-    return _regenerator().w(function (_context49) {
-      while (1) switch (_context49.p = _context49.n) {
+  _loadBossHistory = _asyncToGenerator(_regenerator().m(function _callee56() {
+    var panel, h, rows, html, _t60;
+    return _regenerator().w(function (_context61) {
+      while (1) switch (_context61.p = _context61.n) {
         case 0:
           panel = $('bossPanel-history');
           if (panel) {
-            _context49.n = 1;
+            _context61.n = 1;
             break;
           }
-          return _context49.a(2);
+          return _context61.a(2);
         case 1:
           panel.innerHTML = '<div class="empty-note">Loading boss history...</div>';
-          _context49.p = 2;
-          _context49.n = 3;
+          _context61.p = 2;
+          _context61.n = 3;
           return api('/boss/history');
         case 3:
-          h = _context49.v;
+          h = _context61.v;
           rows = h && h.history ? h.history : [];
           if (rows.length) {
-            _context49.n = 4;
+            _context61.n = 4;
             break;
           }
           panel.innerHTML = '<div class="empty-note">No defeated bosses yet.</div>';
-          return _context49.a(2);
+          return _context61.a(2);
         case 4:
           html = '<div class="boss-info">';
           html += '<h3 style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#9aa2cc; margin:4px 0 12px;">Last 20 Bosses</h3>';
@@ -5431,16 +6429,16 @@ function _loadBossHistory() {
           });
           html += '</ul></div>';
           panel.innerHTML = html;
-          _context49.n = 6;
+          _context61.n = 6;
           break;
         case 5:
-          _context49.p = 5;
-          _t48 = _context49.v;
-          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t48.message || 'Could not load boss history') + '</div>';
+          _context61.p = 5;
+          _t60 = _context61.v;
+          panel.innerHTML = '<div class="empty-note" style="color:#ff6b8a;">' + esc(_t60.message || 'Could not load boss history') + '</div>';
         case 6:
-          return _context49.a(2);
+          return _context61.a(2);
       }
-    }, _callee46, null, [[2, 5]]);
+    }, _callee56, null, [[2, 5]]);
   }));
   return _loadBossHistory.apply(this, arguments);
 }
@@ -5448,28 +6446,28 @@ function openBossModal() {
   return _openBossModal.apply(this, arguments);
 }
 function _openBossModal() {
-  _openBossModal = _asyncToGenerator(_regenerator().m(function _callee47() {
+  _openBossModal = _asyncToGenerator(_regenerator().m(function _callee57() {
     var content;
-    return _regenerator().w(function (_context50) {
-      while (1) switch (_context50.n) {
+    return _regenerator().w(function (_context62) {
+      while (1) switch (_context62.n) {
         case 0:
           closeAllModals();
           content = $('bossContent');
           if (content) {
-            _context50.n = 1;
+            _context62.n = 1;
             break;
           }
-          return _context50.a(2);
+          return _context62.a(2);
         case 1:
           content.innerHTML = '<div class="tabs">' + '<button class="tab active" data-boss-tab="live" type="button">Live</button>' + '<button class="tab" data-boss-tab="history" type="button">History</button>' + '</div>' + '<div id="bossPanel-live" class="panel active"><div class="empty-note">Loading boss information...</div></div>' + '<div id="bossPanel-history" class="panel"><div class="empty-note">Loading boss history...</div></div>';
           $('bossModal').classList.remove('hidden');
           bindBossTabs();
-          _context50.n = 2;
+          _context62.n = 2;
           return Promise.all([loadBossLive(), loadBossHistory()]);
         case 2:
-          return _context50.a(2);
+          return _context62.a(2);
       }
-    }, _callee47);
+    }, _callee57);
   }));
   return _openBossModal.apply(this, arguments);
 }
@@ -5478,18 +6476,18 @@ function openAdminModal() {
   return _openAdminModal.apply(this, arguments);
 }
 function _openAdminModal() {
-  _openAdminModal = _asyncToGenerator(_regenerator().m(function _callee48() {
-    return _regenerator().w(function (_context51) {
-      while (1) switch (_context51.n) {
+  _openAdminModal = _asyncToGenerator(_regenerator().m(function _callee58() {
+    return _regenerator().w(function (_context63) {
+      while (1) switch (_context63.n) {
         case 0:
           closeAllModals();
           $('adminModal').classList.remove('hidden');
-          _context51.n = 1;
+          _context63.n = 1;
           return Promise.all([loadAdminStats(), loadAdminUsers()]);
         case 1:
-          return _context51.a(2);
+          return _context63.a(2);
       }
-    }, _callee48);
+    }, _callee58);
   }));
   return _openAdminModal.apply(this, arguments);
 }
@@ -5498,33 +6496,33 @@ function loadAdminStats() {
   return _loadAdminStats.apply(this, arguments);
 }
 function _loadAdminStats() {
-  _loadAdminStats = _asyncToGenerator(_regenerator().m(function _callee49() {
-    var totalEl, onlineEl, _yield$api4, users, _t49;
-    return _regenerator().w(function (_context52) {
-      while (1) switch (_context52.p = _context52.n) {
+  _loadAdminStats = _asyncToGenerator(_regenerator().m(function _callee59() {
+    var totalEl, onlineEl, _yield$api4, users, _t61;
+    return _regenerator().w(function (_context64) {
+      while (1) switch (_context64.p = _context64.n) {
         case 0:
           totalEl = $('adminTotalUsers');
           onlineEl = $('adminOnlineUsers');
-          _context52.p = 1;
-          _context52.n = 2;
+          _context64.p = 1;
+          _context64.n = 2;
           return api('/admin/users');
         case 2:
-          _yield$api4 = _context52.v;
+          _yield$api4 = _context64.v;
           users = _yield$api4.users;
           if (totalEl) totalEl.textContent = users.length;
           if (onlineEl) onlineEl.textContent = users.filter(function (u) {
             return u.online;
           }).length;
-          _context52.n = 4;
+          _context64.n = 4;
           break;
         case 3:
-          _context52.p = 3;
-          _t49 = _context52.v;
-          console.error('[admin stats]', _t49.message);
+          _context64.p = 3;
+          _t61 = _context64.v;
+          console.error('[admin stats]', _t61.message);
         case 4:
-          return _context52.a(2);
+          return _context64.a(2);
       }
-    }, _callee49, null, [[1, 3]]);
+    }, _callee59, null, [[1, 3]]);
   }));
   return _loadAdminStats.apply(this, arguments);
 }
@@ -5532,44 +6530,44 @@ function loadAdminUsers() {
   return _loadAdminUsers.apply(this, arguments);
 }
 function _loadAdminUsers() {
-  _loadAdminUsers = _asyncToGenerator(_regenerator().m(function _callee50() {
-    var list, _yield$api5, users, _t50;
-    return _regenerator().w(function (_context53) {
-      while (1) switch (_context53.p = _context53.n) {
+  _loadAdminUsers = _asyncToGenerator(_regenerator().m(function _callee60() {
+    var list, _yield$api5, users, _t62;
+    return _regenerator().w(function (_context65) {
+      while (1) switch (_context65.p = _context65.n) {
         case 0:
           list = $('adminUsers');
           if (list) {
-            _context53.n = 1;
+            _context65.n = 1;
             break;
           }
-          return _context53.a(2);
+          return _context65.a(2);
         case 1:
           list.innerHTML = '<li class="empty">Loading...</li>';
-          _context53.p = 2;
-          _context53.n = 3;
+          _context65.p = 2;
+          _context65.n = 3;
           return api('/admin/users');
         case 3:
-          _yield$api5 = _context53.v;
+          _yield$api5 = _context65.v;
           users = _yield$api5.users;
           adminUsersCache = users;
           if (users.length) {
-            _context53.n = 4;
+            _context65.n = 4;
             break;
           }
           list.innerHTML = '<li class="empty">No users found</li>';
-          return _context53.a(2);
+          return _context65.a(2);
         case 4:
           renderAdminUsers(users);
-          _context53.n = 6;
+          _context65.n = 6;
           break;
         case 5:
-          _context53.p = 5;
-          _t50 = _context53.v;
-          list.innerHTML = '<li class="empty">' + esc(_t50.message) + '</li>';
+          _context65.p = 5;
+          _t62 = _context65.v;
+          list.innerHTML = '<li class="empty">' + esc(_t62.message) + '</li>';
         case 6:
-          return _context53.a(2);
+          return _context65.a(2);
       }
-    }, _callee50, null, [[2, 5]]);
+    }, _callee60, null, [[2, 5]]);
   }));
   return _loadAdminUsers.apply(this, arguments);
 }
@@ -5577,11 +6575,11 @@ function renderAdminUsers(users) {
   var list = $('adminUsers');
   if (!list) return;
   list.innerHTML = '';
-  var _iterator11 = _createForOfIteratorHelper(users),
-    _step11;
+  var _iterator13 = _createForOfIteratorHelper(users),
+    _step13;
   try {
-    var _loop9 = function _loop9() {
-      var u = _step11.value;
+    var _loop0 = function _loop0() {
+      var u = _step13.value;
       var banned = u.bannedUntil && u.bannedUntil > Date.now();
       var muted = u.mutedUntil && u.mutedUntil > Date.now();
       var status = (banned ? '<span class="mod-ban">BANNED</span> ' : '') + (muted ? '<span class="mod-mute">MUTED</span>' : '');
@@ -5622,13 +6620,13 @@ function renderAdminUsers(users) {
       });
       list.appendChild(li);
     };
-    for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
-      _loop9();
+    for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+      _loop0();
     }
   } catch (err) {
-    _iterator11.e(err);
+    _iterator13.e(err);
   } finally {
-    _iterator11.f();
+    _iterator13.f();
   }
 }
 if ($('adminUserSearch')) $('adminUserSearch').addEventListener('input', function (e) {
@@ -5660,27 +6658,27 @@ function adminDuration(selId) {
     label: 'for ' + (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent.toLowerCase() : minutes + ' minutes')
   };
 }
-if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee12() {
-  var username, amount, _t12;
-  return _regenerator().w(function (_context12) {
-    while (1) switch (_context12.p = _context12.n) {
+if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', _asyncToGenerator(_regenerator().m(function _callee15() {
+  var username, amount, _t15;
+  return _regenerator().w(function (_context15) {
+    while (1) switch (_context15.p = _context15.n) {
       case 0:
         username = $('adminGiveMoneyUser').value.trim();
         amount = parseInt($('adminGiveMoneyAmount').value, 10);
         if (username) {
-          _context12.n = 1;
+          _context15.n = 1;
           break;
         }
-        return _context12.a(2, toast('OOPS', 'Username required', null, '#ff6b8a'));
+        return _context15.a(2, toast('OOPS', 'Username required', null, '#ff6b8a'));
       case 1:
         if (!(isNaN(amount) || amount === 0)) {
-          _context12.n = 2;
+          _context15.n = 2;
           break;
         }
-        return _context12.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
+        return _context15.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
       case 2:
-        _context12.p = 2;
-        _context12.n = 3;
+        _context15.p = 2;
+        _context15.n = 3;
         return api('/admin/set-money', {
           method: 'POST',
           body: JSON.stringify({
@@ -5693,43 +6691,43 @@ if ($('adminGiveMoneyBtn')) $('adminGiveMoneyBtn').addEventListener('click', _as
         $('adminGiveMoneyUser').value = '';
         $('adminGiveMoneyAmount').value = '';
         loadAdminUsers();
-        _context12.n = 5;
+        _context15.n = 5;
         break;
       case 4:
-        _context12.p = 4;
-        _t12 = _context12.v;
-        toast('OOPS', _t12.message, null, '#ff6b8a');
+        _context15.p = 4;
+        _t15 = _context15.v;
+        toast('OOPS', _t15.message, null, '#ff6b8a');
       case 5:
-        return _context12.a(2);
+        return _context15.a(2);
     }
-  }, _callee12, null, [[2, 4]]);
+  }, _callee15, null, [[2, 4]]);
 })));
 function adminGiveAll(_x21) {
   return _adminGiveAll.apply(this, arguments);
 }
 function _adminGiveAll() {
-  _adminGiveAll = _asyncToGenerator(_regenerator().m(function _callee51(scope) {
-    var item, quantity, mutation, _r12, _t51;
-    return _regenerator().w(function (_context54) {
-      while (1) switch (_context54.p = _context54.n) {
+  _adminGiveAll = _asyncToGenerator(_regenerator().m(function _callee61(scope) {
+    var item, quantity, mutation, _r16, _t63;
+    return _regenerator().w(function (_context66) {
+      while (1) switch (_context66.p = _context66.n) {
         case 0:
           item = $('adminGiveAllItem').value.trim();
           quantity = parseInt($('adminGiveAllQty').value, 10) || 1;
           mutation = $('adminGiveAllMutation').value.trim() || null;
           if (item) {
-            _context54.n = 1;
+            _context66.n = 1;
             break;
           }
-          return _context54.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context66.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 1:
           if (!(mutation && !MUT_BY_ID[mutation])) {
-            _context54.n = 2;
+            _context66.n = 2;
             break;
           }
-          return _context54.a(2, toast('OOPS', 'Invalid mutation', null, '#ff6b8a'));
+          return _context66.a(2, toast('OOPS', 'Invalid mutation', null, '#ff6b8a'));
         case 2:
-          _context54.p = 2;
-          _context54.n = 3;
+          _context66.p = 2;
+          _context66.n = 3;
           return api('/admin/give-all', {
             method: 'POST',
             body: JSON.stringify({
@@ -5740,21 +6738,21 @@ function _adminGiveAll() {
             })
           });
         case 3:
-          _r12 = _context54.v;
-          toast('ADMIN', 'Gave ' + quantity + 'x ' + item + (mutation ? ' (' + mutation + ')' : '') + ' to ' + _r12.updated + ' ' + (scope === 'online' ? 'online player' : 'player') + (_r12.updated === 1 ? '' : 's'), null, '#4fd1ff');
+          _r16 = _context66.v;
+          toast('ADMIN', 'Gave ' + quantity + 'x ' + item + (mutation ? ' (' + mutation + ')' : '') + ' to ' + _r16.updated + ' ' + (scope === 'online' ? 'online player' : 'player') + (_r16.updated === 1 ? '' : 's'), null, '#4fd1ff');
           $('adminGiveAllItem').value = '';
           $('adminGiveAllQty').value = '1';
           $('adminGiveAllMutation').value = '';
-          _context54.n = 5;
+          _context66.n = 5;
           break;
         case 4:
-          _context54.p = 4;
-          _t51 = _context54.v;
-          toast('OOPS', _t51.message, null, '#ff6b8a');
+          _context66.p = 4;
+          _t63 = _context66.v;
+          toast('OOPS', _t63.message, null, '#ff6b8a');
         case 5:
-          return _context54.a(2);
+          return _context66.a(2);
       }
-    }, _callee51, null, [[2, 4]]);
+    }, _callee61, null, [[2, 4]]);
   }));
   return _adminGiveAll.apply(this, arguments);
 }
@@ -5768,13 +6766,13 @@ function adminSetMoney(_x22, _x23) {
   return _adminSetMoney.apply(this, arguments);
 }
 function _adminSetMoney() {
-  _adminSetMoney = _asyncToGenerator(_regenerator().m(function _callee52(username, amt) {
-    var _t52;
-    return _regenerator().w(function (_context55) {
-      while (1) switch (_context55.p = _context55.n) {
+  _adminSetMoney = _asyncToGenerator(_regenerator().m(function _callee62(username, amt) {
+    var _t64;
+    return _regenerator().w(function (_context67) {
+      while (1) switch (_context67.p = _context67.n) {
         case 0:
-          _context55.p = 0;
-          _context55.n = 1;
+          _context67.p = 0;
+          _context67.n = 1;
           return api('/admin/set-money', {
             method: 'POST',
             body: JSON.stringify({
@@ -5785,16 +6783,16 @@ function _adminSetMoney() {
         case 1:
           toast('ADMIN', username + "\u2019s money updated", null, '#4fd1ff');
           loadAdminUsers();
-          _context55.n = 3;
+          _context67.n = 3;
           break;
         case 2:
-          _context55.p = 2;
-          _t52 = _context55.v;
-          toast('OOPS', _t52.message, null, '#ff6b8a');
+          _context67.p = 2;
+          _t64 = _context67.v;
+          toast('OOPS', _t64.message, null, '#ff6b8a');
         case 3:
-          return _context55.a(2);
+          return _context67.a(2);
       }
-    }, _callee52, null, [[0, 2]]);
+    }, _callee62, null, [[0, 2]]);
   }));
   return _adminSetMoney.apply(this, arguments);
 }
@@ -5802,31 +6800,31 @@ function adminGiveMoneyPrompt(_x24) {
   return _adminGiveMoneyPrompt.apply(this, arguments);
 }
 function _adminGiveMoneyPrompt() {
-  _adminGiveMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee53(username) {
+  _adminGiveMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee63(username) {
     var amount, amt;
-    return _regenerator().w(function (_context56) {
-      while (1) switch (_context56.n) {
+    return _regenerator().w(function (_context68) {
+      while (1) switch (_context68.n) {
         case 0:
           amount = prompt('Enter amount to give to ' + username + ' (negative to remove):', '1000');
           if (!(amount == null)) {
-            _context56.n = 1;
+            _context68.n = 1;
             break;
           }
-          return _context56.a(2);
+          return _context68.a(2);
         case 1:
           amt = parseInt(amount, 10);
           if (!(isNaN(amt) || amt === 0)) {
-            _context56.n = 2;
+            _context68.n = 2;
             break;
           }
-          return _context56.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
+          return _context68.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
         case 2:
-          _context56.n = 3;
+          _context68.n = 3;
           return adminSetMoney(username, amt);
         case 3:
-          return _context56.a(2);
+          return _context68.a(2);
       }
-    }, _callee53);
+    }, _callee63);
   }));
   return _adminGiveMoneyPrompt.apply(this, arguments);
 }
@@ -5834,27 +6832,27 @@ function adminSetMoneyPrompt(_x25) {
   return _adminSetMoneyPrompt.apply(this, arguments);
 }
 function _adminSetMoneyPrompt() {
-  _adminSetMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee54(username) {
-    var amount, amt, _t53;
-    return _regenerator().w(function (_context57) {
-      while (1) switch (_context57.p = _context57.n) {
+  _adminSetMoneyPrompt = _asyncToGenerator(_regenerator().m(function _callee64(username) {
+    var amount, amt, _t65;
+    return _regenerator().w(function (_context69) {
+      while (1) switch (_context69.p = _context69.n) {
         case 0:
           amount = prompt('Set ' + username + "\u2019s money to:", '0');
           if (!(amount == null)) {
-            _context57.n = 1;
+            _context69.n = 1;
             break;
           }
-          return _context57.a(2);
+          return _context69.a(2);
         case 1:
           amt = parseInt(amount, 10);
           if (!(isNaN(amt) || amt < 0)) {
-            _context57.n = 2;
+            _context69.n = 2;
             break;
           }
-          return _context57.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
+          return _context69.a(2, toast('OOPS', 'Invalid amount', null, '#ff6b8a'));
         case 2:
-          _context57.p = 2;
-          _context57.n = 3;
+          _context69.p = 2;
+          _context69.n = 3;
           return api('/admin/set-money', {
             method: 'POST',
             body: JSON.stringify({
@@ -5865,34 +6863,34 @@ function _adminSetMoneyPrompt() {
         case 3:
           toast('ADMIN', username + ' money set', null, '#4fd1ff');
           loadAdminUsers();
-          _context57.n = 5;
+          _context69.n = 5;
           break;
         case 4:
-          _context57.p = 4;
-          _t53 = _context57.v;
-          toast('OOPS', _t53.message, null, '#ff6b8a');
+          _context69.p = 4;
+          _t65 = _context69.v;
+          toast('OOPS', _t65.message, null, '#ff6b8a');
         case 5:
-          return _context57.a(2);
+          return _context69.a(2);
       }
-    }, _callee54, null, [[2, 4]]);
+    }, _callee64, null, [[2, 4]]);
   }));
   return _adminSetMoneyPrompt.apply(this, arguments);
 }
 function allItemNames() {
   var allNames = [];
-  var _iterator12 = _createForOfIteratorHelper(RARITIES),
-    _step12;
+  var _iterator14 = _createForOfIteratorHelper(RARITIES),
+    _step14;
   try {
-    for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
-      var r = _step12.value;
+    for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
+      var r = _step14.value;
       (ITEMS_BY_RARITY[r.key] || []).forEach(function (it) {
         if (allNames.indexOf(it) === -1) allNames.push(it);
       });
     }
   } catch (err) {
-    _iterator12.e(err);
+    _iterator14.e(err);
   } finally {
-    _iterator12.f();
+    _iterator14.f();
   }
   allNames.sort();
   return allNames;
@@ -5901,42 +6899,42 @@ function adminGiveItemPrompt(_x26) {
   return _adminGiveItemPrompt.apply(this, arguments);
 }
 function _adminGiveItemPrompt() {
-  _adminGiveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee55(username) {
-    var allNames, itemSel, item, mutId, qty, _t54;
-    return _regenerator().w(function (_context58) {
-      while (1) switch (_context58.p = _context58.n) {
+  _adminGiveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee65(username) {
+    var allNames, itemSel, item, mutId, qty, _t66;
+    return _regenerator().w(function (_context70) {
+      while (1) switch (_context70.p = _context70.n) {
         case 0:
           allNames = allItemNames();
           itemSel = prompt('Give item to ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
-            _context58.n = 1;
+            _context70.n = 1;
             break;
           }
-          return _context58.a(2);
+          return _context70.a(2);
         case 1:
           item = itemSel.trim();
           if (item) {
-            _context58.n = 2;
+            _context70.n = 2;
             break;
           }
-          return _context58.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context70.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
           mutId = prompt('Mutation (blank for none; valid: gold, diamond, electric)', '');
           if (!(mutId == null)) {
-            _context58.n = 3;
+            _context70.n = 3;
             break;
           }
-          return _context58.a(2);
+          return _context70.a(2);
         case 3:
           qty = parseInt(prompt('Quantity', '1') || '1', 10);
           if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context58.n = 4;
+            _context70.n = 4;
             break;
           }
-          return _context58.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+          return _context70.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
         case 4:
-          _context58.p = 4;
-          _context58.n = 5;
+          _context70.p = 4;
+          _context70.n = 5;
           return api('/admin/give-item', {
             method: 'POST',
             body: JSON.stringify({
@@ -5948,16 +6946,16 @@ function _adminGiveItemPrompt() {
           });
         case 5:
           toast('ADMIN', 'Gave ' + qty + 'x ' + item + ' to ' + username, null, '#4fd1ff');
-          _context58.n = 7;
+          _context70.n = 7;
           break;
         case 6:
-          _context58.p = 6;
-          _t54 = _context58.v;
-          toast('OOPS', _t54.message, null, '#ff6b8a');
+          _context70.p = 6;
+          _t66 = _context70.v;
+          toast('OOPS', _t66.message, null, '#ff6b8a');
         case 7:
-          return _context58.a(2);
+          return _context70.a(2);
       }
-    }, _callee55, null, [[4, 6]]);
+    }, _callee65, null, [[4, 6]]);
   }));
   return _adminGiveItemPrompt.apply(this, arguments);
 }
@@ -5965,35 +6963,35 @@ function adminRemoveItemPrompt(_x27) {
   return _adminRemoveItemPrompt.apply(this, arguments);
 }
 function _adminRemoveItemPrompt() {
-  _adminRemoveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee56(username) {
-    var allNames, itemSel, item, qty, _t55;
-    return _regenerator().w(function (_context59) {
-      while (1) switch (_context59.p = _context59.n) {
+  _adminRemoveItemPrompt = _asyncToGenerator(_regenerator().m(function _callee66(username) {
+    var allNames, itemSel, item, qty, _t67;
+    return _regenerator().w(function (_context71) {
+      while (1) switch (_context71.p = _context71.n) {
         case 0:
           allNames = allItemNames();
           itemSel = prompt('Remove item from ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
-            _context59.n = 1;
+            _context71.n = 1;
             break;
           }
-          return _context59.a(2);
+          return _context71.a(2);
         case 1:
           item = itemSel.trim();
           if (item) {
-            _context59.n = 2;
+            _context71.n = 2;
             break;
           }
-          return _context59.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context71.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
           qty = parseInt(prompt('Quantity to remove', '1') || '1', 10);
           if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context59.n = 3;
+            _context71.n = 3;
             break;
           }
-          return _context59.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+          return _context71.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
         case 3:
-          _context59.p = 3;
-          _context59.n = 4;
+          _context71.p = 3;
+          _context71.n = 4;
           return api('/admin/remove-item', {
             method: 'POST',
             body: JSON.stringify({
@@ -6004,16 +7002,16 @@ function _adminRemoveItemPrompt() {
           });
         case 4:
           toast('ADMIN', 'Removed ' + qty + 'x ' + item + ' from ' + username, null, '#4fd1ff');
-          _context59.n = 6;
+          _context71.n = 6;
           break;
         case 5:
-          _context59.p = 5;
-          _t55 = _context59.v;
-          toast('OOPS', _t55.message, null, '#ff6b8a');
+          _context71.p = 5;
+          _t67 = _context71.v;
+          toast('OOPS', _t67.message, null, '#ff6b8a');
         case 6:
-          return _context59.a(2);
+          return _context71.a(2);
       }
-    }, _callee56, null, [[3, 5]]);
+    }, _callee66, null, [[3, 5]]);
   }));
   return _adminRemoveItemPrompt.apply(this, arguments);
 }
@@ -6021,42 +7019,42 @@ function adminRemoveMutationPrompt(_x28) {
   return _adminRemoveMutationPrompt.apply(this, arguments);
 }
 function _adminRemoveMutationPrompt() {
-  _adminRemoveMutationPrompt = _asyncToGenerator(_regenerator().m(function _callee57(username) {
-    var allNames, itemSel, item, mutId, qty, _t56;
-    return _regenerator().w(function (_context60) {
-      while (1) switch (_context60.p = _context60.n) {
+  _adminRemoveMutationPrompt = _asyncToGenerator(_regenerator().m(function _callee67(username) {
+    var allNames, itemSel, item, mutId, qty, _t68;
+    return _regenerator().w(function (_context72) {
+      while (1) switch (_context72.p = _context72.n) {
         case 0:
           allNames = allItemNames();
           itemSel = prompt('Remove mutation from item for ' + username + ' (enter exact item name):\n\n' + allNames.slice(0, 200).join(', ') + (allNames.length > 200 ? '\n...+' + (allNames.length - 200) + ' more' : ''), allNames[0] || '');
           if (!(itemSel == null)) {
-            _context60.n = 1;
+            _context72.n = 1;
             break;
           }
-          return _context60.a(2);
+          return _context72.a(2);
         case 1:
           item = itemSel.trim();
           if (item) {
-            _context60.n = 2;
+            _context72.n = 2;
             break;
           }
-          return _context60.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
+          return _context72.a(2, toast('OOPS', 'Item name required', null, '#ff6b8a'));
         case 2:
           mutId = prompt('Mutation to remove (valid: gold, diamond, electric)', '');
           if (!(mutId == null)) {
-            _context60.n = 3;
+            _context72.n = 3;
             break;
           }
-          return _context60.a(2);
+          return _context72.a(2);
         case 3:
           qty = parseInt(prompt('Quantity', '1') || '1', 10);
           if (!(isNaN(qty) || qty <= 0 || qty > 1000000)) {
-            _context60.n = 4;
+            _context72.n = 4;
             break;
           }
-          return _context60.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
+          return _context72.a(2, toast('OOPS', 'Invalid quantity', null, '#ff6b8a'));
         case 4:
-          _context60.p = 4;
-          _context60.n = 5;
+          _context72.p = 4;
+          _context72.n = 5;
           return api('/admin/remove-mutation', {
             method: 'POST',
             body: JSON.stringify({
@@ -6068,16 +7066,16 @@ function _adminRemoveMutationPrompt() {
           });
         case 5:
           toast('ADMIN', 'Removed mutation from ' + qty + 'x ' + item + ' for ' + username, null, '#4fd1ff');
-          _context60.n = 7;
+          _context72.n = 7;
           break;
         case 6:
-          _context60.p = 6;
-          _t56 = _context60.v;
-          toast('OOPS', _t56.message, null, '#ff6b8a');
+          _context72.p = 6;
+          _t68 = _context72.v;
+          toast('OOPS', _t68.message, null, '#ff6b8a');
         case 7:
-          return _context60.a(2);
+          return _context72.a(2);
       }
-    }, _callee57, null, [[4, 6]]);
+    }, _callee67, null, [[4, 6]]);
   }));
   return _adminRemoveMutationPrompt.apply(this, arguments);
 }
@@ -6085,13 +7083,13 @@ function adminSetLevel(_x29, _x30) {
   return _adminSetLevel.apply(this, arguments);
 }
 function _adminSetLevel() {
-  _adminSetLevel = _asyncToGenerator(_regenerator().m(function _callee58(username, level) {
-    var _t57;
-    return _regenerator().w(function (_context61) {
-      while (1) switch (_context61.p = _context61.n) {
+  _adminSetLevel = _asyncToGenerator(_regenerator().m(function _callee68(username, level) {
+    var _t69;
+    return _regenerator().w(function (_context73) {
+      while (1) switch (_context73.p = _context73.n) {
         case 0:
-          _context61.p = 0;
-          _context61.n = 1;
+          _context73.p = 0;
+          _context73.n = 1;
           return api('/admin/set-level', {
             method: 'POST',
             body: JSON.stringify({
@@ -6102,16 +7100,16 @@ function _adminSetLevel() {
         case 1:
           toast('ADMIN', username + ' is now level ' + level, null, '#4fd1ff');
           loadAdminUsers();
-          _context61.n = 3;
+          _context73.n = 3;
           break;
         case 2:
-          _context61.p = 2;
-          _t57 = _context61.v;
-          toast('OOPS', _t57.message, null, '#ff6b8a');
+          _context73.p = 2;
+          _t69 = _context73.v;
+          toast('OOPS', _t69.message, null, '#ff6b8a');
         case 3:
-          return _context61.a(2);
+          return _context73.a(2);
       }
-    }, _callee58, null, [[0, 2]]);
+    }, _callee68, null, [[0, 2]]);
   }));
   return _adminSetLevel.apply(this, arguments);
 }
@@ -6119,19 +7117,19 @@ function adminClearItems(_x31) {
   return _adminClearItems.apply(this, arguments);
 }
 function _adminClearItems() {
-  _adminClearItems = _asyncToGenerator(_regenerator().m(function _callee59(username) {
-    var _t58;
-    return _regenerator().w(function (_context62) {
-      while (1) switch (_context62.p = _context62.n) {
+  _adminClearItems = _asyncToGenerator(_regenerator().m(function _callee69(username) {
+    var _t70;
+    return _regenerator().w(function (_context74) {
+      while (1) switch (_context74.p = _context74.n) {
         case 0:
           if (confirm('Clear all items for ' + username + '?')) {
-            _context62.n = 1;
+            _context74.n = 1;
             break;
           }
-          return _context62.a(2);
+          return _context74.a(2);
         case 1:
-          _context62.p = 1;
-          _context62.n = 2;
+          _context74.p = 1;
+          _context74.n = 2;
           return api('/admin/clear-items', {
             method: 'POST',
             body: JSON.stringify({
@@ -6141,16 +7139,16 @@ function _adminClearItems() {
         case 2:
           toast('ADMIN', username + "\u2019s items cleared", null, '#4fd1ff');
           loadAdminUsers();
-          _context62.n = 4;
+          _context74.n = 4;
           break;
         case 3:
-          _context62.p = 3;
-          _t58 = _context62.v;
-          toast('OOPS', _t58.message, null, '#ff6b8a');
+          _context74.p = 3;
+          _t70 = _context74.v;
+          toast('OOPS', _t70.message, null, '#ff6b8a');
         case 4:
-          return _context62.a(2);
+          return _context74.a(2);
       }
-    }, _callee59, null, [[1, 3]]);
+    }, _callee69, null, [[1, 3]]);
   }));
   return _adminClearItems.apply(this, arguments);
 }
@@ -6158,19 +7156,19 @@ function adminResetProgress(_x32) {
   return _adminResetProgress.apply(this, arguments);
 }
 function _adminResetProgress() {
-  _adminResetProgress = _asyncToGenerator(_regenerator().m(function _callee60(username) {
-    var _t59;
-    return _regenerator().w(function (_context63) {
-      while (1) switch (_context63.p = _context63.n) {
+  _adminResetProgress = _asyncToGenerator(_regenerator().m(function _callee70(username) {
+    var _t71;
+    return _regenerator().w(function (_context75) {
+      while (1) switch (_context75.p = _context75.n) {
         case 0:
           if (confirm('Reset ALL progress for ' + username + '? This cannot be undone.')) {
-            _context63.n = 1;
+            _context75.n = 1;
             break;
           }
-          return _context63.a(2);
+          return _context75.a(2);
         case 1:
-          _context63.p = 1;
-          _context63.n = 2;
+          _context75.p = 1;
+          _context75.n = 2;
           return api('/admin/reset-progress', {
             method: 'POST',
             body: JSON.stringify({
@@ -6180,16 +7178,16 @@ function _adminResetProgress() {
         case 2:
           toast('ADMIN', username + ' reset', null, '#4fd1ff');
           loadAdminUsers();
-          _context63.n = 4;
+          _context75.n = 4;
           break;
         case 3:
-          _context63.p = 3;
-          _t59 = _context63.v;
-          toast('OOPS', _t59.message, null, '#ff6b8a');
+          _context75.p = 3;
+          _t71 = _context75.v;
+          toast('OOPS', _t71.message, null, '#ff6b8a');
         case 4:
-          return _context63.a(2);
+          return _context75.a(2);
       }
-    }, _callee60, null, [[1, 3]]);
+    }, _callee70, null, [[1, 3]]);
   }));
   return _adminResetProgress.apply(this, arguments);
 }
@@ -6197,19 +7195,19 @@ function adminKick(_x33) {
   return _adminKick.apply(this, arguments);
 }
 function _adminKick() {
-  _adminKick = _asyncToGenerator(_regenerator().m(function _callee61(username) {
-    var _t60;
-    return _regenerator().w(function (_context64) {
-      while (1) switch (_context64.p = _context64.n) {
+  _adminKick = _asyncToGenerator(_regenerator().m(function _callee71(username) {
+    var _t72;
+    return _regenerator().w(function (_context76) {
+      while (1) switch (_context76.p = _context76.n) {
         case 0:
           if (confirm('Kick ' + username + ' out of their world?')) {
-            _context64.n = 1;
+            _context76.n = 1;
             break;
           }
-          return _context64.a(2);
+          return _context76.a(2);
         case 1:
-          _context64.p = 1;
-          _context64.n = 2;
+          _context76.p = 1;
+          _context76.n = 2;
           return api('/admin/kick', {
             method: 'POST',
             body: JSON.stringify({
@@ -6219,16 +7217,16 @@ function _adminKick() {
         case 2:
           toast('ADMIN', username + ' kicked', null, '#ffb648');
           loadAdminUsers();
-          _context64.n = 4;
+          _context76.n = 4;
           break;
         case 3:
-          _context64.p = 3;
-          _t60 = _context64.v;
-          toast('OOPS', _t60.message, null, '#ff6b8a');
+          _context76.p = 3;
+          _t72 = _context76.v;
+          toast('OOPS', _t72.message, null, '#ff6b8a');
         case 4:
-          return _context64.a(2);
+          return _context76.a(2);
       }
-    }, _callee61, null, [[1, 3]]);
+    }, _callee71, null, [[1, 3]]);
   }));
   return _adminKick.apply(this, arguments);
 }
@@ -6236,14 +7234,14 @@ function adminMute(_x34) {
   return _adminMute.apply(this, arguments);
 }
 function _adminMute() {
-  _adminMute = _asyncToGenerator(_regenerator().m(function _callee62(username) {
-    var d, _r13, _t61;
-    return _regenerator().w(function (_context65) {
-      while (1) switch (_context65.p = _context65.n) {
+  _adminMute = _asyncToGenerator(_regenerator().m(function _callee72(username) {
+    var d, _r17, _t73;
+    return _regenerator().w(function (_context77) {
+      while (1) switch (_context77.p = _context77.n) {
         case 0:
           d = adminDuration('adminMuteDur');
-          _context65.p = 1;
-          _context65.n = 2;
+          _context77.p = 1;
+          _context77.n = 2;
           return api('/admin/mute', {
             method: 'POST',
             body: JSON.stringify({
@@ -6253,19 +7251,19 @@ function _adminMute() {
             })
           });
         case 2:
-          _r13 = _context65.v;
-          toast('ADMIN', username + (_r13.muted ? ' muted ' + d.label : ' unmuted'), null, '#ffb648');
+          _r17 = _context77.v;
+          toast('ADMIN', username + (_r17.muted ? ' muted ' + d.label : ' unmuted'), null, '#ffb648');
           loadAdminUsers();
-          _context65.n = 4;
+          _context77.n = 4;
           break;
         case 3:
-          _context65.p = 3;
-          _t61 = _context65.v;
-          toast('OOPS', _t61.message, null, '#ff6b8a');
+          _context77.p = 3;
+          _t73 = _context77.v;
+          toast('OOPS', _t73.message, null, '#ff6b8a');
         case 4:
-          return _context65.a(2);
+          return _context77.a(2);
       }
-    }, _callee62, null, [[1, 3]]);
+    }, _callee72, null, [[1, 3]]);
   }));
   return _adminMute.apply(this, arguments);
 }
@@ -6273,14 +7271,14 @@ function adminBan(_x35) {
   return _adminBan.apply(this, arguments);
 }
 function _adminBan() {
-  _adminBan = _asyncToGenerator(_regenerator().m(function _callee63(username) {
-    var d, _r14, _t62;
-    return _regenerator().w(function (_context66) {
-      while (1) switch (_context66.p = _context66.n) {
+  _adminBan = _asyncToGenerator(_regenerator().m(function _callee73(username) {
+    var d, _r18, _t74;
+    return _regenerator().w(function (_context78) {
+      while (1) switch (_context78.p = _context78.n) {
         case 0:
           d = adminDuration('adminBanDur');
-          _context66.p = 1;
-          _context66.n = 2;
+          _context78.p = 1;
+          _context78.n = 2;
           return api('/admin/ban', {
             method: 'POST',
             body: JSON.stringify({
@@ -6290,19 +7288,19 @@ function _adminBan() {
             })
           });
         case 2:
-          _r14 = _context66.v;
-          toast('ADMIN', username + (_r14.banned ? ' banned ' + d.label : ' unbanned'), null, _r14.banned ? '#ff5c8a' : '#7bdc78');
+          _r18 = _context78.v;
+          toast('ADMIN', username + (_r18.banned ? ' banned ' + d.label : ' unbanned'), null, _r18.banned ? '#ff5c8a' : '#7bdc78');
           loadAdminUsers();
-          _context66.n = 4;
+          _context78.n = 4;
           break;
         case 3:
-          _context66.p = 3;
-          _t62 = _context66.v;
-          toast('OOPS', _t62.message, null, '#ff6b8a');
+          _context78.p = 3;
+          _t74 = _context78.v;
+          toast('OOPS', _t74.message, null, '#ff6b8a');
         case 4:
-          return _context66.a(2);
+          return _context78.a(2);
       }
-    }, _callee63, null, [[1, 3]]);
+    }, _callee73, null, [[1, 3]]);
   }));
   return _adminBan.apply(this, arguments);
 }
@@ -6310,21 +7308,21 @@ function adminAnnounce() {
   return _adminAnnounce.apply(this, arguments);
 }
 function _adminAnnounce() {
-  _adminAnnounce = _asyncToGenerator(_regenerator().m(function _callee64() {
-    var inp, text, _t63;
-    return _regenerator().w(function (_context67) {
-      while (1) switch (_context67.p = _context67.n) {
+  _adminAnnounce = _asyncToGenerator(_regenerator().m(function _callee74() {
+    var inp, text, _t75;
+    return _regenerator().w(function (_context79) {
+      while (1) switch (_context79.p = _context79.n) {
         case 0:
           inp = $('adminAnnounceInp');
           text = inp.value.trim();
           if (text) {
-            _context67.n = 1;
+            _context79.n = 1;
             break;
           }
-          return _context67.a(2);
+          return _context79.a(2);
         case 1:
-          _context67.p = 1;
-          _context67.n = 2;
+          _context79.p = 1;
+          _context79.n = 2;
           return api('/admin/announce', {
             method: 'POST',
             body: JSON.stringify({
@@ -6334,16 +7332,16 @@ function _adminAnnounce() {
         case 2:
           inp.value = '';
           toast('ADMIN', 'Announcement sent', null, '#4fd1ff');
-          _context67.n = 4;
+          _context79.n = 4;
           break;
         case 3:
-          _context67.p = 3;
-          _t63 = _context67.v;
-          toast('OOPS', _t63.message, null, '#ff6b8a');
+          _context79.p = 3;
+          _t75 = _context79.v;
+          toast('OOPS', _t75.message, null, '#ff6b8a');
         case 4:
-          return _context67.a(2);
+          return _context79.a(2);
       }
-    }, _callee64, null, [[1, 3]]);
+    }, _callee74, null, [[1, 3]]);
   }));
   return _adminAnnounce.apply(this, arguments);
 }
@@ -6386,20 +7384,20 @@ resize();
 setAuthMode('login');
 requestAnimationFrame(frame);
 (function () {
-  var _boot = _asyncToGenerator(_regenerator().m(function _callee13() {
-    var pendingJoin, sid, _t13;
-    return _regenerator().w(function (_context13) {
-      while (1) switch (_context13.p = _context13.n) {
+  var _boot = _asyncToGenerator(_regenerator().m(function _callee16() {
+    var pendingJoin, sid, _t16;
+    return _regenerator().w(function (_context16) {
+      while (1) switch (_context16.p = _context16.n) {
         case 0:
           if (token) {
-            _context13.n = 1;
+            _context16.n = 1;
             break;
           }
           showScreen('auth');
-          return _context13.a(2);
+          return _context16.a(2);
         case 1:
-          _context13.p = 1;
-          _context13.n = 2;
+          _context16.p = 1;
+          _context16.n = 2;
           return loadMe();
         case 2:
           pendingJoin = localStorage.getItem('vaultoria_pending_join');
@@ -6408,18 +7406,18 @@ requestAnimationFrame(frame);
             sid = parseInt(pendingJoin, 10);
             if (sid) enterServer(sid, 'World ' + sid);
           }
-          _context13.n = 4;
+          _context16.n = 4;
           break;
         case 3:
-          _context13.p = 3;
-          _t13 = _context13.v;
+          _context16.p = 3;
+          _t16 = _context16.v;
           token = null;
           localStorage.removeItem('vaultoria_token');
           showScreen('auth');
         case 4:
-          return _context13.a(2);
+          return _context16.a(2);
       }
-    }, _callee13, null, [[1, 3]]);
+    }, _callee16, null, [[1, 3]]);
   }));
   function boot() {
     return _boot.apply(this, arguments);

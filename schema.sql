@@ -113,6 +113,19 @@ CREATE TABLE IF NOT EXISTS boss_contributions (
   PRIMARY KEY (boss_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS warzone_matches (
+  id         SERIAL PRIMARY KEY,
+  player_a   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  player_b   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  wager_a    JSONB   NOT NULL DEFAULT '{"type":"none"}'::jsonb,
+  wager_b    JSONB   NOT NULL DEFAULT '{"type":"none"}'::jsonb,
+  state      TEXT    NOT NULL DEFAULT 'fighting',
+  winner_id  INTEGER,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ended_at   TIMESTAMPTZ,
+  result     JSONB   NOT NULL DEFAULT '{}'::jsonb
+);
+
 -- ------------------------------------------------------------
 -- 2. Columns that may be missing on older tables
 -- CREATE TABLE IF NOT EXISTS never alters existing tables, so new
@@ -146,6 +159,9 @@ ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS last_offline  TIMESTAMPTZ;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_color  TEXT        NOT NULL DEFAULT '47';
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_trail  TEXT        NOT NULL DEFAULT 'none';
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS custom_glow   TEXT        NOT NULL DEFAULT 'none';
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS wz_wins       INTEGER     NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS wz_losses     INTEGER     NOT NULL DEFAULT 0;
+ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS wz_money_won  BIGINT      NOT NULL DEFAULT 0;
 ALTER TABLE player_state     ADD COLUMN IF NOT EXISTS updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
 ALTER TABLE bazaar_listings  ADD COLUMN IF NOT EXISTS quantity      INTEGER     NOT NULL DEFAULT 1;
@@ -161,6 +177,9 @@ CREATE INDEX IF NOT EXISTS idx_friendships_friend ON friendships (friend_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (lower(username));
 CREATE INDEX IF NOT EXISTS idx_boss_active        ON bosses (defeated_at);
 CREATE INDEX IF NOT EXISTS idx_store_purchases    ON store_purchases (user_id);
+CREATE INDEX IF NOT EXISTS idx_warzone_a          ON warzone_matches (player_a, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_warzone_b          ON warzone_matches (player_b, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_warzone_state      ON warzone_matches (state);
 
 -- ------------------------------------------------------------
 -- 4. Data migrations (safe, idempotent)

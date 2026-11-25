@@ -25,6 +25,7 @@ const { WebSocketServer } = require('ws');
 const Stripe = require('stripe');
 const luck = require('./luck');
 const genTime = require('./genTime');
+const warzone = require('./warzone');
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'vaultoria-dev-secret-change-me';
@@ -242,7 +243,22 @@ function socketOfUser(userId) {
   return null;
 }
 
-
+const WARZONE_RULES = {
+  arenaW: warzone.ARENA_W,
+  arenaH: warzone.ARENA_H,
+  fighterW: warzone.FIGHTER_W,
+  fighterH: warzone.FIGHTER_H,
+  maxHp: warzone.MAX_HP,
+  damage: warzone.ATTACK_DAMAGE,
+  attackCooldownMs: warzone.ATTACK_COOLDOWN_MS,
+  moveSpeed: warzone.MOVE_SPEED,
+  fightTimeoutMs: warzone.FIGHT_TIMEOUT_MS,
+  reconnectGraceMs: warzone.RECONNECT_GRACE_MS,
+  lobbyTimeoutMs: warzone.LOBBY_TIMEOUT_MS,
+  minMoneyWager: warzone.MIN_MONEY_WAGER,
+  maxMoneyWager: warzone.MAX_MONEY_WAGER,
+  maxItemQty: warzone.MAX_ITEM_QTY
+};
 
 /* ---------------------------------------------------------------
  * Login rewards + daily quests (calendar day boundaries, UTC)
@@ -492,6 +508,7 @@ async function initDb() {
   await pool.query(sql);
 
   try { await purgeLegacyItems(); } catch (e) { console.error('[purge]', e.message); }
+  try { await recoverWarzoneMatches(); } catch (e) { console.error('[warzone recovery]', e.message); }
 
   // World IDs persist, but names are server-side only. Clear old seat records.
   try {
@@ -618,7 +635,10 @@ function publicState(row) {
     breaches: Number(row.breaches || 0),
     customColor: row.custom_color || '47',
     customTrail: row.custom_trail || 'none',
-    customGlow: row.custom_glow || 'none'
+    customGlow: row.custom_glow || 'none',
+    wzWins: Number(row.wz_wins || 0),
+    wzLosses: Number(row.wz_losses || 0),
+    wzMoneyWon: Number(row.wz_money_won || 0)
   };
 }
 
@@ -1857,6 +1877,516 @@ setInterval(() => {
   }
 }, 15000);
 
+const warzoneQueue = new Map();
+const warzoneMatches = new Map();
+const warzoneChallenges = new Map();
+let nextWarzoneId = 1;
+let nextWarzoneChallengeId = 1;
+
+function wzNameOf(userId) {
+  const s = socketOfUserGlobal(userId);
+  return (s && s.username) || ('Player ' + userId);
+}
+function wzValidItem(key) {
+  const parts = splitKey(key);
+  return !!ITEM_BASE[parts.item] && (!parts.mut || !!MUT_BY_ID[parts.mut]);
+}
+function wzRole(m, userId) {
+  if (!m) return null;
+  if (m.a.userId === Number(userId)) return 'a';
+  if (m.b.userId === Number(userId)) return 'b';
+  return null;
+}
+function wzOther(m, p) { return p === m.a ? m.b : m.a; }
+function wzInMatch(userId) {
+  for (const m of warzoneMatches.values()) {
+    if ((m.state === 'lobby' || m.state === 'fighting') && (m.a.userId === userId || m.b.userId === userId)) return m;
+  }
+  return null;
+}
+function wzFighterView(p) {
+  return {
+    id: p.userId, username: p.username, wager: p.wager, confirmed: p.confirmed,
+    connected: !p.disconnectedAt, hp: p.hp, x: p.x, y: p.y,
+    facing: p.facing, moving: p.moving, attackAt: p.attackAt || 0
+  };
+}
+function wzFighterLive(p) {
+  return {
+    id: p.userId, hp: p.hp, x: p.x, y: p.y, facing: p.facing,
+    moving: p.moving, attackAt: p.attackAt || 0, connected: !p.disconnectedAt
+  };
+}
+function wzPublic(m, viewerId) {
+  const role = wzRole(m, viewerId);
+  return {
+    matchId: m.id, dbId: m.dbId || null, state: m.state, source: m.source, role,
+    you: role ? wzFighterView(m[role]) : null,
+    opponent: role ? wzFighterView(wzOther(m, m[role])) : null,
+    a: wzFighterView(m.a), b: wzFighterView(m.b),
+    rules: WARZONE_RULES,
+    deadline: m.state === 'lobby' ? m.createdAt + warzone.LOBBY_TIMEOUT_MS : null,
+    startedAt: m.startedAt || null,
+    winnerId: m.winnerId || null, outcome: m.outcome || null, result: m.result || null
+  };
+}
+function wzNotify(m, obj) {
+  notifyUser(m.a.userId, obj);
+  notifyUser(m.b.userId, obj);
+}
+function wzMakeMatch(aId, bId, source) {
+  const id = nextWarzoneId++;
+  const mk = (userId, x, facing) => ({
+    userId: Number(userId), username: wzNameOf(userId), wager: { type: 'none' },
+    confirmed: false, hp: warzone.MAX_HP,
+    x, y: (warzone.ARENA_H - warzone.FIGHTER_H) / 2, facing,
+    moving: false, ix: 0, iy: 0, attackQueued: false, attackAt: 0,
+    lastAttackAt: 0, lastInputAt: 0, graceTimer: null, disconnectedAt: 0
+  });
+  const m = {
+    id, dbId: null, state: 'lobby', source, createdAt: Date.now(), startedAt: 0, endedAt: 0,
+    a: mk(aId, 120, { x: 1, y: 0 }),
+    b: mk(bId, warzone.ARENA_W - 120 - warzone.FIGHTER_W, { x: -1, y: 0 }),
+    timer: null, tickCount: 0, winnerId: null, outcome: null, result: null
+  };
+  warzoneMatches.set(id, m);
+  return m;
+}
+function wzAnnounceMatch(m) {
+  for (const p of [m.a, m.b]) {
+    const other = wzOther(m, p);
+    pushTo(p.userId, {
+      type: 'warzoneMatched', matchId: m.id, source: m.source,
+      opponentId: other.userId, opponentName: other.username
+    });
+  }
+}
+function wzTryPair() {
+  const ids = [...warzoneQueue.keys()];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = ids[i], b = ids[j];
+      if (!socketOfUserGlobal(a) || !socketOfUserGlobal(b) || wzInMatch(a) || wzInMatch(b)) {
+        if (!socketOfUserGlobal(a) || wzInMatch(a)) warzoneQueue.delete(a);
+        if (!socketOfUserGlobal(b) || wzInMatch(b)) warzoneQueue.delete(b);
+        continue;
+      }
+      warzoneQueue.delete(a);
+      warzoneQueue.delete(b);
+      const m = wzMakeMatch(a, b, 'queue');
+      wzAnnounceMatch(m);
+      return m;
+    }
+  }
+  return null;
+}
+function wzCancelLobby(m, reason) {
+  if (!m || m.state !== 'lobby') return;
+  m.state = 'cancelled';
+  m.endedAt = Date.now();
+  for (const p of [m.a, m.b]) if (p.graceTimer) { clearTimeout(p.graceTimer); p.graceTimer = null; }
+  wzNotify(m, { type: 'warzoneCancelled', matchId: m.id, reason: reason || 'Match cancelled' });
+  warzoneMatches.delete(m.id);
+}
+
+async function wzEscrow(m) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const byId = new Map();
+    for (const uid of [m.a.userId, m.b.userId].sort((x, y) => x - y)) {
+      byId.set(uid, await stateForUpdate(client, uid));
+    }
+    for (const p of [m.a, m.b]) {
+      const st = byId.get(p.userId);
+      const check = warzone.normalizeWager(p.wager, st.counts || {}, wzValidItem);
+      if (!check.ok) throw new Error(check.error);
+      const counts = Object.assign({}, st.counts || {});
+      warzone.applyWagerToCounts(counts, p.wager, -1);
+      const money = Number(st.money || 0) - warzone.moneyOf(p.wager);
+      if (money < 0) throw new Error('Not enough money for that wager');
+      await client.query(
+        'UPDATE player_state SET money = $2, counts = $3, updated_at = NOW() WHERE user_id = $1',
+        [p.userId, money, JSON.stringify(counts)]
+      );
+    }
+    const ins = await client.query(
+      'INSERT INTO warzone_matches (player_a, player_b, wager_a, wager_b) VALUES ($1, $2, $3, $4) RETURNING id',
+      [m.a.userId, m.b.userId, JSON.stringify(m.a.wager), JSON.stringify(m.b.wager)]
+    );
+    m.dbId = ins.rows[0].id;
+    await client.query('COMMIT');
+    return true;
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[warzone escrow]', e.message);
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+async function wzRefundDbRow(dbId) {
+  const { rows } = await pool.query("SELECT * FROM warzone_matches WHERE id = $1 AND state = 'fighting'", [dbId]);
+  const row = rows[0];
+  if (!row) return false;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const byId = new Map();
+    for (const uid of [Number(row.player_a), Number(row.player_b)].sort((x, y) => x - y)) {
+      byId.set(uid, await stateForUpdate(client, uid));
+    }
+    for (const [col, uid] of [['wager_a', Number(row.player_a)], ['wager_b', Number(row.player_b)]]) {
+      const st = byId.get(uid);
+      const wager = row[col] && row[col].type ? row[col] : { type: 'none' };
+      const counts = Object.assign({}, st.counts || {});
+      warzone.applyWagerToCounts(counts, wager, 1);
+      await client.query(
+        'UPDATE player_state SET money = $2, counts = $3, updated_at = NOW() WHERE user_id = $1',
+        [uid, Number(st.money || 0) + warzone.moneyOf(wager), JSON.stringify(counts)]
+      );
+    }
+    await client.query("UPDATE warzone_matches SET state = 'refunded', ended_at = NOW() WHERE id = $1", [row.id]);
+    await client.query('COMMIT');
+    return true;
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function recoverWarzoneMatches() {
+  const { rows } = await pool.query("SELECT id FROM warzone_matches WHERE state = 'fighting'");
+  for (const r of rows) {
+    try { await wzRefundDbRow(r.id); } catch (e) { console.error('[warzone recovery]', r.id, e.message); }
+  }
+}
+
+async function wzSettle(m, winnerRole, outcome, result, dbState) {
+  if (!m || m.state === 'finished' || m.state === 'cancelled' || m.state === 'settling') return false;
+  const prev = m.state;
+  m.state = 'settling';
+  if (m.timer) { clearInterval(m.timer); m.timer = null; }
+  for (const p of [m.a, m.b]) if (p.graceTimer) { clearTimeout(p.graceTimer); p.graceTimer = null; }
+  const winner = winnerRole === 'a' ? m.a : winnerRole === 'b' ? m.b : null;
+  const loser = winnerRole === 'a' ? m.b : winnerRole === 'b' ? m.a : null;
+
+  if (prev === 'fighting' && m.dbId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const byId = new Map();
+      for (const uid of [m.a.userId, m.b.userId].sort((x, y) => x - y)) {
+        byId.set(uid, await stateForUpdate(client, uid));
+      }
+      for (const p of [m.a, m.b]) {
+        const st = byId.get(p.userId);
+        const counts = Object.assign({}, st.counts || {});
+        warzone.applyWagerToCounts(counts, p.wager, 1);
+        let money = Number(st.money || 0) + warzone.moneyOf(p.wager);
+        let won = Number(st.wz_money_won || 0);
+        if (winner && loser && p.userId === winner.userId) {
+          warzone.applyWagerToCounts(counts, loser.wager, 1);
+          money += warzone.moneyOf(loser.wager);
+          won += warzone.moneyOf(loser.wager);
+        }
+        const wins = Number(st.wz_wins || 0) + (winner && p.userId === winner.userId ? 1 : 0);
+        const losses = Number(st.wz_losses || 0) + (loser && p.userId === loser.userId ? 1 : 0);
+        await client.query(
+          `UPDATE player_state SET money = $2, counts = $3, wz_wins = $4, wz_losses = $5, wz_money_won = $6, updated_at = NOW()
+            WHERE user_id = $1`,
+          [p.userId, money, JSON.stringify(counts), wins, losses, won]
+        );
+      }
+      await client.query(
+        'UPDATE warzone_matches SET state = $2, winner_id = $3, ended_at = NOW(), result = $4 WHERE id = $1',
+        [m.dbId, dbState || 'completed', winner ? winner.userId : null, JSON.stringify(result || {})]
+      );
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK').catch(() => {});
+      console.error('[warzone settle]', e.message);
+      m.state = prev;
+      if (prev === 'fighting' && !m.timer) m.timer = setInterval(() => wzTick(m), warzone.TICK_MS);
+      return false;
+    } finally {
+      client.release();
+    }
+  }
+
+  m.state = 'finished';
+  m.endedAt = Date.now();
+  m.winnerId = winner ? winner.userId : null;
+  m.outcome = outcome;
+  m.result = result || {};
+  for (const p of [m.a, m.b]) {
+    let fresh = null;
+    try { fresh = publicState(await stateFor(pool, p.userId)); } catch (e) {}
+    pushTo(p.userId, {
+      type: 'warzoneResult', matchId: m.id, dbId: m.dbId,
+      winnerId: m.winnerId, outcome, result: m.result, state: fresh
+    });
+  }
+  return true;
+}
+
+async function wzStartFight(m) {
+  if (!m || m.state !== 'lobby') return false;
+  if (!(await wzEscrow(m))) {
+    m.state = 'cancelled';
+    m.endedAt = Date.now();
+    wzNotify(m, { type: 'warzoneCancelled', matchId: m.id, reason: 'Could not lock both wagers' });
+    warzoneMatches.delete(m.id);
+    return false;
+  }
+  m.state = 'fighting';
+  m.startedAt = Date.now();
+  m.tickCount = 0;
+  for (const p of [m.a, m.b]) {
+    p.hp = warzone.MAX_HP;
+    p.ix = 0; p.iy = 0;
+    p.attackQueued = false; p.attackAt = 0; p.lastAttackAt = 0;
+  }
+  for (const p of [m.a, m.b]) {
+    pushTo(p.userId, { type: 'warzoneStart', match: wzPublic(m, p.userId) });
+  }
+  m.timer = setInterval(() => wzTick(m), warzone.TICK_MS);
+  return true;
+}
+
+function wzTick(m) {
+  if (m.state !== 'fighting') return;
+  const now = Date.now();
+  for (const p of [m.a, m.b]) {
+    if (p.disconnectedAt) continue;
+    const pos = warzone.stepPosition(p, p.ix, p.iy, warzone.TICK_MS / 1000);
+    p.x = pos.x;
+    p.y = pos.y;
+    p.moving = !!(p.ix || p.iy);
+    if (p.attackQueued) {
+      p.attackQueued = false;
+      if (warzone.canAttack(now, p.lastAttackAt)) {
+        p.lastAttackAt = now;
+        p.attackAt = now;
+        const other = wzOther(m, p);
+        if (!other.disconnectedAt && warzone.inAttackRange(p, other)) {
+          other.hp = Math.max(0, other.hp - warzone.ATTACK_DAMAGE);
+          if (other.hp <= 0) {
+            wzSettle(m, p === m.a ? 'a' : 'b', 'ko', {
+              hpA: m.a.hp, hpB: m.b.hp, durationMs: now - m.startedAt
+            });
+            return;
+          }
+        }
+      }
+    }
+  }
+  if (now - m.startedAt >= warzone.FIGHT_TIMEOUT_MS) {
+    const result = { hpA: m.a.hp, hpB: m.b.hp, durationMs: now - m.startedAt };
+    const leader = warzone.decideTimeout(m.a.hp, m.b.hp);
+    wzSettle(m, leader === 'draw' ? null : leader, leader === 'draw' ? 'draw' : 'timeout', result);
+    return;
+  }
+  const data = JSON.stringify({
+    type: 'warzoneState', matchId: m.id, tick: ++m.tickCount, now,
+    players: [wzFighterLive(m.a), wzFighterLive(m.b)]
+  });
+  for (const p of [m.a, m.b]) {
+    const c = socketOfUserGlobal(p.userId);
+    if (c && c.readyState === 1) { try { c.send(data); } catch (e) {} }
+  }
+}
+
+app.post('/api/warzone/queue', dbReady, auth, rateLimit('warzone_queue', 6, 60000), async (req, res) => {
+  const uid = Number(req.user.id);
+  const action = String((req.body || {}).action || 'join');
+  if (action === 'leave') {
+    warzoneQueue.delete(uid);
+    return res.json({ ok: true, queued: false });
+  }
+  if (action !== 'join') return res.status(400).json({ error: 'Invalid queue action' });
+  if (wzInMatch(uid)) return res.status(409).json({ error: 'You are already in a match' });
+  if (warzoneQueue.has(uid)) return res.json({ ok: true, queued: true });
+  warzoneQueue.set(uid, Date.now());
+  const m = wzTryPair();
+  res.json({
+    ok: true, queued: warzoneQueue.has(uid),
+    matched: !!m, matchId: m ? m.id : null,
+    opponent: m ? { id: m.b.userId, username: m.b.username } : null
+  });
+});
+
+app.post('/api/warzone/challenge', dbReady, auth, rateLimit('warzone_challenge', 5, 60000), async (req, res) => {
+  try {
+    const b = req.body || {};
+    let toId = Math.floor(Number(b.toUserId));
+    if (!Number.isFinite(toId) || toId <= 0) {
+      const name = String(b.toUsername || '').trim().slice(0, 20);
+      if (!name) return res.status(400).json({ error: 'Pick an opponent' });
+      const { rows } = await pool.query('SELECT id FROM users WHERE lower(username) = lower($1)', [name]);
+      if (!rows[0]) return res.status(400).json({ error: 'No player with that username' });
+      toId = Number(rows[0].id);
+    }
+    const uid = Number(req.user.id);
+    if (toId === uid) return res.status(400).json({ error: 'You cannot challenge yourself' });
+    if (!socketOfUserGlobal(toId)) return res.status(400).json({ error: 'That player is not online' });
+    if (wzInMatch(uid) || wzInMatch(toId)) return res.status(409).json({ error: 'One of you is already in a match' });
+    for (const c of warzoneChallenges.values()) {
+      if ((c.fromId === uid && c.toId === toId) || (c.fromId === toId && c.toId === uid)) {
+        return res.status(400).json({ error: 'A challenge is already pending' });
+      }
+    }
+    const id = nextWarzoneChallengeId++;
+    warzoneChallenges.set(id, { id, fromId: uid, toId, createdAt: Date.now() });
+    pushTo(toId, { type: 'warzoneChallenge', challengeId: id, fromId: uid, fromName: req.user.username });
+    res.json({ ok: true, challengeId: id });
+  } catch (e) {
+    console.error('[warzone challenge]', e.message);
+    res.status(500).json({ error: 'Could not send challenge' });
+  }
+});
+
+app.post('/api/warzone/challenge/:id/accept', dbReady, auth, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const c = warzoneChallenges.get(id);
+  if (!c || c.toId !== Number(req.user.id) || Date.now() - c.createdAt > warzone.CHALLENGE_TTL_MS) {
+    warzoneChallenges.delete(id);
+    return res.status(404).json({ error: 'Challenge expired or not for you' });
+  }
+  if (wzInMatch(c.fromId) || wzInMatch(c.toId)) {
+    warzoneChallenges.delete(id);
+    return res.status(409).json({ error: 'One of you is already in a match' });
+  }
+  warzoneChallenges.delete(id);
+  warzoneQueue.delete(c.fromId);
+  warzoneQueue.delete(c.toId);
+  const m = wzMakeMatch(c.fromId, c.toId, 'challenge');
+  wzAnnounceMatch(m);
+  res.json({ ok: true, matchId: m.id, opponentId: m.a.userId, opponentName: m.a.username });
+});
+
+app.post('/api/warzone/challenge/:id/decline', dbReady, auth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const c = warzoneChallenges.get(id);
+  if (c && c.toId === Number(req.user.id)) {
+    warzoneChallenges.delete(id);
+    pushTo(c.fromId, { type: 'warzoneChallengeDeclined', challengeId: id, fromName: req.user.username });
+  }
+  res.json({ ok: true });
+});
+
+app.post('/api/warzone/:id/wager', dbReady, auth, rateLimit('warzone_wager', 20, 60000), async (req, res) => {
+  const m = warzoneMatches.get(parseInt(req.params.id, 10));
+  if (!m || m.state !== 'lobby') return res.status(404).json({ error: 'Match lobby not found' });
+  const role = wzRole(m, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not in this match' });
+  try {
+    const st = await stateFor(pool, req.user.id);
+    const normalized = warzone.normalizeWager((req.body || {}).wager, st.counts || {}, wzValidItem);
+    if (!normalized.ok) return res.status(400).json({ error: normalized.error });
+    m[role].wager = normalized.wager;
+    m.a.confirmed = false;
+    m.b.confirmed = false;
+    for (const p of [m.a, m.b]) {
+      pushTo(p.userId, { type: 'warzoneLobby', match: wzPublic(m, p.userId), updatedBy: req.user.username });
+    }
+    res.json({ ok: true, match: wzPublic(m, req.user.id) });
+  } catch (e) {
+    console.error('[warzone wager]', e.message);
+    res.status(500).json({ error: 'Could not set wager' });
+  }
+});
+
+app.post('/api/warzone/:id/confirm', dbReady, auth, async (req, res) => {
+  const m = warzoneMatches.get(parseInt(req.params.id, 10));
+  if (!m || m.state !== 'lobby') return res.status(404).json({ error: 'Match lobby not found' });
+  const role = wzRole(m, req.user.id);
+  if (!role) return res.status(403).json({ error: 'Not in this match' });
+  m[role].confirmed = true;
+  for (const p of [m.a, m.b]) pushTo(p.userId, { type: 'warzoneLobby', match: wzPublic(m, p.userId) });
+  if (!m.a.confirmed || !m.b.confirmed) return res.json({ ok: true, match: wzPublic(m, req.user.id) });
+  if (!(await wzStartFight(m))) return res.status(409).json({ error: 'Could not lock both wagers' });
+  res.json({ ok: true, match: wzPublic(m, req.user.id) });
+});
+
+app.post('/api/warzone/:id/cancel', dbReady, auth, (req, res) => {
+  const m = warzoneMatches.get(parseInt(req.params.id, 10));
+  if (!m || !wzRole(m, req.user.id)) return res.status(404).json({ error: 'Match not found' });
+  if (m.state === 'lobby') wzCancelLobby(m, req.user.username + ' left the lobby');
+  else if (m.state === 'fighting') wzSettle(m, null, 'cancelled', { reason: 'Cancelled by player' }, 'refunded');
+  res.json({ ok: true });
+});
+
+app.get('/api/warzone', dbReady, auth, async (req, res) => {
+  const uid = Number(req.user.id);
+  try {
+    const st = await stateFor(pool, uid);
+    const { rows } = await pool.query(
+      `SELECT m.id, m.player_a, m.wager_a, m.wager_b, m.state, m.winner_id, m.started_at, m.ended_at, m.result,
+              CASE WHEN m.player_a = $1 THEN m.player_b ELSE m.player_a END AS opponent_id,
+              CASE WHEN m.player_a = $1 THEN ub.username ELSE ua.username END AS opponent_name
+         FROM warzone_matches m
+         JOIN users ua ON ua.id = m.player_a
+         JOIN users ub ON ub.id = m.player_b
+        WHERE m.player_a = $1 OR m.player_b = $1
+        ORDER BY m.started_at DESC LIMIT 20`,
+      [uid]
+    );
+    const active = wzInMatch(uid);
+    res.json({
+      stats: {
+        wins: Number(st.wz_wins || 0),
+        losses: Number(st.wz_losses || 0),
+        moneyWon: Number(st.wz_money_won || 0)
+      },
+      queued: warzoneQueue.has(uid),
+      activeMatch: active ? wzPublic(active, uid) : null,
+      history: rows.map(r => ({
+        id: r.id, state: r.state, winnerId: r.winner_id,
+        startedAt: r.started_at ? new Date(r.started_at).getTime() : 0,
+        endedAt: r.ended_at ? new Date(r.ended_at).getTime() : 0,
+        opponent: { id: r.opponent_id, username: r.opponent_name },
+        wagerA: r.wager_a, wagerB: r.wager_b, result: r.result || {},
+        yourWager: Number(r.player_a) === uid ? r.wager_a : r.wager_b,
+        won: Number(r.winner_id) === uid
+      }))
+    });
+  } catch (e) {
+    console.error('[warzone history]', e.message);
+    res.status(500).json({ error: 'Could not load warzone history' });
+  }
+});
+
+app.post('/api/admin/warzone/refund/:id', dbReady, auth, isAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const live = [...warzoneMatches.values()].find(m => m.id === id || m.dbId === id);
+  try {
+    if (live) {
+      if (live.state === 'lobby') wzCancelLobby(live, 'Refunded by admin');
+      else await wzSettle(live, null, 'cancelled', { reason: 'Refunded by admin' }, 'refunded');
+    } else {
+      await wzRefundDbRow(id);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[warzone admin refund]', e.message);
+    res.status(500).json({ error: 'Could not refund match' });
+  }
+});
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, c] of warzoneChallenges) if (now - c.createdAt > warzone.CHALLENGE_TTL_MS) warzoneChallenges.delete(id);
+  for (const [id, m] of warzoneMatches) {
+    if (m.state === 'lobby' && now - m.createdAt > warzone.LOBBY_TIMEOUT_MS) wzCancelLobby(m, 'Wager lobby timed out');
+    if (m.state === 'finished' && m.endedAt && now - m.endedAt > 60000) warzoneMatches.delete(id);
+    if (m.state === 'cancelled') warzoneMatches.delete(id);
+  }
+}, 5000);
+
 /* ---------------------------------------------------------------
  * Electric Event endpoints + scheduler.
  * ------------------------------------------------------------- */
@@ -2880,6 +3410,60 @@ wss.on('connection', (ws, req) => {
 
       if (!ws.serverId) return;
 
+      if (msg.type === 'warzoneEnter') {
+        const id = parseInt(msg.matchId, 10);
+        const m = warzoneMatches.get(id);
+        const role = wzRole(m, user.id);
+        if (!m || !role || (m.state !== 'lobby' && m.state !== 'fighting')) {
+          ws.send(JSON.stringify({ type: 'warzoneCancelled', matchId: id, reason: 'Match no longer available' }));
+          return;
+        }
+        ws.warzoneId = id;
+        const p = m[role];
+        if (p.disconnectedAt) {
+          if (p.graceTimer) { clearTimeout(p.graceTimer); p.graceTimer = null; }
+          p.disconnectedAt = 0;
+          pushTo(wzOther(m, p).userId, { type: 'warzoneOpponentReconnected', matchId: id });
+        }
+        ws.send(JSON.stringify({
+          type: m.state === 'fighting' ? 'warzoneResume' : 'warzoneLobby',
+          match: wzPublic(m, user.id)
+        }));
+        return;
+      }
+
+      if (msg.type === 'warzoneInput') {
+        const m = warzoneMatches.get(ws.warzoneId);
+        const role = wzRole(m, user.id);
+        if (!m || m.state !== 'fighting' || !role || m[role].disconnectedAt) return;
+        const p = m[role];
+        if (msg.attack) p.attackQueued = true;
+        const now = Date.now();
+        if (now - p.lastInputAt < warzone.INPUT_MIN_GAP_MS) return;
+        p.lastInputAt = now;
+        p.ix = clampNum(msg.ix, -1, 1, 0);
+        p.iy = clampNum(msg.iy, -1, 1, 0);
+        p.facing = warzone.facingFromInput(p.ix, p.iy, p.facing);
+        return;
+      }
+
+      if (msg.type === 'warzoneLeave') {
+        const m = warzoneMatches.get(ws.warzoneId);
+        const role = wzRole(m, user.id);
+        if (!m || !role) { ws.warzoneId = null; return; }
+        if (m.state === 'lobby') {
+          wzCancelLobby(m, user.username + ' left the lobby');
+        } else if (m.state === 'fighting') {
+          const winner = wzOther(m, m[role]);
+          wzSettle(m, winner === m.a ? 'a' : 'b', 'forfeit', {
+            reason: user.username + ' forfeited', hpA: m.a.hp, hpB: m.b.hp,
+            durationMs: Date.now() - m.startedAt
+          });
+        }
+        ws.warzoneId = null;
+        return;
+      }
+
       if (msg.type === 'move') {
         const entry = presence.get(ws.serverId)?.get(user.id);
         if (entry) {
@@ -2941,6 +3525,32 @@ wss.on('connection', (ws, req) => {
             s.state = 'cancelled';
             const otherId = s.a.userId === user.id ? s.b.userId : s.a.userId;
             pushTo(otherId, { type: 'tradeCancelled', reason: 'Your trade partner disconnected' });
+          }
+        }
+
+        if (ws.warzoneId) {
+          const m = warzoneMatches.get(ws.warzoneId);
+          const role = wzRole(m, user.id);
+          if (m && role) {
+            const p = m[role];
+            if (m.state === 'lobby') {
+              wzCancelLobby(m, user.username + ' disconnected');
+            } else if (m.state === 'fighting' && !p.disconnectedAt) {
+              p.disconnectedAt = Date.now();
+              p.ix = 0; p.iy = 0; p.attackQueued = false;
+              const other = wzOther(m, p);
+              pushTo(other.userId, {
+                type: 'warzoneOpponentDisconnected', matchId: m.id,
+                graceMs: warzone.RECONNECT_GRACE_MS
+              });
+              p.graceTimer = setTimeout(() => {
+                p.graceTimer = null;
+                if (m.state !== 'fighting' || !p.disconnectedAt) return;
+                const result = { hpA: m.a.hp, hpB: m.b.hp, reason: 'opponent disconnected' };
+                if (other.disconnectedAt) wzSettle(m, null, 'draw', result, 'refunded');
+                else wzSettle(m, other === m.a ? 'a' : 'b', 'forfeit', result);
+              }, warzone.RECONNECT_GRACE_MS);
+            }
           }
         }
       }

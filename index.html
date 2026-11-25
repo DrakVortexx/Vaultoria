@@ -209,6 +209,56 @@
   .hud-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
   .hud-btn.bazaar { background: linear-gradient(135deg, #ffb648, #ff5c8a); border: none; box-shadow: 0 6px 20px rgba(255,140,80,0.4); }
   .hud-btn.primary { background: linear-gradient(135deg, #6d4dff, #b14dff); border: none; box-shadow: 0 6px 20px rgba(124,92,255,0.4); }
+  .hud-btn.warzone { background: linear-gradient(135deg, #ff5c8a, #d81a5c); border: none; box-shadow: 0 6px 20px rgba(255,92,138,0.45); }
+
+  #warzoneArena {
+    position: fixed; inset: 0; z-index: 29; pointer-events: none;
+    background: radial-gradient(circle at 50% 45%, rgba(52,14,40,0.96), rgba(3,4,12,0.99) 70%);
+  }
+  #warzoneArena.hidden { display: none; }
+  .wz-top { position: absolute; top: 18px; left: 20px; right: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .wz-fighter { width: min(230px, 30vw); padding: 10px 14px; border-radius: 16px; background: rgba(8,9,22,0.82); border: 1px solid rgba(255,255,255,0.1); }
+  .wz-fighter.right { text-align: right; }
+  .wz-name { font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wz-hp-wrap { height: 12px; margin-top: 8px; border-radius: 999px; background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.12); overflow: hidden; }
+  .wz-hp { height: 100%; width: 100%; border-radius: 999px; background: linear-gradient(90deg, #ffb648, #ff5c8a); transition: width 0.12s linear; }
+  .wz-hpText { font-size: 11px; font-weight: 700; color: #c3c8e6; margin-top: 5px; }
+  .wz-center { text-align: center; flex: 1; }
+  .wz-timer { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #ff9ab5; text-shadow: 0 0 22px rgba(255,92,138,0.55); }
+  .wz-status { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; margin-top: 4px; }
+  .wz-hint { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); font-size: 12px; letter-spacing: 1px; color: #8b93bd; background: rgba(5,6,15,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 8px 16px; white-space: nowrap; }
+  .wz-forfeit { position: absolute; right: 20px; bottom: 18px; pointer-events: auto; }
+  .wz-card {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(520px, 94vw); max-height: 90vh; overflow-y: auto; pointer-events: auto;
+    background: rgba(6,7,18,0.94); border: 1px solid rgba(255,92,138,0.35); border-radius: 24px;
+    padding: 20px 22px; box-shadow: 0 30px 80px rgba(0,0,0,0.75), 0 0 60px rgba(255,92,138,0.18);
+  }
+  .wz-card.hidden { display: none; }
+  .wz-title { font-size: 16px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #ff9ab5; text-align: center; margin-bottom: 6px; }
+  .wz-bets { display: flex; flex-direction: column; gap: 8px; width: 100%; margin: 14px 0; }
+  .wz-betRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; }
+  .wz-betRow b { color: #ffb648; }
+  .wz-betRow .ready { color: #7bdc78; font-weight: 800; }
+  .wz-choice { display: flex; gap: 6px; justify-content: center; width: 100%; margin-bottom: 10px; }
+  .wz-choice button { font-family: inherit; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 10px; cursor: pointer; color: #9aa2cc; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+  .wz-choice button.active { color: #fff; background: linear-gradient(135deg, #ff5c8a, #d81a5c); border-color: transparent; }
+  .wz-input { width: 100%; font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 12px; color: #fff; background: rgba(5,6,15,0.85); border: 1px solid rgba(255,255,255,0.14); outline: none; text-align: center; }
+  .wz-input:focus { border-color: #ff5c8a; }
+  .wz-items { width: 100%; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .wz-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); cursor: pointer; font-size: 12px; }
+  .wz-item:hover, .wz-item.active { border-color: rgba(255,92,138,0.6); background: rgba(255,92,138,0.1); }
+  .wz-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; margin-top: 6px; }
+  .wz-actions button { font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing: 1px; padding: 10px 18px; border-radius: 12px; cursor: pointer; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); }
+  .wz-actions button.primary { background: linear-gradient(135deg, #ff5c8a, #d81a5c); border-color: transparent; }
+  .wz-actions button.good { background: linear-gradient(135deg, #4fd1ff, #6d4dff); border-color: transparent; }
+  .wz-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); font-size: 12px; }
+  .wz-list { display: flex; flex-direction: column; gap: 6px; width: 100%; max-height: 260px; overflow-y: auto; }
+  .wz-empty { color: #8b93bd; font-size: 12px; text-align: center; padding: 14px; }
+  .wz-sub { font-size: 12px; color: #9aa2cc; text-align: center; line-height: 1.5; width: 100%; }
+  .wz-stat { font-size: 12px; font-weight: 700; color: #b98bff; }
+  body.wz-arena #mobileControls { z-index: 31; }
+  body.wz-arena #mobileActions { display: none; }
 
   #hint {
     position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
@@ -788,7 +838,7 @@
           <li><b>Autoclicking the shield is not allowed</b> &mdash; automating, macroing, or autoclicking your vault shield is bannable.</li>
           <li>Do not scam or impersonate other players.</li>
           <li>No spam, flooding, or advertising.</li>
-          <li>Use trading and raiding fairly; do not use alternate accounts to exploit them.</li>
+          <li>Use trading, raiding and warzone wagers fairly; do not use alternate accounts to exploit them.</li>
           <li>Follow moderator instructions. Rule-breaking may result in a mute or ban.</li>
           <li>Only create 2 accounts per user. If you create more than 2 you will be banned on all accounts</li>
 
@@ -831,6 +881,7 @@
         <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
         <button class="hud-btn" id="leadBtn" type="button">Leaders</button>
         <button class="hud-btn" id="tradeBtn" type="button">Trade</button>
+        <button class="hud-btn warzone" id="warzoneBtn" type="button">Warzone</button>
         <button class="hud-btn" id="leaveBtn" type="button">Leave</button>
       </div>
     </div>
@@ -851,6 +902,84 @@
       <button class="mobile-action" id="mActionsSell" type="button">SELL ALL</button>
       <button class="mobile-action" id="mActionsMarket" type="button">MARKET</button>
       <button class="mobile-action boss" id="mActionsBoss" type="button">BOSS</button>
+      <button class="mobile-action" id="mActionsWarzone" type="button">WARZONE</button>
+    </div>
+  </div>
+
+  <div id="warzoneArena" class="hidden">
+    <div class="wz-top">
+      <div class="wz-fighter" id="wzFighterA">
+        <div class="wz-name" id="wzNameA">You</div>
+        <div class="wz-hp-wrap"><div class="wz-hp" id="wzHpA"></div></div>
+        <div class="wz-hpText" id="wzHpTextA">100 / 100</div>
+      </div>
+      <div class="wz-center">
+        <div class="wz-timer" id="wzTimer">00:00</div>
+        <div class="wz-status" id="wzStatus">WAGER LOBBY</div>
+      </div>
+      <div class="wz-fighter right" id="wzFighterB">
+        <div class="wz-name" id="wzNameB">Opponent</div>
+        <div class="wz-hp-wrap"><div class="wz-hp" id="wzHpB"></div></div>
+        <div class="wz-hpText" id="wzHpTextB">100 / 100</div>
+      </div>
+    </div>
+    <div class="wz-card" id="wzLobby">
+      <div class="wz-title">Wager Lobby</div>
+      <div class="wz-sub" id="wzLobbyStatus">Agree on a bet with your opponent. Winner takes both.</div>
+      <div class="wz-bets">
+        <div class="wz-betRow"><span>You: <b id="wzBetYou">No bet</b></span><span id="wzReadyYou">NOT READY</span></div>
+        <div class="wz-betRow"><span>Opponent: <b id="wzBetThem">No bet</b></span><span id="wzReadyThem">NOT READY</span></div>
+      </div>
+      <div class="wz-choice">
+        <button type="button" data-wtype="none" class="active">NO BET</button>
+        <button type="button" data-wtype="money">MONEY</button>
+        <button type="button" data-wtype="item">ITEM</button>
+      </div>
+      <input id="wzMoneyInput" class="wz-input hidden" type="number" min="1000" step="1000" placeholder="Amount (min 1,000)">
+      <input id="wzItemQty" class="wz-input hidden" type="number" min="1" max="12" value="1" placeholder="Qty (1-12)">
+      <div id="wzItemList" class="wz-items hidden"></div>
+      <div class="wz-actions">
+        <button type="button" class="primary" id="wzSetWager">SET BET</button>
+        <button type="button" class="good" id="wzReady">READY</button>
+        <button type="button" id="wzLobbyLeave">LEAVE</button>
+      </div>
+    </div>
+    <div class="wz-card hidden" id="wzResult">
+      <div class="wz-title" id="wzResultTitle">Duel Complete</div>
+      <div class="wz-sub" id="wzResultBody"></div>
+      <div class="wz-actions"><button type="button" class="primary" id="wzResultClose">BACK TO GAME</button></div>
+    </div>
+    <button class="hud-btn warzone wz-forfeit" id="wzForfeit" type="button">FORFEIT</button>
+    <div class="wz-hint" id="wzHint">WASD / Arrows to move &middot; Click or Space to attack</div>
+  </div>
+
+  <div id="warzoneModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <div class="modal-title">Warzone</div>
+        <button class="x" data-close="warzoneModal" type="button">&times;</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-wztab="find" type="button">Find a Duel</button>
+        <button class="tab" data-wztab="challenge" type="button">Challenge</button>
+        <button class="tab" data-wztab="history" type="button">History</button>
+      </div>
+      <div class="panel active" id="wzPanelFind">
+        <div class="wz-sub">Step into the arena and risk an item or cash. Both players set a bet, confirm, then fight. Winner keeps their own bet and takes the opponent's.</div>
+        <div class="wz-row" style="margin-top:14px"><span>Wins / Losses</span><span class="wz-stat" id="wzStats">0 / 0</span></div>
+        <div class="wz-row"><span>Money won</span><span class="wz-stat" id="wzMoneyWon">$0</span></div>
+        <div class="wz-actions" style="margin-top:16px">
+          <button type="button" class="primary" id="wzQueueBtn">FIND MATCH</button>
+        </div>
+      </div>
+      <div class="panel" id="wzPanelChallenge">
+        <div class="wz-sub">Challenge an online keeper directly. They can accept or decline.</div>
+        <div class="wz-list" id="wzOnlineList" style="margin-top:12px"></div>
+        <div class="wz-sub" id="wzPending" style="margin-top:10px"></div>
+      </div>
+      <div class="panel" id="wzPanelHistory">
+        <div class="wz-list" id="wzHistoryList"></div>
+      </div>
     </div>
   </div>
 
@@ -1466,6 +1595,14 @@ let dailyData = null;
 let bossState = null;
 let lastMoneyShown = null;
 let ownedProducts = [];
+let arena = null;
+let inArena = false;
+let wzQueued = false;
+let wzChallenges = [];
+let wzBetType = 'none';
+let wzSelectedItem = '';
+let wzLastInput = 0;
+let wzLastHud = 0;
 
 applyEventTheme();
 setInterval(applyEventTheme, 60000);
@@ -1980,6 +2117,7 @@ function connectWS() {
   sock.addEventListener('open', () => {
     if (sock !== ws || !currentServer) return;
     sock.send(JSON.stringify({ type: 'join', serverId: currentServer.id, x: player.x, y: player.y }));
+    if (inArena && arena) sock.send(JSON.stringify({ type: 'warzoneEnter', matchId: arena.matchId }));
   });
   sock.addEventListener('message', ev => {
     if (sock !== ws) return;
@@ -1987,6 +2125,16 @@ function connectWS() {
     if (msg.type === 'members') onMembers(msg.members);
     else if (msg.type === 'move') onRemoteMove(msg);
     else if (msg.type === 'say') addChat('chat', msg.name, msg.text);
+    else if (msg.type === 'warzoneMatched') onWarzoneMatched(msg);
+    else if (msg.type === 'warzoneChallenge') onWarzoneChallenge(msg);
+    else if (msg.type === 'warzoneChallengeDeclined') onWarzoneChallengeDeclined(msg);
+    else if (msg.type === 'warzoneLobby') onWarzoneLobby(msg);
+    else if (msg.type === 'warzoneStart' || msg.type === 'warzoneResume') onWarzoneStart(msg);
+    else if (msg.type === 'warzoneState') onWarzoneState(msg);
+    else if (msg.type === 'warzoneResult') onWarzoneResult(msg);
+    else if (msg.type === 'warzoneCancelled') onWarzoneCancelled(msg);
+    else if (msg.type === 'warzoneOpponentDisconnected') onWarzoneDisconnected(msg);
+    else if (msg.type === 'warzoneOpponentReconnected') onWarzoneReconnected(msg);
     else if (msg.type === 'boss') onBoss(msg.boss);
     else if (msg.type === 'bossDefeated') onBossDefeated(msg.boss);
     else if (msg.type === 'breached') onBreached(msg);
@@ -2148,6 +2296,7 @@ window.addEventListener('keydown', e => {
   }
   if (document.activeElement && document.activeElement.tagName === 'INPUT' && k !== 'escape') return;
   if (k === 'e' && !e.repeat) { triggerInteract(); return; }
+  if (k === ' ' && !e.repeat && inArena) { wzAttack(); return; }
   if (k === 'escape') { closeAllModals(); return; }
   keys[k] = true; ac();
 });
@@ -2156,8 +2305,10 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 
 // Shared by the keyboard E key and the on-screen mobile E button.
 function triggerInteract() {
+  if (inArena) return;
   if (!inGame || anyModalOpen()) return;
   ac();
+  if (nearWarzone()) { openWarzone(); return; }
   if (eventActive() && nearWheel()) openWheel();
   else toggleVault();
 }
@@ -2201,7 +2352,7 @@ function triggerInteract() {
     });
     stick.addEventListener('pointerup', e => { if (e.pointerId === pid) reset(); });
     stick.addEventListener('pointercancel', e => { if (e.pointerId === pid) reset(); });
-    if (eBtn) eBtn.addEventListener('pointerdown', e => { e.preventDefault(); triggerInteract(); });
+    if (eBtn) eBtn.addEventListener('pointerdown', e => { e.preventDefault(); if (inArena) { wzAttack(); return; } triggerInteract(); });
   } else {
     function firstTouch(e) { return e.touches[0] || e.changedTouches[0]; }
     stick.addEventListener('touchstart', e => {
@@ -2220,9 +2371,10 @@ function triggerInteract() {
     }, false);
     stick.addEventListener('touchend', reset, false);
     stick.addEventListener('touchcancel', reset, false);
-    if (eBtn) eBtn.addEventListener('touchstart', e => { e.preventDefault(); triggerInteract(); }, false);
+    if (eBtn) eBtn.addEventListener('touchstart', e => { e.preventDefault(); if (inArena) { wzAttack(); return; } triggerInteract(); }, false);
   }
 })();
+canvas.addEventListener('pointerdown', () => { if (inArena) wzAttack(); });
 
 function resize() {
   dpr = window.devicePixelRatio || 1;
@@ -2239,6 +2391,10 @@ function nearMyVault() {
   const p = VAULT_POS[mySlot];
   const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
   return Math.hypot(cx - p.x, cy - p.y) < 96;
+}
+function nearWarzone() {
+  const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+  return Math.hypot(cx - (EL.x + 180), cy - (EL.y - 50)) < 78;
 }
 function vaultAtPosition(slot) { return members.find(m => m.slot === slot) || null; }
 
@@ -2588,7 +2744,7 @@ function drawWorld(now) {
     if (!o.online) continue;
     const member = members.find(m => m.id === id);
     const color = member && member.customColor ? 'hsl(' + member.customColor + ', 65%, 58%)' : 'hsl(' + o.hue + ', 65%, 58%)';
-    if (o.zone === 'vault') continue;
+    if (o.zone === 'vault' || o.zone === 'warzone') continue;
     drawTrail(o.id, o.customTrail, now);
     drawCharacter(o.x, o.y, color, o.facing, o.moving, o.walk);
     drawNameTag(o.x + 20, o.y - 6, o.username, color);
@@ -2672,9 +2828,9 @@ function drawWarzone(now) {
   ctx.shadowBlur = 12;
   ctx.fillText('WARZONE', 0, 50);
   ctx.font = "700 9px 'Segoe UI', sans-serif";
-  ctx.fillStyle = 'rgba(255,92,138,0.7)';
+  ctx.fillStyle = 'rgba(255,92,138,0.85)';
   ctx.shadowBlur = 0;
-  ctx.fillText('COMING SOON', 0, 65);
+  ctx.fillText('PRESS E', 0, 65);
 
   ctx.restore();
 }
@@ -2877,7 +3033,9 @@ function frame(now) {
   const dt = Math.min(64, now - lastFrame) / 1000;
   lastFrame = now;
 
-  if (inGame) {
+  if (inArena) {
+    wzFrame(now, dt);
+  } else if (inGame) {
     refreshTutorial();
 
     const blocked = anyModalOpen();
@@ -2947,8 +3105,12 @@ function frame(now) {
 }
 
 function updateHint() {
+  if (inArena) return;
   const h = $('hint');
-  if (nearMyVault()) {
+  if (nearWarzone()) {
+    h.textContent = isMobile ? 'Tap E to enter the Warzone' : 'Press E to enter the Warzone';
+    $('zone').textContent = 'WARZONE';
+  } else if (nearMyVault()) {
     h.textContent = isMobile ? 'Tap E to open your vault' : 'Press E to open your vault';
     $('zone').textContent = 'YOUR VAULT';
   } else {
@@ -2959,12 +3121,14 @@ function updateHint() {
   }
   const vb = $('vaultBtn');
   vb.textContent = nearMyVault() ? 'Open Vault' : 'Vault';
+  const wb = $('warzoneBtn');
+  if (wb) wb.textContent = nearWarzone() ? 'ENTER WARZONE' : 'Warzone';
 }
 
 /* =============================================================
  * VAULT UI
  * ============================================================= */
-const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'wheelModal', 'bossModal', 'tradeModal'];
+const MODAL_IDS = ['vaultModal', 'bazaarModal', 'marketModal', 'leaderModal', 'wheelModal', 'bossModal', 'tradeModal', 'warzoneModal'];
 function anyModalOpen() { return MODAL_IDS.some(id => !$(id).classList.contains('hidden')); }
 function closeAllModals() {
   MODAL_IDS.forEach(id => $(id).classList.add('hidden'));
@@ -3980,6 +4144,511 @@ $('tradeCancel').addEventListener('click', async () => {
     loadOnline();
   } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
 });
+
+function wzFmtWager(w) {
+  if (!w || w.type === 'none') return 'No bet';
+  if (w.type === 'money') return '$' + fmt(w.amount);
+  return itemDisplayName(w.key) + ' x' + (w.qty || 1);
+}
+
+function openWarzone() {
+  if (!inGame || inArena) return;
+  closeAllModals();
+  $('warzoneModal').classList.remove('hidden');
+  wzRenderMenu();
+  wzRenderOnline();
+  wzRenderHistory();
+}
+$('warzoneBtn').addEventListener('click', () => { ac(); openWarzone(); });
+const wzMobileBtn = $('mActionsWarzone');
+if (wzMobileBtn) wzMobileBtn.addEventListener('click', () => { ac(); openWarzone(); });
+
+document.querySelectorAll('.tab[data-wztab]').forEach(tab => tab.addEventListener('click', () => {
+  document.querySelectorAll('.tab[data-wztab]').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#warzoneModal .panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  const name = tab.dataset.wztab;
+  $('wzPanel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  if (name === 'challenge') wzRenderOnline();
+  if (name === 'history') wzRenderHistory();
+}));
+
+async function wzRenderMenu() {
+  $('wzQueueBtn').textContent = wzQueued ? 'LEAVE QUEUE' : 'FIND MATCH';
+  try {
+    const r = await api('/warzone');
+    wzQueued = !!r.queued;
+    $('wzStats').textContent = r.stats.wins + ' / ' + r.stats.losses;
+    $('wzMoneyWon').textContent = '$' + fmt(r.stats.moneyWon);
+    $('wzQueueBtn').textContent = wzQueued ? 'LEAVE QUEUE' : 'FIND MATCH';
+    if (r.activeMatch && !inArena) {
+      closeAllModals();
+      wzEnterArena(r.activeMatch, r.activeMatch.state === 'fighting' ? 'fighting' : 'lobby');
+    }
+  } catch (e) {}
+}
+
+async function wzRenderOnline() {
+  const list = $('wzOnlineList');
+  if (!list) return;
+  try {
+    const r = await api('/online');
+    list.innerHTML = '';
+    const users = (r.online || []).filter(u => u.id !== me.id);
+    if (!users.length) {
+      list.innerHTML = '<div class="wz-empty">No other players online</div>';
+    } else {
+      for (const u of users) {
+        const row = document.createElement('div');
+        row.className = 'wz-row';
+        const name = document.createElement('span');
+        name.textContent = u.username;
+        const btn = document.createElement('button');
+        btn.className = 'mini-btn';
+        btn.textContent = 'CHALLENGE';
+        btn.addEventListener('click', async () => {
+          try {
+            await api('/warzone/challenge', { method: 'POST', body: JSON.stringify({ toUserId: u.id }) });
+            toast('WARZONE', 'Challenge sent to ' + u.username, null, '#ffb648');
+          } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+        });
+        row.appendChild(name);
+        row.appendChild(btn);
+        list.appendChild(row);
+      }
+    }
+  } catch (e) {}
+  const pending = $('wzPending');
+  if (pending) {
+    pending.innerHTML = '';
+    if (!wzChallenges.length) {
+      pending.textContent = 'No pending challenges.';
+    } else {
+      for (const c of wzChallenges) {
+        const row = document.createElement('div');
+        row.className = 'wz-row';
+        const label = document.createElement('span');
+        label.textContent = c.fromName + ' challenged you';
+        const btns = document.createElement('span');
+        const accept = document.createElement('button');
+        accept.className = 'mini-btn';
+        accept.textContent = 'ACCEPT';
+        accept.addEventListener('click', async () => {
+          try {
+            const r = await api('/warzone/challenge/' + c.id + '/accept', { method: 'POST' });
+            wzChallenges = wzChallenges.filter(x => x.id !== c.id);
+            closeAllModals();
+            wzEnterArena({ matchId: r.matchId, opponent: { id: r.opponentId, username: r.opponentName } }, 'lobby');
+          } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+        });
+        const decline = document.createElement('button');
+        decline.className = 'mini-btn ghost';
+        decline.textContent = 'DECLINE';
+        decline.addEventListener('click', async () => {
+          try {
+            await api('/warzone/challenge/' + c.id + '/decline', { method: 'POST' });
+            wzChallenges = wzChallenges.filter(x => x.id !== c.id);
+            wzRenderOnline();
+          } catch (e) {}
+        });
+        btns.appendChild(accept);
+        btns.appendChild(decline);
+        row.appendChild(label);
+        row.appendChild(btns);
+        pending.appendChild(row);
+      }
+    }
+  }
+}
+
+async function wzRenderHistory() {
+  const list = $('wzHistoryList');
+  if (!list) return;
+  try {
+    const r = await api('/warzone');
+    list.innerHTML = '';
+    if (!r.history.length) {
+      list.innerHTML = '<div class="wz-empty">No duels yet. Enter the arena to make history.</div>';
+      return;
+    }
+    for (const h of r.history) {
+      const row = document.createElement('div');
+      row.className = 'wz-row';
+      const label = h.won ? 'WIN' : (h.state === 'refunded' ? 'REFUND' : 'LOSS');
+      const left = document.createElement('span');
+      left.textContent = esc(h.opponent.username) + ' \u00b7 ' + label + ' \u00b7 ' + wzFmtWager(h.yourWager);
+      const right = document.createElement('span');
+      right.textContent = new Date(h.startedAt || Date.now()).toLocaleDateString();
+      row.appendChild(left);
+      row.appendChild(right);
+      list.appendChild(row);
+    }
+  } catch (e) {}
+}
+
+$('wzQueueBtn').addEventListener('click', async () => {
+  if (inArena) return;
+  try {
+    const r = await api('/warzone/queue', {
+      method: 'POST', body: JSON.stringify({ action: wzQueued ? 'leave' : 'join' })
+    });
+    wzQueued = !!r.queued;
+    $('wzQueueBtn').textContent = wzQueued ? 'LEAVE QUEUE' : 'FIND MATCH';
+    if (r.matched) {
+      closeAllModals();
+      wzEnterArena({ matchId: r.matchId, opponent: r.opponent }, 'lobby');
+    } else {
+      toast('WARZONE', wzQueued ? 'Searching for an opponent...' : 'Left the queue', null, '#4fd1ff');
+    }
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
+
+function wzEnterArena(match, phase) {
+  if (inArena) return;
+  if (!match || !match.matchId) return;
+  const rules = match.rules || {};
+  arena = {
+    matchId: match.matchId, match: match,
+    phase: phase === 'fighting' ? 'fighting' : 'lobby',
+    rules: {
+      arenaW: rules.arenaW || 960, arenaH: rules.arenaH || 600,
+      fighterW: rules.fighterW || 40, fighterH: rules.fighterH || 58,
+      maxHp: rules.maxHp || 100, damage: rules.damage || 10,
+      attackCooldownMs: rules.attackCooldownMs || 600,
+      fightTimeoutMs: rules.fightTimeoutMs || 120000
+    },
+    players: { a: match.a || null, b: match.b || null },
+    render: {
+      a: { x: (match.a && match.a.x) || 120, y: (match.a && match.a.y) || 271 },
+      b: { x: (match.b && match.b.x) || 800, y: (match.b && match.b.y) || 271 }
+    },
+    target: {
+      a: { x: (match.a && match.a.x) || 120, y: (match.a && match.a.y) || 271 },
+      b: { x: (match.b && match.b.x) || 800, y: (match.b && match.b.y) || 271 }
+    },
+    attackQueued: false, status: '', startedAt: match.startedAt || 0
+  };
+  inArena = true;
+  document.body.classList.add('wz-arena');
+  $('warzoneArena').classList.remove('hidden');
+  $('mobileEBtn').textContent = 'ATK';
+  closeAllModals();
+  wsSend({ type: 'warzoneEnter', matchId: arena.matchId });
+  if (arena.phase === 'fighting') wzBeginFight(match);
+  else wzRenderLobby();
+}
+
+function wzExitArena() {
+  if (!inArena) return;
+  wsSend({ type: 'warzoneLeave' });
+  inArena = false;
+  arena = null;
+  document.body.classList.remove('wz-arena');
+  $('warzoneArena').classList.add('hidden');
+  $('mobileEBtn').textContent = 'E';
+  for (const k in keys) keys[k] = false;
+  refreshState().catch(() => {});
+}
+
+function wzRenderLobby() {
+  if (!arena || !arena.match) return;
+  const m = arena.match;
+  arena.phase = 'lobby';
+  $('wzLobby').classList.remove('hidden');
+  $('wzResult').classList.add('hidden');
+  $('wzForfeit').classList.add('hidden');
+  $('wzHint').classList.add('hidden');
+  $('wzLobbyStatus').textContent = 'Agree on a bet with ' + ((m.opponent && m.opponent.username) || 'your opponent') + '. Winner takes both bets.';
+  $('wzBetYou').textContent = wzFmtWager(m.you && m.you.wager);
+  $('wzBetThem').textContent = wzFmtWager(m.opponent && m.opponent.wager);
+  $('wzReadyYou').textContent = (m.you && m.you.confirmed) ? 'READY' : 'NOT READY';
+  $('wzReadyThem').textContent = (m.opponent && m.opponent.confirmed) ? 'READY' : 'NOT READY';
+  $('wzReady').textContent = (m.you && m.you.confirmed) ? 'READY \u2713' : 'READY';
+  wzRenderWagerPicker();
+  wzRenderHud(true);
+}
+
+function wzRenderWagerPicker() {
+  document.querySelectorAll('#wzLobby .wz-choice button').forEach(b =>
+    b.classList.toggle('active', b.dataset.wtype === wzBetType));
+  $('wzMoneyInput').classList.toggle('hidden', wzBetType !== 'money');
+  $('wzItemQty').classList.toggle('hidden', wzBetType !== 'item');
+  $('wzItemList').classList.toggle('hidden', wzBetType !== 'item');
+  if (wzBetType !== 'item') return;
+  const list = $('wzItemList');
+  list.innerHTML = '';
+  const entries = Object.entries(state.counts || {}).sort((a, b) => itemValueKey(b[0]) - itemValueKey(a[0]));
+  if (!entries.length) {
+    list.innerHTML = '<div class="wz-empty">No items in your vault to wager</div>';
+    return;
+  }
+  for (const [key, qty] of entries) {
+    const row = document.createElement('div');
+    row.className = 'wz-item' + (wzSelectedItem === key ? ' active' : '');
+    const left = document.createElement('span');
+    left.textContent = itemDisplayName(key) + ' x' + qty;
+    const right = document.createElement('span');
+    right.textContent = wzSelectedItem === key ? 'SELECTED' : '';
+    row.appendChild(left);
+    row.appendChild(right);
+    row.addEventListener('click', () => { wzSelectedItem = key; wzRenderWagerPicker(); });
+    list.appendChild(row);
+  }
+}
+
+document.querySelectorAll('#wzLobby .wz-choice button').forEach(b => b.addEventListener('click', () => {
+  wzBetType = b.dataset.wtype;
+  wzRenderWagerPicker();
+}));
+
+$('wzSetWager').addEventListener('click', async () => {
+  if (!arena || arena.phase !== 'lobby') return;
+  let wager = { type: 'none' };
+  if (wzBetType === 'money') wager = { type: 'money', amount: Math.floor(Number($('wzMoneyInput').value) || 0) };
+  if (wzBetType === 'item') {
+    if (!wzSelectedItem) { toast('WARZONE', 'Pick an item first', null, '#ff6b8a'); return; }
+    wager = { type: 'item', key: wzSelectedItem, qty: Math.floor(Number($('wzItemQty').value) || 1) };
+  }
+  try {
+    const r = await api('/warzone/' + arena.matchId + '/wager', {
+      method: 'POST', body: JSON.stringify({ wager })
+    });
+    arena.match = r.match;
+    wzRenderLobby();
+    toast('WARZONE', 'Bet set: ' + wzFmtWager(wager), null, '#4fd1ff');
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
+
+$('wzReady').addEventListener('click', async () => {
+  if (!arena || arena.phase !== 'lobby') return;
+  try {
+    const r = await api('/warzone/' + arena.matchId + '/confirm', { method: 'POST' });
+    arena.match = r.match;
+    if (r.match && r.match.state === 'fighting') wzBeginFight(r.match);
+    else wzRenderLobby();
+  } catch (e) { toast('OOPS', e.message, null, '#ff6b8a'); }
+});
+
+async function wzLeaveLobby() {
+  if (!arena) return;
+  try { await api('/warzone/' + arena.matchId + '/cancel', { method: 'POST' }); } catch (e) {}
+  wzExitArena();
+}
+$('wzLobbyLeave').addEventListener('click', wzLeaveLobby);
+$('wzForfeit').addEventListener('click', () => {
+  if (!arena) return;
+  if (arena.phase === 'fighting') {
+    wsSend({ type: 'warzoneLeave' });
+    toast('WARZONE', 'You forfeited the duel', null, '#ff6b8a');
+    wzExitArena();
+  } else wzLeaveLobby();
+});
+$('wzResultClose').addEventListener('click', wzExitArena);
+
+function wzBeginFight(match) {
+  if (!arena || arena.matchId !== match.matchId) return;
+  arena.match = match;
+  arena.phase = 'fighting';
+  arena.startedAt = match.startedAt || Date.now();
+  if (match.rules) arena.rules = Object.assign(arena.rules, match.rules);
+  for (const side of ['a', 'b']) {
+    const p = match[side];
+    if (!p) continue;
+    const live = arena.players[side] || {};
+    live.id = p.id; live.username = p.username; live.hp = p.hp;
+    live.facing = p.facing || { x: side === 'a' ? 1 : -1, y: 0 };
+    live.moving = false; live.attackAt = 0; live.fxUntil = 0;
+    arena.players[side] = live;
+    arena.render[side] = { x: p.x, y: p.y };
+    arena.target[side] = { x: p.x, y: p.y };
+  }
+  $('wzLobby').classList.add('hidden');
+  $('wzResult').classList.add('hidden');
+  $('wzForfeit').classList.remove('hidden');
+  $('wzHint').classList.remove('hidden');
+  $('wzHint').textContent = isMobile
+    ? 'Joystick to move \u00b7 Tap ATK to attack'
+    : 'WASD / Arrows to move \u00b7 Click or Space to attack';
+  $('mobileEBtn').textContent = 'ATK';
+  wzRenderHud(true);
+  sfxToast();
+  toast('FIGHT!', 'Duel started', null, '#ff5c8a');
+}
+
+function wzRenderHud(force) {
+  if (!arena) return;
+  const now = Date.now();
+  if (!force && now - wzLastHud < 80) return;
+  wzLastHud = now;
+  const max = arena.rules.maxHp || 100;
+  for (const side of ['a', 'b']) {
+    const p = arena.players[side];
+    const suffix = side === 'a' ? 'A' : 'B';
+    if (!p) continue;
+    $('wzName' + suffix).textContent = p.username || (side === 'a' ? 'You' : 'Opponent');
+    const hp = Math.max(0, Number(p.hp) || 0);
+    $('wzHp' + suffix).style.width = Math.max(0, Math.min(100, hp / max * 100)) + '%';
+    $('wzHpText' + suffix).textContent = hp + ' / ' + max;
+  }
+  const remain = Math.max(0, Math.floor(((arena.rules.fightTimeoutMs || 120000) - (arena.startedAt ? now - arena.startedAt : 0)) / 1000));
+  $('wzTimer').textContent = String(Math.floor(remain / 60)).padStart(2, '0') + ':' + String(remain % 60).padStart(2, '0');
+  $('wzStatus').textContent = arena.status ||
+    (arena.phase === 'lobby' ? 'WAGER LOBBY' : arena.phase === 'result' ? 'MATCH OVER' : 'DUEL IN PROGRESS');
+}
+
+function wzAttack() {
+  if (!inArena || !arena || arena.phase !== 'fighting') return;
+  ac();
+  tone(240, 0.07, 'square', 0.045);
+  arena.attackQueued = true;
+}
+
+function onWarzoneMatched(msg) {
+  toast('WARZONE', 'Opponent found: ' + (msg.opponentName || 'unknown'), null, '#ff5c8a');
+  if (!inArena) {
+    closeAllModals();
+    wzEnterArena({ matchId: msg.matchId, opponent: { id: msg.opponentId, username: msg.opponentName } }, 'lobby');
+  }
+}
+function onWarzoneChallenge(msg) {
+  toast('WARZONE CHALLENGE', msg.fromName + ' challenged you', null, '#ffb648');
+  wzChallenges.push({ id: msg.challengeId, fromId: msg.fromId, fromName: msg.fromName });
+  if ($('wzPanelChallenge').classList.contains('active')) wzRenderOnline();
+}
+function onWarzoneChallengeDeclined(msg) {
+  toast('WARZONE', msg.fromName + ' declined your challenge', null, '#ff6b8a');
+}
+function onWarzoneLobby(msg) {
+  if (!arena || arena.matchId !== msg.match.matchId) return;
+  arena.match = msg.match;
+  if (arena.phase === 'lobby') wzRenderLobby();
+}
+function onWarzoneStart(msg) {
+  if (!arena || arena.matchId !== msg.match.matchId) return;
+  wzBeginFight(msg.match);
+}
+function onWarzoneState(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  for (const p of msg.players) {
+    const side = arena.players.a && p.id === arena.players.a.id ? 'a'
+      : arena.players.b && p.id === arena.players.b.id ? 'b' : null;
+    if (!side) continue;
+    arena.target[side] = { x: p.x, y: p.y };
+    const live = arena.players[side];
+    live.hp = p.hp; live.x = p.x; live.y = p.y;
+    live.facing = p.facing; live.moving = p.moving; live.connected = p.connected;
+    if (p.attackAt && p.attackAt !== live.attackAt) {
+      live.attackAt = p.attackAt;
+      live.fxUntil = p.attackAt + 220;
+    }
+  }
+  wzRenderHud();
+}
+function onWarzoneResult(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  arena.phase = 'result';
+  if (msg.state) { state = msg.state; renderVault(); }
+  const youWon = Number(msg.winnerId) === Number(me && me.id);
+  $('wzResultTitle').textContent = msg.outcome === 'draw' ? 'Draw' : youWon ? 'Victory' : 'Defeat';
+  let body = 'Outcome: ' + String(msg.outcome || 'finished').replace(/[^a-z]/gi, ' ') + '. ';
+  if (arena.match && arena.match.you) body += 'Your bet was ' + wzFmtWager(arena.match.you.wager) + '. ';
+  if (youWon) body += 'You kept your bet and took your opponent\u2019s.';
+  else if (msg.outcome === 'draw') body += 'Both bets were refunded.';
+  else body += 'Your bet was lost.';
+  $('wzResultBody').textContent = body;
+  $('wzResult').classList.remove('hidden');
+  $('wzLobby').classList.add('hidden');
+  $('wzForfeit').classList.add('hidden');
+  $('wzHint').classList.add('hidden');
+  shock(youWon ? '#ffb648' : '#7c5cff');
+  sfxToast();
+}
+function onWarzoneCancelled(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  toast('WARZONE', msg.reason || 'Match cancelled', null, '#ff6b8a');
+  wzExitArena();
+}
+function onWarzoneDisconnected(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  arena.status = 'Opponent disconnected \u00b7 ' + Math.round((msg.graceMs || 10000) / 1000) + 's to forfeit';
+  wzRenderHud(true);
+}
+function onWarzoneReconnected(msg) {
+  if (!arena || arena.matchId !== msg.matchId) return;
+  arena.status = '';
+  wzRenderHud(true);
+}
+
+function wzFrame(now, dt) {
+  if (arena && arena.phase === 'fighting') {
+    const ix = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+    const iy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+    if (now - wzLastInput >= 70) {
+      wzLastInput = now;
+      wsSend({ type: 'warzoneInput', ix, iy, attack: !!arena.attackQueued });
+      arena.attackQueued = false;
+    }
+    for (const side of ['a', 'b']) {
+      const r = arena.render[side], t = arena.target[side];
+      if (!r || !t) continue;
+      const k = Math.min(1, dt * 12);
+      r.x += (t.x - r.x) * k;
+      r.y += (t.y - r.y) * k;
+    }
+  }
+  wzRenderHud();
+  drawArena(now);
+}
+
+function drawArena(now) {
+  const rules = (arena && arena.rules) || {};
+  const aw = rules.arenaW || 960, ah = rules.arenaH || 600;
+  const fw = rules.fighterW || 40, fh = rules.fighterH || 58;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, viewW, viewH);
+  const scale = Math.max(0.3, Math.min((viewW - 40) / aw, (viewH - 180) / ah));
+  const ox = (viewW - aw * scale) / 2;
+  const oy = (viewH - ah * scale) / 2 + 20;
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = 'rgba(12,8,22,0.9)';
+  ctx.strokeStyle = 'rgba(255,92,138,0.55)';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = 'rgba(255,92,138,0.5)';
+  ctx.shadowBlur = 30;
+  rr(0, 0, aw, ah, 18);
+  ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 1;
+  for (let x = 60; x < aw; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ah); ctx.stroke(); }
+  for (let y = 60; y < ah; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(aw, y); ctx.stroke(); }
+  if (arena) {
+    for (const side of ['a', 'b']) {
+      const p = arena.players[side], r = arena.render[side];
+      if (!p || !r) continue;
+      const color = side === 'a'
+        ? (state && state.customColor ? 'hsl(' + state.customColor + ', 65%, 58%)' : '#7c5cff')
+        : '#ff5c8a';
+      drawCharacter(r.x, r.y, color, p.facing || { x: side === 'a' ? 1 : -1, y: 0 }, p.moving, now / 90);
+      drawNameTag(r.x + fw / 2, r.y - 10, p.username || '?', color);
+      if (p.fxUntil && now < p.fxUntil) {
+        const a = 1 - (p.fxUntil - now) / 220;
+        ctx.save();
+        ctx.translate(r.x + fw / 2, r.y + fh / 2);
+        if (p.facing && p.facing.x < 0) ctx.rotate(Math.PI);
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.8 * (1 - a)).toFixed(3) + ')';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, fw * 0.85, -0.9 + a * 1.8, 0.3 + a * 1.8);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+  ctx.restore();
+}
 
 /* =============================================================
  * DAILY QUESTS

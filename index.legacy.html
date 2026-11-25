@@ -209,6 +209,56 @@
   .hud-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
   .hud-btn.bazaar { background: linear-gradient(135deg, #ffb648, #ff5c8a); border: none; box-shadow: 0 6px 20px rgba(255,140,80,0.4); }
   .hud-btn.primary { background: linear-gradient(135deg, #6d4dff, #b14dff); border: none; box-shadow: 0 6px 20px rgba(124,92,255,0.4); }
+  .hud-btn.warzone { background: linear-gradient(135deg, #ff5c8a, #d81a5c); border: none; box-shadow: 0 6px 20px rgba(255,92,138,0.45); }
+
+  #warzoneArena {
+    position: fixed; inset: 0; z-index: 29; pointer-events: none;
+    background: radial-gradient(circle at 50% 45%, rgba(52,14,40,0.96), rgba(3,4,12,0.99) 70%);
+  }
+  #warzoneArena.hidden { display: none; }
+  .wz-top { position: absolute; top: 18px; left: 20px; right: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .wz-fighter { width: min(230px, 30vw); padding: 10px 14px; border-radius: 16px; background: rgba(8,9,22,0.82); border: 1px solid rgba(255,255,255,0.1); }
+  .wz-fighter.right { text-align: right; }
+  .wz-name { font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wz-hp-wrap { height: 12px; margin-top: 8px; border-radius: 999px; background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.12); overflow: hidden; }
+  .wz-hp { height: 100%; width: 100%; border-radius: 999px; background: linear-gradient(90deg, #ffb648, #ff5c8a); transition: width 0.12s linear; }
+  .wz-hpText { font-size: 11px; font-weight: 700; color: #c3c8e6; margin-top: 5px; }
+  .wz-center { text-align: center; flex: 1; }
+  .wz-timer { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #ff9ab5; text-shadow: 0 0 22px rgba(255,92,138,0.55); }
+  .wz-status { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #9aa2cc; margin-top: 4px; }
+  .wz-hint { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); font-size: 12px; letter-spacing: 1px; color: #8b93bd; background: rgba(5,6,15,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 8px 16px; white-space: nowrap; }
+  .wz-forfeit { position: absolute; right: 20px; bottom: 18px; pointer-events: auto; }
+  .wz-card {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(520px, 94vw); max-height: 90vh; overflow-y: auto; pointer-events: auto;
+    background: rgba(6,7,18,0.94); border: 1px solid rgba(255,92,138,0.35); border-radius: 24px;
+    padding: 20px 22px; box-shadow: 0 30px 80px rgba(0,0,0,0.75), 0 0 60px rgba(255,92,138,0.18);
+  }
+  .wz-card.hidden { display: none; }
+  .wz-title { font-size: 16px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #ff9ab5; text-align: center; margin-bottom: 6px; }
+  .wz-bets { display: flex; flex-direction: column; gap: 8px; width: 100%; margin: 14px 0; }
+  .wz-betRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; }
+  .wz-betRow b { color: #ffb648; }
+  .wz-betRow .ready { color: #7bdc78; font-weight: 800; }
+  .wz-choice { display: flex; gap: 6px; justify-content: center; width: 100%; margin-bottom: 10px; }
+  .wz-choice button { font-family: inherit; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 10px; cursor: pointer; color: #9aa2cc; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+  .wz-choice button.active { color: #fff; background: linear-gradient(135deg, #ff5c8a, #d81a5c); border-color: transparent; }
+  .wz-input { width: 100%; font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 12px; color: #fff; background: rgba(5,6,15,0.85); border: 1px solid rgba(255,255,255,0.14); outline: none; text-align: center; }
+  .wz-input:focus { border-color: #ff5c8a; }
+  .wz-items { width: 100%; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .wz-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); cursor: pointer; font-size: 12px; }
+  .wz-item:hover, .wz-item.active { border-color: rgba(255,92,138,0.6); background: rgba(255,92,138,0.1); }
+  .wz-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; margin-top: 6px; }
+  .wz-actions button { font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing: 1px; padding: 10px 18px; border-radius: 12px; cursor: pointer; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); }
+  .wz-actions button.primary { background: linear-gradient(135deg, #ff5c8a, #d81a5c); border-color: transparent; }
+  .wz-actions button.good { background: linear-gradient(135deg, #4fd1ff, #6d4dff); border-color: transparent; }
+  .wz-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); font-size: 12px; }
+  .wz-list { display: flex; flex-direction: column; gap: 6px; width: 100%; max-height: 260px; overflow-y: auto; }
+  .wz-empty { color: #8b93bd; font-size: 12px; text-align: center; padding: 14px; }
+  .wz-sub { font-size: 12px; color: #9aa2cc; text-align: center; line-height: 1.5; width: 100%; }
+  .wz-stat { font-size: 12px; font-weight: 700; color: #b98bff; }
+  body.wz-arena #mobileControls { z-index: 31; }
+  body.wz-arena #mobileActions { display: none; }
 
   #hint {
     position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
@@ -789,7 +839,7 @@
           <li><b>Autoclicking the shield is not allowed</b> &mdash; automating, macroing, or autoclicking your vault shield is bannable.</li>
           <li>Do not scam or impersonate other players.</li>
           <li>No spam, flooding, or advertising.</li>
-          <li>Use trading and raiding fairly; do not use alternate accounts to exploit them.</li>
+          <li>Use trading, raiding and warzone wagers fairly; do not use alternate accounts to exploit them.</li>
           <li>Follow moderator instructions. Rule-breaking may result in a mute or ban.</li>
           <li>Only create 2 accounts per user. If you create more than 2 you will be banned on all accounts</li>
 
@@ -832,6 +882,7 @@
         <button class="hud-btn bazaar" id="bazaarBtn" type="button">Bazaar</button>
         <button class="hud-btn" id="leadBtn" type="button">Leaders</button>
         <button class="hud-btn" id="tradeBtn" type="button">Trade</button>
+        <button class="hud-btn warzone" id="warzoneBtn" type="button">Warzone</button>
         <button class="hud-btn" id="leaveBtn" type="button">Leave</button>
       </div>
     </div>
@@ -852,6 +903,84 @@
       <button class="mobile-action" id="mActionsSell" type="button">SELL ALL</button>
       <button class="mobile-action" id="mActionsMarket" type="button">MARKET</button>
       <button class="mobile-action boss" id="mActionsBoss" type="button">BOSS</button>
+      <button class="mobile-action" id="mActionsWarzone" type="button">WARZONE</button>
+    </div>
+  </div>
+
+  <div id="warzoneArena" class="hidden">
+    <div class="wz-top">
+      <div class="wz-fighter" id="wzFighterA">
+        <div class="wz-name" id="wzNameA">You</div>
+        <div class="wz-hp-wrap"><div class="wz-hp" id="wzHpA"></div></div>
+        <div class="wz-hpText" id="wzHpTextA">100 / 100</div>
+      </div>
+      <div class="wz-center">
+        <div class="wz-timer" id="wzTimer">00:00</div>
+        <div class="wz-status" id="wzStatus">WAGER LOBBY</div>
+      </div>
+      <div class="wz-fighter right" id="wzFighterB">
+        <div class="wz-name" id="wzNameB">Opponent</div>
+        <div class="wz-hp-wrap"><div class="wz-hp" id="wzHpB"></div></div>
+        <div class="wz-hpText" id="wzHpTextB">100 / 100</div>
+      </div>
+    </div>
+    <div class="wz-card" id="wzLobby">
+      <div class="wz-title">Wager Lobby</div>
+      <div class="wz-sub" id="wzLobbyStatus">Agree on a bet with your opponent. Winner takes both.</div>
+      <div class="wz-bets">
+        <div class="wz-betRow"><span>You: <b id="wzBetYou">No bet</b></span><span id="wzReadyYou">NOT READY</span></div>
+        <div class="wz-betRow"><span>Opponent: <b id="wzBetThem">No bet</b></span><span id="wzReadyThem">NOT READY</span></div>
+      </div>
+      <div class="wz-choice">
+        <button type="button" data-wtype="none" class="active">NO BET</button>
+        <button type="button" data-wtype="money">MONEY</button>
+        <button type="button" data-wtype="item">ITEM</button>
+      </div>
+      <input id="wzMoneyInput" class="wz-input hidden" type="number" min="1000" step="1000" placeholder="Amount (min 1,000)">
+      <input id="wzItemQty" class="wz-input hidden" type="number" min="1" max="12" value="1" placeholder="Qty (1-12)">
+      <div id="wzItemList" class="wz-items hidden"></div>
+      <div class="wz-actions">
+        <button type="button" class="primary" id="wzSetWager">SET BET</button>
+        <button type="button" class="good" id="wzReady">READY</button>
+        <button type="button" id="wzLobbyLeave">LEAVE</button>
+      </div>
+    </div>
+    <div class="wz-card hidden" id="wzResult">
+      <div class="wz-title" id="wzResultTitle">Duel Complete</div>
+      <div class="wz-sub" id="wzResultBody"></div>
+      <div class="wz-actions"><button type="button" class="primary" id="wzResultClose">BACK TO GAME</button></div>
+    </div>
+    <button class="hud-btn warzone wz-forfeit" id="wzForfeit" type="button">FORFEIT</button>
+    <div class="wz-hint" id="wzHint">WASD / Arrows to move &middot; Click or Space to attack</div>
+  </div>
+
+  <div id="warzoneModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <div class="modal-title">Warzone</div>
+        <button class="x" data-close="warzoneModal" type="button">&times;</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-wztab="find" type="button">Find a Duel</button>
+        <button class="tab" data-wztab="challenge" type="button">Challenge</button>
+        <button class="tab" data-wztab="history" type="button">History</button>
+      </div>
+      <div class="panel active" id="wzPanelFind">
+        <div class="wz-sub">Step into the arena and risk an item or cash. Both players set a bet, confirm, then fight. Winner keeps their own bet and takes the opponent's.</div>
+        <div class="wz-row" style="margin-top:14px"><span>Wins / Losses</span><span class="wz-stat" id="wzStats">0 / 0</span></div>
+        <div class="wz-row"><span>Money won</span><span class="wz-stat" id="wzMoneyWon">$0</span></div>
+        <div class="wz-actions" style="margin-top:16px">
+          <button type="button" class="primary" id="wzQueueBtn">FIND MATCH</button>
+        </div>
+      </div>
+      <div class="panel" id="wzPanelChallenge">
+        <div class="wz-sub">Challenge an online keeper directly. They can accept or decline.</div>
+        <div class="wz-list" id="wzOnlineList" style="margin-top:12px"></div>
+        <div class="wz-sub" id="wzPending" style="margin-top:10px"></div>
+      </div>
+      <div class="panel" id="wzPanelHistory">
+        <div class="wz-list" id="wzHistoryList"></div>
+      </div>
     </div>
   </div>
 
